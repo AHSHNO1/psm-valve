@@ -1,12 +1,15 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calculator, AlertTriangle, CheckCircle2, Activity, Wind,
   Gauge, BarChart3, Zap, Droplets, Flame, ChevronDown,
-  ArrowLeft, Beaker, Save, Trash2, Printer, X, Layers,
-  Share2, RotateCcw
+  ArrowLeft, Save, Trash2, Printer, X, Layers,
+  Share2, RotateCcw, Copy, Check, HelpCircle, Sparkles,
+  Info, Wand2, Globe2, Award, Camera, FlaskConical,
+  LineChart, FileText, ClipboardList, Package, Star,
+  Undo2
 } from "lucide-react";
 import {
   calcLiquidCv, calcGasCv, calcSteamCv, cvToSize,
@@ -17,10 +20,22 @@ import {
   removeScenario, clearScenarios
 } from "@/lib/sizing-presets";
 import { useDictionary } from "./Providers";
+import {
+  ValveCharacteristicChart, TipsAndStandards, AlternativeSizes,
+  InstalledChart, DeltaPChart
+} from "./SizingCharts";
+import SizingWizard from "./SizingWizard";
+import SizingCompare from "./SizingCompare";
+import SizingReportModal from "./SizingReportModal";
+import MaterialGuide from "./MaterialGuide";
+import FluidPicker from "./FluidPicker";
+import { suggestProducts } from "@/data/psm-products-preview";
+import { SYSTEMS, formToSI, formFromSI } from "@/lib/unit-system";
+import { track } from "@/lib/analytics";
 
 const DEFAULT_FORM = {
-  Q: 100, Gf: 1, Gg: 0.65, P1: 10, P2: 6, T: 25,
-  Pv: 0.5, Pc: 221, Z: 1, k: 1.4, xT: 0.7, FL: 0.9, W: 500
+  Q: null, Gf: 1, Gg: 0.65, P1: null, P2: null, T: null,
+  Pv: 0.5, Pc: 221, Z: 1, k: 1.4, xT: 0.7, FL: 0.9, W: null
 };
 
 function getRecommendedCharacteristic(fluid, openingPercent) {
@@ -32,196 +47,210 @@ function getRecommendedCharacteristic(fluid, openingPercent) {
   return "equal";
 }
 
-// ============ INLINE STANDARDS TABLE ============
-const STANDARDS_DN = [
-  { dn: "DN15", nps: '1/2"', cv: 15 },
-  { dn: "DN25", nps: '1"', cv: 45 },
-  { dn: "DN50", nps: '2"', cv: 150 },
-  { dn: "DN80", nps: '3"', cv: 320 },
-  { dn: "DN100", nps: '4"', cv: 550 },
-  { dn: "DN150", nps: '6"', cv: 1250 },
-  { dn: "DN200", nps: '8"', cv: 2200 },
-  { dn: "DN300", nps: '12"', cv: 4800 }
-];
+function validateForm(form, fluid, locale) {
+  const errors = {};
+  const isFa = locale === "fa";
 
-const STANDARDS_ANSI = [
-  { ansi: "150", pn: "PN20", bar: 19.6 },
-  { ansi: "300", pn: "PN50", bar: 51.1 },
-  { ansi: "600", pn: "PN100", bar: 102.1 },
-  { ansi: "900", pn: "PN150", bar: 153.2 },
-  { ansi: "1500", pn: "PN250", bar: 255.3 },
-  { ansi: "2500", pn: "PN420", bar: 425.5 }
-];
+  if (fluid === "steam") {
+    if (form.W == null || form.W <= 0) errors.W = isFa ? "دبی بخار باید بزرگتر از صفر باشد" : "Steam flow must be > 0";
+  } else {
+    if (form.Q == null || form.Q <= 0) errors.Q = isFa ? "دبی باید بزرگتر از صفر باشد" : "Flow must be > 0";
+  }
 
-function StandardsTable({ locale }) {
-  const [tab, setTab] = useState("dn");
+  if (form.P1 == null || form.P1 <= 0) errors.P1 = isFa ? "فشار ورودی باید مثبت باشد" : "P1 must be > 0";
+  if (form.P2 == null || form.P2 < 0) errors.P2 = isFa ? "فشار خروجی نمی‌تواند منفی باشد" : "P2 cannot be negative";
+  if (form.P1 != null && form.P2 != null && form.P1 <= form.P2) {
+    errors.P2 = isFa ? "فشار ورودی باید بیشتر از خروجی باشد" : "P1 must be > P2";
+  }
 
-  return (
-    <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
-      <div style={{
-        padding: "10px 14px",
-        borderBottom: "1px solid var(--border)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 900, color: "var(--text)" }}>
-          <span>📊</span>
-          {locale === "fa" ? "جدول استانداردها" : "Standards"}
-        </div>
-        <div style={{ display: "flex", gap: 4, padding: 3, background: "var(--bg-soft)", borderRadius: 8 }}>
-          <button onClick={function() { setTab("dn"); }} style={{
-            padding: "5px 10px", borderRadius: 6, border: "none", cursor: "pointer",
-            fontFamily: "inherit", fontSize: 10, fontWeight: 900,
-            background: tab === "dn" ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "transparent",
-            color: tab === "dn" ? "#FFFFFF" : "var(--text-soft)"
-          }}>DN/NPS</button>
-          <button onClick={function() { setTab("ansi"); }} style={{
-            padding: "5px 10px", borderRadius: 6, border: "none", cursor: "pointer",
-            fontFamily: "inherit", fontSize: 10, fontWeight: 900,
-            background: tab === "ansi" ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "transparent",
-            color: tab === "ansi" ? "#FFFFFF" : "var(--text-soft)"
-          }}>ANSI/PN</button>
-        </div>
-      </div>
-      <div style={{ maxHeight: 220, overflowY: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
-          <thead style={{ position: "sticky", top: 0, background: "var(--bg-soft)", zIndex: 1 }}>
-            <tr>
-              {(tab === "dn" ? ["DN", "NPS", "Cv"] : ["ANSI", "PN", "bar"]).map(function(h, i) {
-                return (
-                  <th key={i} style={{
-                    padding: "8px 12px", textAlign: "center",
-                    fontSize: 10, fontWeight: 900, color: "var(--text-muted)",
-                    textTransform: "uppercase", letterSpacing: "0.05em",
-                    borderBottom: "1px solid var(--border)"
-                  }}>{h}</th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {(tab === "dn" ? STANDARDS_DN : STANDARDS_ANSI).map(function(d, i) {
-              const row = tab === "dn"
-                ? [d.dn, d.nps, d.cv]
-                : ["Class " + d.ansi, d.pn, d.bar];
-              return (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#FFFFFF" : "var(--bg-soft)" }}>
-                  {row.map(function(c, j) {
-                    return (
-                      <td key={j} style={{
-                        padding: "7px 12px", textAlign: "center",
-                        fontFamily: "monospace", fontWeight: j === 0 ? 900 : 700,
-                        color: j === 0 ? "#B8850A" : "var(--text)"
-                      }}>{c}</td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  if (fluid === "liquid") {
+    if (form.Gf == null || form.Gf <= 0) errors.Gf = isFa ? "چگالی نسبی باید مثبت باشد" : "Gf must be > 0";
+    if (form.Pv != null && form.Pv < 0) errors.Pv = isFa ? "فشار بخار نمی‌تواند منفی باشد" : "Pv cannot be negative";
+    if (form.Pv != null && form.P1 != null && form.Pv >= form.P1) {
+      errors.Pv = isFa ? "فشار بخار باید کمتر از P1 باشد" : "Pv must be < P1";
+    }
+  }
+
+  if (fluid === "gas") {
+    if (form.Gg == null || form.Gg <= 0) errors.Gg = isFa ? "چگالی گاز باید مثبت باشد" : "Gg must be > 0";
+  }
+
+  if (fluid !== "liquid") {
+    if (form.T == null || form.T < -200 || form.T > 800) {
+      errors.T = isFa ? "دما باید بین ۲۰۰- و ۸۰۰ درجه باشد" : "T must be between -200 and 800 °C";
+    }
+  }
+
+  return errors;
 }
 
-// ============ INLINE MATERIAL GUIDE ============
-const MATERIALS = [
-  { id: "wcb", name: { fa: "WCB فولاد کربنی", en: "WCB Carbon Steel" }, tempRange: [-29, 425], body: "ASTM A216 WCB", color: "#64748B" },
-  { id: "cf8m", name: { fa: "CF8M استیل 316", en: "CF8M 316 SS" }, tempRange: [-196, 540], body: "ASTM A351 CF8M", color: "#0891B2" },
-  { id: "cf3m", name: { fa: "CF3M استیل 316L", en: "CF3M 316L SS" }, tempRange: [-196, 450], body: "ASTM A351 CF3M", color: "#0EA5E9" },
-  { id: "duplex", name: { fa: "Duplex دوپلکس", en: "Duplex SS" }, tempRange: [-50, 300], body: "ASTM A995 4A", color: "#7C3AED" },
-  { id: "alloy20", name: { fa: "Alloy 20", en: "Alloy 20" }, tempRange: [-29, 425], body: "ASTM A351 CN7M", color: "#DB2777" },
-  { id: "hastelloy", name: { fa: "Hastelloy C-276", en: "Hastelloy C-276" }, tempRange: [-196, 675], body: "ASTM A494 CW-12MW", color: "#DC2626" },
-  { id: "cryo", name: { fa: "CF8M کرایو", en: "Cryogenic CF8M" }, tempRange: [-254, -50], body: "ASTM A351 CF8M cryo", color: "#0284C7" }
-];
+const FIELD_HELP = {
+  fa: {
+    Q: "دبی حجمی سیال — مایع: m³/h، گاز: Nm³/h",
+    W: "دبی جرمی بخار بر حسب kg/h",
+    Gf: "چگالی نسبی مایع نسبت به آب (آب = ۱)",
+    Gg: "چگالی نسبی گاز نسبت به هوا (هوا = ۱)",
+    P1: "فشار مطلق ورودی شیر (bar)",
+    P2: "فشار مطلق خروجی شیر (bar)",
+    Pv: "فشار بخار مایع در دمای کار — برای تشخیص کاویتاسیون",
+    Pc: "فشار بحرانی سیال — برای محاسبه دقیق‌تر",
+    FL: "ضریب بازیابی فشار شیر (معمولاً ۰.۹)",
+    T: "دمای سیال بر حسب سلسیوس",
+    Z: "ضریب تراکم‌پذیری گاز (گاز ایده‌آل = ۱)",
+    k: "نسبت گرمای ویژه Cp/Cv (هوا = ۱.۴)",
+    xT: "ضریب افت فشار بحرانی (معمولاً ۰.۷)"
+  },
+  en: {
+    Q: "Volumetric flow — liquid: m³/h, gas: Nm³/h",
+    W: "Steam mass flow in kg/h",
+    Gf: "Liquid specific gravity relative to water",
+    Gg: "Gas specific gravity relative to air",
+    P1: "Absolute inlet pressure (bar)",
+    P2: "Absolute outlet pressure (bar)",
+    Pv: "Vapor pressure of liquid at operating temperature",
+    Pc: "Critical pressure of fluid",
+    FL: "Valve pressure recovery factor (≈0.9)",
+    T: "Fluid temperature in °C",
+    Z: "Gas compressibility factor (ideal gas = 1)",
+    k: "Specific heat ratio Cp/Cv (air = 1.4)",
+    xT: "Choked pressure drop ratio (typically 0.7)"
+  },
+  ar: { Q: "التدفق", W: "تدفق البخار", Gf: "الكثافة", Gg: "كثافة الغاز", P1: "الدخول", P2: "الخروج", Pv: "ضغط البخار", Pc: "الضغط الحرج", FL: "معامل الاسترداد", T: "الحرارة", Z: "الانضغاط", k: "الحرارة النوعية", xT: "الانسداد" },
+  ru: { Q: "Расход", W: "Расход пара", Gf: "Плотность", Gg: "Плотность газа", P1: "Вход", P2: "Выход", Pv: "Давление паров", Pc: "Крит. давление", FL: "Коэффициент", T: "Температура", Z: "Сжимаемость", k: "Показатель", xT: "Запирание" }
+};
 
-function MaterialGuide({ form, locale }) {
-  const temp = form.T || 25;
-  const p = form.P1 || 10;
-
-  let recId = "wcb";
-  if (temp <= -50) recId = "cryo";
-  else if (temp > 540) recId = "hastelloy";
-  else if (p > 100 && temp > 300) recId = "cf8m";
-  else if (temp > 425 || temp < -29) recId = "cf8m";
-
-  const recommended = MATERIALS.find(function(m) { return m.id === recId; });
-
+function Field({ label, unit, value, onChange, step, help, error, placeholder }) {
+  const [showHelp, setShowHelp] = useState(false);
+  const isError = !!error;
   return (
-    <div className="card-glass" style={{ padding: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 900, color: "var(--text)", display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-        <span>🔬</span>
-        {locale === "fa" ? "راهنمای انتخاب متریال" : "Material Guide"}
+    <div style={{ position: "relative" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 900, color: isError ? "#E81123" : "var(--text-muted)" }}>{label}</span>
+          {help && (
+            <button
+              type="button"
+              onClick={() => setShowHelp(!showHelp)}
+              onMouseEnter={() => setShowHelp(true)}
+              onMouseLeave={() => setShowHelp(false)}
+              style={{
+                width: 14, height: 14, borderRadius: "50%",
+                border: "none", cursor: "help",
+                background: "var(--bg-soft)", color: "var(--text-muted)",
+                display: "grid", placeItems: "center", padding: 0
+              }}
+            >
+              <HelpCircle size={10} />
+            </button>
+          )}
+        </div>
+        {unit && (
+          <span style={{
+            fontSize: 9, color: isError ? "#E81123" : "var(--text-muted)", fontFamily: "monospace",
+            fontWeight: 700, padding: "2px 6px", borderRadius: 5,
+            background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)"
+          }}>{unit}</span>
+        )}
       </div>
-
-      {recommended && (
+      <input
+        type="number"
+        step={step || 1}
+        value={value == null ? "" : value}
+        placeholder={placeholder || ""}
+        onChange={onChange}
+        style={{
+          width: "100%", padding: "10px 12px", borderRadius: 9,
+          border: "1.5px solid " + (isError ? "#E81123" : "var(--border)"),
+          background: isError ? "rgba(232,17,35,0.04)" : "var(--bg-soft)",
+          color: isError ? "#E81123" : "var(--text)",
+          fontFamily: "monospace", fontSize: 13.5, fontWeight: 700
+        }}
+        onFocus={e => {
+          if (!isError) {
+            e.target.style.borderColor = "#E0A81A";
+            e.target.style.background = "#FFFFFF";
+            e.target.style.boxShadow = "0 0 0 3px rgba(201, 149, 13, 0.12)";
+          }
+        }}
+        onBlur={e => {
+          if (!isError) {
+            e.target.style.borderColor = "var(--border)";
+            e.target.style.background = "var(--bg-soft)";
+            e.target.style.boxShadow = "none";
+          }
+        }}
+      />
+      {isError && (
         <div style={{
-          padding: 12, borderRadius: 10, marginBottom: 10,
-          background: recommended.color + "12",
-          border: "1.5px solid " + recommended.color + "50"
+          display: "flex", alignItems: "center", gap: 4,
+          marginTop: 4, fontSize: 10, fontWeight: 800, color: "#E81123"
         }}>
-          <div style={{ fontSize: 10, fontWeight: 900, color: recommended.color, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
-            {locale === "fa" ? "پیشنهاد" : "Recommended"}
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", marginBottom: 6 }}>
-            {recommended.name[locale] || recommended.name.en}
-          </div>
-          <div style={{ fontSize: 10.5, fontFamily: "monospace", color: "var(--text-soft)" }}>
-            {recommended.body} · {recommended.tempRange[0]}…{recommended.tempRange[1]}°C
-          </div>
+          <AlertTriangle size={10} /> {error}
         </div>
       )}
-
-      <div style={{ display: "grid", gap: 4 }}>
-        {MATERIALS.map(function(m) {
-          const isRec = m.id === recId;
-          return (
-            <div key={m.id} style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "6px 10px", borderRadius: 8,
-              background: isRec ? m.color + "10" : "var(--bg-soft)",
-              border: "1px solid " + (isRec ? m.color + "50" : "var(--border)")
-            }}>
-              <div style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: m.color
-              }} />
-              <div style={{ flex: 1, fontSize: 11, fontWeight: isRec ? 900 : 700, color: isRec ? m.color : "var(--text)" }}>
-                {m.name[locale] || m.name.en}
-              </div>
-              <div style={{ fontSize: 9.5, fontFamily: "monospace", color: "var(--text-muted)" }}>
-                {m.tempRange[0]}…{m.tempRange[1]}°C
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <AnimatePresence>
+        {showHelp && help && !isError && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            style={{
+              position: "absolute", top: "100%", right: 0, left: 0,
+              marginTop: 6, padding: "8px 11px", borderRadius: 9,
+              background: "#1F2124", color: "#FFFFFF",
+              fontSize: 10.5, fontWeight: 600, lineHeight: 1.6,
+              zIndex: 30, boxShadow: "0 8px 24px rgba(0,0,0,0.25)"
+            }}
+          >
+            {help}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// ============ MAIN COMPONENT ============
 export default function SizingTool() {
   const { locale } = useDictionary();
   const [fluid, setFluid] = useState("liquid");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [result, setResult] = useState(null);
+  const [autoCalc, setAutoCalc] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [saved, setSaved] = useState([]);
   const [showSaved, setShowSaved] = useState(false);
   const [scenarioName, setScenarioName] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [unitSystem, setUnitSystem] = useState("SI");
+  const [wizardMode, setWizardMode] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showFluidPicker, setShowFluidPicker] = useState(false);
+  const [selectedFluidName, setSelectedFluidName] = useState(null);
   const [mobileTab, setMobileTab] = useState("form");
+  const [referenceTab, setReferenceTab] = useState("reference");
+  const [undoSnapshot, setUndoSnapshot] = useState(null);
+  const [showUndo, setShowUndo] = useState(false);
 
-  useEffect(function() { setSaved(loadScenarios()); }, []);
+  const help = FIELD_HELP[locale] || FIELD_HELP.en;
+  const sys = SYSTEMS[unitSystem];
+  const isFa = locale === "fa";
 
-  // Auto-save to localStorage
-  useEffect(function() {
+  const errors = useMemo(() => validateForm(form, fluid, locale), [form, fluid, locale]);
+  const hasErrors = Object.keys(errors).length > 0;
+
+  const topProduct = useMemo(() => {
+    if (!result || !result.Cv) return null;
+    const s = suggestProducts(result.Cv, form, locale);
+    return s[0] || null;
+  }, [result, form, locale]);
+
+  useEffect(() => { setSaved(loadScenarios()); }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const savedData = localStorage.getItem("psm_sizing_form");
@@ -229,24 +258,83 @@ export default function SizingTool() {
         const parsed = JSON.parse(savedData);
         if (parsed.form) setForm(Object.assign({}, DEFAULT_FORM, parsed.form));
         if (parsed.fluid) setFluid(parsed.fluid);
+        if (parsed.unitSystem) setUnitSystem(parsed.unitSystem);
+        if (parsed.selectedFluidName) setSelectedFluidName(parsed.selectedFluidName);
       }
     } catch (e) {}
   }, []);
 
-  useEffect(function() {
+  useEffect(() => {
     if (typeof window === "undefined") return;
-    const t = setTimeout(function() {
+    const t = setTimeout(() => {
       try {
-        localStorage.setItem("psm_sizing_form", JSON.stringify({ form: form, fluid: fluid }));
+        localStorage.setItem("psm_sizing_form", JSON.stringify({
+          form, fluid, unitSystem, selectedFluidName
+        }));
       } catch (e) {}
     }, 500);
-    return function() { clearTimeout(t); };
-  }, [form, fluid]);
+    return () => clearTimeout(t);
+  }, [form, fluid, unitSystem, selectedFluidName]);
+
+  useEffect(() => {
+    if (!autoCalc || !hasInteracted || hasErrors) return;
+    const t = setTimeout(() => { runCalculation(false); }, 400);
+    return () => clearTimeout(t);
+  }, [form, fluid, autoCalc, hasInteracted, hasErrors]);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") {
+        if (showCompare) setShowCompare(false);
+        if (showFluidPicker) setShowFluidPicker(false);
+        if (showReport) setShowReport(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showCompare, showFluidPicker, showReport]);
+
+  function runCalculation() {
+    if (hasErrors) return;
+    const siForm = formToSI(form, unitSystem);
+    let r;
+    if (fluid === "liquid") {
+      r = calcLiquidCv({ Q: siForm.Q, Gf: siForm.Gf, P1: siForm.P1, P2: siForm.P2, Pv: siForm.Pv, Pc: siForm.Pc, FL: siForm.FL });
+    } else if (fluid === "steam") {
+      r = calcSteamCv({ W: siForm.W, P1: siForm.P1, P2: siForm.P2, T: siForm.T });
+    } else {
+      r = calcGasCv({ Q: siForm.Q, Gg: siForm.Gg, T: siForm.T, P1: siForm.P1, P2: siForm.P2, Z: siForm.Z, k: siForm.k, xT: siForm.xT });
+    }
+    if (r.error) { setResult({ error: r.error }); return; }
+    const openingPercent = Math.min(100, Math.round((r.Cv / r.size.cv) * 100));
+    const warnings = getRecommendation(openingPercent, r.choked, r.cavitationRisk);
+    const recCharacteristic = getRecommendedCharacteristic(fluid, openingPercent);
+    setResult(Object.assign({}, r, {
+      openingPercent, warnings, fluidType: fluid,
+      recommendedCharacteristic: recCharacteristic,
+      timestamp: Date.now(),
+      formSI: siForm
+    }));
+    setShowMore(false);
+    track.calculationDone({
+      fluid,
+      cv: r.Cv,
+      size: r.size.size,
+      opening: openingPercent,
+      choked: !!r.choked
+    });
+  }
 
   function update(k) {
-    return function(e) {
-      const v = parseFloat(e.target.value);
-      setForm(Object.assign({}, form, { [k]: isNaN(v) ? 0 : v }));
+    return (e) => {
+      const raw = e.target.value;
+      if (raw === "") {
+        setForm(Object.assign({}, form, { [k]: null }));
+      } else {
+        const v = parseFloat(raw);
+        setForm(Object.assign({}, form, { [k]: isNaN(v) ? null : v }));
+      }
+      setHasInteracted(true);
     };
   }
 
@@ -254,42 +342,79 @@ export default function SizingTool() {
     setFluid(preset.fluid);
     setForm(Object.assign({}, DEFAULT_FORM, preset.values));
     setResult(null);
+    setHasInteracted(true);
+    setSelectedFluidName(null);
+    track.presetUsed({ preset: preset.id, fluid: preset.fluid });
   }
 
   function applyFluidPreset(key) {
     const p = FLUID_PRESETS[key];
     if (!p) return;
     setForm(Object.assign({}, form, { Gf: p.Gf, Pv: p.Pv, Pc: p.Pc }));
+    setHasInteracted(true);
   }
 
-  function calculate() {
-    let r;
-    if (fluid === "liquid") {
-      r = calcLiquidCv({ Q: form.Q, Gf: form.Gf, P1: form.P1, P2: form.P2, Pv: form.Pv, Pc: form.Pc, FL: form.FL });
-    } else if (fluid === "steam") {
-      r = calcSteamCv({ W: form.W, P1: form.P1, P2: form.P2, T: form.T });
-    } else {
-      r = calcGasCv({ Q: form.Q, Gg: form.Gg, T: form.T, P1: form.P1, P2: form.P2, Z: form.Z, k: form.k, xT: form.xT });
+  function handleFluidPick(pickedFluid) {
+    setSelectedFluidName(pickedFluid.names[locale] || pickedFluid.names.en);
+    if (pickedFluid.type !== fluid) setFluid(pickedFluid.type);
+    const updates = {};
+    if (pickedFluid.type === "liquid") {
+      if (pickedFluid.Gf != null) updates.Gf = pickedFluid.Gf;
+      if (pickedFluid.Pv != null) updates.Pv = pickedFluid.Pv;
+      if (pickedFluid.Pc != null) updates.Pc = pickedFluid.Pc;
+    } else if (pickedFluid.type === "gas") {
+      if (pickedFluid.Gg != null) updates.Gg = pickedFluid.Gg;
+      if (pickedFluid.k != null) updates.k = pickedFluid.k;
+      if (pickedFluid.Z != null) updates.Z = pickedFluid.Z;
+    } else if (pickedFluid.type === "steam") {
+      if (pickedFluid.k != null) updates.k = pickedFluid.k;
     }
-    if (r.error) { setResult({ error: r.error }); return; }
-    const openingPercent = Math.min(100, Math.round((r.Cv / r.size.cv) * 100));
-    const warnings = getRecommendation(openingPercent, r.choked, r.cavitationRisk);
-    const recCharacteristic = getRecommendedCharacteristic(fluid, openingPercent);
-    setResult(Object.assign({}, r, {
-      openingPercent: openingPercent,
-      warnings: warnings,
-      fluidType: fluid,
-      recommendedCharacteristic: recCharacteristic,
-      timestamp: Date.now()
-    }));
-    setShowMore(false);
+    setForm(Object.assign({}, form, updates));
+    setHasInteracted(true);
+    track.fluidPicked({ fluid: pickedFluid.id, type: pickedFluid.type });
   }
 
-  function reset() {
+  function switchUnitSystem(newSys) {
+    if (newSys === unitSystem) return;
+    const siForm = formToSI(form, unitSystem);
+    const newForm = formFromSI(siForm, newSys);
+    setForm(newForm);
+    setUnitSystem(newSys);
+    setResult(null);
+    track.unitToggled(newSys);
+  }
+
+  function handleReset() {
+    if (!hasInteracted) return;
+    const snapshot = {
+      form: Object.assign({}, form),
+      fluid,
+      selectedFluidName,
+      result
+    };
     setForm(DEFAULT_FORM);
     setResult(null);
     setFluid("liquid");
+    setSelectedFluidName(null);
+    setHasInteracted(false);
+    setUndoSnapshot(snapshot);
+    setShowUndo(true);
+    setTimeout(() => {
+      setShowUndo(false);
+      setUndoSnapshot(null);
+    }, 6000);
     try { localStorage.removeItem("psm_sizing_form"); } catch (e) {}
+  }
+
+  function handleUndo() {
+    if (!undoSnapshot) return;
+    setForm(undoSnapshot.form);
+    setFluid(undoSnapshot.fluid);
+    setSelectedFluidName(undoSnapshot.selectedFluidName);
+    setResult(undoSnapshot.result);
+    setHasInteracted(true);
+    setShowUndo(false);
+    setUndoSnapshot(null);
   }
 
   function handleSave() {
@@ -297,70 +422,22 @@ export default function SizingTool() {
     const item = {
       id: "sc-" + Date.now(),
       name: scenarioName.trim(),
-      fluid: fluid,
+      fluid,
       form: Object.assign({}, form),
-      result: result
+      result
     };
     setSaved(saveScenario(item));
     setScenarioName("");
     setShowSaveDialog(false);
+    track.scenarioSaved();
   }
 
   function handleRemove(id) { setSaved(removeScenario(id)); }
 
   function handleClearAll() {
-    if (!confirm("همه سناریوها حذف شوند؟")) return;
+    if (!confirm(isFa ? "همه سناریوها حذف شوند؟" : "Clear all scenarios?")) return;
     clearScenarios();
     setSaved([]);
-  }
-
-  function handlePrint() {
-    if (typeof window !== "undefined") window.print();
-  }
-
-  function handleDownloadPDF() {
-    try {
-      // Simple print to PDF approach
-      window.print();
-    } catch (e) {
-      alert("خطا در تولید PDF");
-    }
-  }
-
-  function handleDownloadCSV() {
-    if (!result) return;
-    const rows = [
-      ["PSM VALVE — Petro Sazeh Mihan"],
-      ["IT Department"],
-      [""],
-      ["Parameter", "Value", "Unit"],
-      ["Fluid", fluid, ""],
-      ["Q", form.Q, fluid === "steam" ? "kg/h" : "m3/h"],
-      ["P1", form.P1, "bar"],
-      ["P2", form.P2, "bar"],
-      ["Pv", form.Pv || "-", "bar"],
-      ["T", form.T || "-", "C"],
-      [""],
-      ["Cv", result.Cv, ""],
-      ["Kv", result.Kv, ""],
-      ["Size", result.size.size, ""],
-      ["DN", result.size.dn, ""],
-      ["NPS", result.size.nps, ""],
-      ["Opening", result.openingPercent + "%", ""],
-      ["Velocity", result.velocity || "-", "m/s"],
-      ["Noise", result.noise || "-", "dB"],
-      ["Cavitation", result.cavitationRisk || "-", ""]
-    ];
-    const csv = rows.map(function(r) {
-      return r.map(function(c) { return '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"'; }).join(",");
-    }).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "PSM-Sizing-" + Date.now() + ".csv";
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   function shareLink() {
@@ -368,250 +445,354 @@ export default function SizingTool() {
     try {
       const params = new URLSearchParams();
       params.set("fluid", fluid);
-      Object.keys(form).forEach(function(k) { params.set(k, String(form[k])); });
+      params.set("unitSystem", unitSystem);
+      Object.keys(form).forEach(k => {
+        if (form[k] != null) params.set(k, String(form[k]));
+      });
       const url = window.location.origin + window.location.pathname + "?" + params.toString();
       if (navigator.clipboard) navigator.clipboard.writeText(url);
       setShowShareToast(true);
-      setTimeout(function() { setShowShareToast(false); }, 2500);
+      setTimeout(() => setShowShareToast(false), 2500);
     } catch (e) {}
   }
+
+  const completion = useMemo(() => {
+    const required = fluid === "steam" ? ["W", "P1", "P2"] : ["Q", "P1", "P2"];
+    const filled = required.filter(k => form[k] && form[k] > 0);
+    return Math.round((filled.length / required.length) * 100);
+  }, [form, fluid]);
+
+  const dP = (form.P1 != null && form.P2 != null) ? +(form.P1 - form.P2).toFixed(2) : 0;
 
   const L = {
     fa: {
       title: "سایزینگ شیر کنترلی",
       subtitle: "محاسبه دقیق Cv/Kv بر اساس IEC 60534",
       liquid: "مایع", gas: "گاز", steam: "بخار",
-      presets: "سناریوها",
-      operatingPoint: "نقطه کاری",
-      advanced: "پیشرفته",
-      calculate: "محاسبه",
-      reset: "بازنشانی",
-      emptyTitle: "فرم را پر کنید",
-      emptyDesc: "یا از سناریوهای آماده استفاده کنید",
-      cv: "ضریب Cv", size: "سایز", opening: "بازشدگی",
+      presets: "سناریوهای آماده", presetsHint: "با یک کلیک، فرم پر می‌شود",
+      operatingPoint: "نقطه کاری", advanced: "تنظیمات پیشرفته",
+      calculate: "محاسبه", reset: "بازنشانی", undo: "بازگردانی",
+      cv: "ضریب Cv", size: "سایز پیشنهادی", opening: "بازشدگی",
       velocity: "سرعت", noise: "نویز", cav: "کاویتاسیون",
       low: "کم", medium: "متوسط", high: "بالا", flashing: "فلاشینگ",
       choked: "جریان Choked",
-      more: "جزئیات", less: "بستن",
-      pdf: "PDF", excel: "Excel", print: "چاپ", save: "ذخیره", share: "اشتراک",
+      more: "نمودارهای تخصصی", less: "بستن",
+      save: "ذخیره", share: "اشتراک",
+      compare: "مقایسه", report: "گزارش",
       reqQuote: "درخواست قیمت",
       saveDialog: "نام سناریو", confirm: "ذخیره", cancel: "انصراف",
-      savedList: "سناریوهای ذخیره‌شده",
-      removeAll: "حذف همه",
-      formTab: "فرم", resultsTab: "نتایج",
-      chartTitle: "نمودار مشخصه جریان",
-      whyTitle: "چرا این سایز؟",
-      altTitle: "مقایسه سایزها",
-      tipsTitle: "توصیه‌ها",
-      printTitle: "گزارش سایزینگ شیر کنترلی"
+      savedList: "سناریوهای ذخیره‌شده", removeAll: "حذف همه",
+      formTab: "فرم", resultTab: "نتیجه",
+      liveMode: "محاسبه زنده", liveOn: "روشن", liveOff: "خاموش",
+      deltaP: "افت فشار (ΔP)",
+      completion: "تکمیل فرم",
+      wizardBtn: "حالت ساده",
+      unitSI: "متریک", unitImperial: "اینچی",
+      errorsTitle: "خطا در ورودی‌ها",
+      errorsHint: "لطفاً مقادیر قرمز را اصلاح کنید",
+      pickFluid: "انتخاب سیال",
+      selectedFluid: "سیال انتخاب‌شده",
+      resultEmptyTitle: "آماده محاسبه",
+      resultEmptyDesc: "فرم را پر کنید تا نتیجه زنده نمایش داده شود",
+      resultEmptyHint: "یا از سناریوهای آماده استفاده کنید",
+      product: "محصول پیشنهادی PSM",
+      productHint: "بر اساس Cv محاسبه‌شده",
+      noProduct: "محصولی برای این Cv یافت نشد",
+      viewProduct: "مشاهده محصولات",
+      refTitle: "مراجع فنی",
+      refStandards: "استانداردها و توصیه‌ها",
+      refMaterial: "راهنمای متریال",
+      refCharts: "نمودارهای پیشرفته",
+      lastCalc: "آخرین محاسبه",
+      config: "تنظیمات"
     },
     en: {
       title: "Control Valve Sizing",
       subtitle: "Accurate Cv/Kv calculation per IEC 60534",
       liquid: "Liquid", gas: "Gas", steam: "Steam",
-      presets: "Scenarios",
-      operatingPoint: "Operating Point",
-      advanced: "Advanced",
-      calculate: "Calculate",
-      reset: "Reset",
-      emptyTitle: "Fill the form",
-      emptyDesc: "or use a preset scenario",
-      cv: "Cv", size: "Size", opening: "Opening",
+      presets: "Preset Scenarios", presetsHint: "One click to fill the form",
+      operatingPoint: "Operating Point", advanced: "Advanced Settings",
+      calculate: "Calculate", reset: "Reset", undo: "Undo",
+      cv: "Cv Factor", size: "Recommended Size", opening: "Opening",
       velocity: "Velocity", noise: "Noise", cav: "Cavitation",
       low: "Low", medium: "Medium", high: "High", flashing: "Flashing",
-      choked: "Choked Flow",
-      more: "Details", less: "Hide",
-      pdf: "PDF", excel: "Excel", print: "Print", save: "Save", share: "Share",
+      choked: "Choked Flow", more: "Advanced charts", less: "Hide",
+      save: "Save", share: "Share",
+      compare: "Compare", report: "Report",
       reqQuote: "Request Quote",
       saveDialog: "Scenario name", confirm: "Save", cancel: "Cancel",
-      savedList: "Saved scenarios",
-      removeAll: "Clear all",
-      formTab: "Form", resultsTab: "Results",
-      chartTitle: "Flow Characteristic",
-      whyTitle: "Why this size?",
-      altTitle: "Alt Sizes",
-      tipsTitle: "Tips",
-      printTitle: "Control Valve Sizing Report"
+      savedList: "Saved Scenarios", removeAll: "Clear all",
+      formTab: "Form", resultTab: "Result",
+      liveMode: "Live calc", liveOn: "ON", liveOff: "OFF",
+      deltaP: "Pressure drop (ΔP)", completion: "Completion",
+      wizardBtn: "Simple Mode",
+      unitSI: "Metric", unitImperial: "Imperial",
+      errorsTitle: "Invalid Inputs",
+      errorsHint: "Please fix the red fields",
+      pickFluid: "Pick Fluid", selectedFluid: "Selected Fluid",
+      resultEmptyTitle: "Ready to calculate",
+      resultEmptyDesc: "Fill the form to see live results",
+      resultEmptyHint: "or use a preset scenario",
+      product: "Suggested PSM Product",
+      productHint: "Based on your calculated Cv",
+      noProduct: "No matching product for this Cv",
+      viewProduct: "View Products",
+      refTitle: "Technical References",
+      refStandards: "Standards & Tips",
+      refMaterial: "Material Guide",
+      refCharts: "Advanced Charts",
+      lastCalc: "Last calculation",
+      config: "Settings"
     },
     ar: {
-      title: "تحديد حجم الصمام",
-      subtitle: "حساب Cv/Kv وفقًا لـ IEC 60534",
+      title: "تحديد حجم الصمام", subtitle: "حساب Cv/Kv وفقًا لـ IEC 60534",
       liquid: "سائل", gas: "غاز", steam: "بخار",
-      presets: "سيناريوهات", operatingPoint: "نقطة التشغيل", advanced: "متقدم",
-      calculate: "احسب", reset: "إعادة",
-      emptyTitle: "املأ النموذج", emptyDesc: "أو اختر سيناريو",
+      presets: "سيناريوهات", presetsHint: "بنقرة واحدة",
+      operatingPoint: "نقطة التشغيل", advanced: "متقدم",
+      calculate: "احسب", reset: "إعادة", undo: "تراجع",
       cv: "Cv", size: "الحجم", opening: "الفتح",
       velocity: "السرعة", noise: "الضجيج", cav: "التجويف",
       low: "منخفض", medium: "متوسط", high: "عالي", flashing: "وميض",
-      choked: "تدفق مختنق", more: "المزيد", less: "إخفاء",
-      pdf: "PDF", excel: "Excel", print: "طباعة", save: "حفظ", share: "مشاركة",
-      reqQuote: "طلب سعر", saveDialog: "اسم السيناريو", confirm: "حفظ", cancel: "إلغاء",
-      savedList: "السيناريوهات", removeAll: "حذف الكل",
-      formTab: "النموذج", resultsTab: "النتائج",
-      chartTitle: "خصائص التدفق", whyTitle: "لماذا؟", altTitle: "مقارنة", tipsTitle: "نصائح",
-      printTitle: "تقرير"
+      choked: "مختنق", more: "الرسوم", less: "إخفاء",
+      save: "حفظ", share: "مشاركة", compare: "مقارنة", report: "تقرير",
+      reqQuote: "طلب سعر", saveDialog: "الاسم", confirm: "حفظ", cancel: "إلغاء",
+      savedList: "السيناريوهات", removeAll: "حذف",
+      formTab: "النموذج", resultTab: "النتيجة",
+      liveMode: "حي", liveOn: "مفعّل", liveOff: "معطّل",
+      deltaP: "ΔP", completion: "الاكتمال",
+      wizardBtn: "بسيط", unitSI: "متري", unitImperial: "إمبراطوري",
+      errorsTitle: "أخطاء", errorsHint: "صحح الحقول الحمراء",
+      pickFluid: "اختر السائل", selectedFluid: "المختار",
+      resultEmptyTitle: "جاهز", resultEmptyDesc: "املأ النموذج",
+      resultEmptyHint: "أو اختر سيناريو",
+      product: "منتج مقترح", productHint: "بناءً على Cv",
+      noProduct: "لا يوجد", viewProduct: "عرض",
+      refTitle: "المراجع", refStandards: "المعايير",
+      refMaterial: "المواد", refCharts: "الرسوم",
+      lastCalc: "آخر حساب", config: "إعدادات"
     },
     ru: {
-      title: "Подбор клапана",
-      subtitle: "Расчет Cv/Kv по IEC 60534",
+      title: "Подбор клапана", subtitle: "Расчет Cv/Kv по IEC 60534",
       liquid: "Жидкость", gas: "Газ", steam: "Пар",
-      presets: "Сценарии", operatingPoint: "Рабочая точка", advanced: "Ещё",
-      calculate: "Рассчитать", reset: "Сброс",
-      emptyTitle: "Заполните форму", emptyDesc: "или выберите пресет",
+      presets: "Сценарии", presetsHint: "Один клик",
+      operatingPoint: "Рабочая точка", advanced: "Дополнительно",
+      calculate: "Рассчитать", reset: "Сброс", undo: "Отменить",
       cv: "Cv", size: "Размер", opening: "Открытие",
       velocity: "Скорость", noise: "Шум", cav: "Кавитация",
       low: "Низкий", medium: "Средний", high: "Высокий", flashing: "Вспышка",
-      choked: "Крит. поток", more: "Детали", less: "Скрыть",
-      pdf: "PDF", excel: "Excel", print: "Печать", save: "Сохранить", share: "Поделиться",
-      reqQuote: "Запросить", saveDialog: "Имя", confirm: "Сохранить", cancel: "Отмена",
+      choked: "Крит", more: "Графики", less: "Скрыть",
+      save: "Сохранить", share: "Поделиться", compare: "Сравнить", report: "Отчет",
+      reqQuote: "Запросить", saveDialog: "Имя", confirm: "OK", cancel: "Отмена",
       savedList: "Сохраненные", removeAll: "Очистить",
-      formTab: "Форма", resultsTab: "Результаты",
-      chartTitle: "Характеристика", whyTitle: "Почему?", altTitle: "Сравнить", tipsTitle: "Советы",
-      printTitle: "Отчет"
+      formTab: "Форма", resultTab: "Результат",
+      liveMode: "Live", liveOn: "ВКЛ", liveOff: "ВЫКЛ",
+      deltaP: "ΔP", completion: "Заполнено",
+      wizardBtn: "Простой", unitSI: "Метрика", unitImperial: "Имперская",
+      errorsTitle: "Ошибки", errorsHint: "Исправьте красные поля",
+      pickFluid: "Выбрать среду", selectedFluid: "Выбрано",
+      resultEmptyTitle: "Готово", resultEmptyDesc: "Заполните форму",
+      resultEmptyHint: "или выберите сценарий",
+      product: "Продукт", productHint: "По Cv",
+      noProduct: "Нет", viewProduct: "Смотреть",
+      refTitle: "Справочники", refStandards: "Стандарты",
+      refMaterial: "Материалы", refCharts: "Графики",
+      lastCalc: "Последний", config: "Настройки"
     }
   }[locale] || {};
 
+  const REF_TABS = [
+    { id: "reference", icon: Info, label: L.refStandards },
+    { id: "material", icon: FlaskConical, label: L.refMaterial },
+    { id: "charts", icon: BarChart3, label: L.refCharts }
+  ];
+
+  if (wizardMode) {
+    return (
+      <section className="container-x py-6 sizing-root">
+        <SizingWizard
+          locale={locale}
+          form={form}
+          fluid={fluid}
+          setForm={setForm}
+          setFluid={setFluid}
+          onCalculate={() => {
+            setWizardMode(false);
+            setTimeout(() => { runCalculation(true); setHasInteracted(true); }, 300);
+          }}
+          onCancel={() => setWizardMode(false)}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="container-x py-6 sizing-root">
-      {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-4 no-print">
-        <h1 className="text-xl sm:text-2xl font-black" style={{ color: "var(--text)" }}>
-          <span className="heading-grad">{L.title}</span>
-        </h1>
-        <p className="mt-1 text-xs sm:text-sm" style={{ color: "var(--text-muted)", fontWeight: 600 }}>
-          {L.subtitle}
-        </p>
+      {/* ============ TOOLBAR ============ */}
+      <div className="sizing-toolbar no-print">
+        <button
+          onClick={() => { setWizardMode(true); track.wizardOpened(); }}
+          className="tb-btn tb-wizard"
+        >
+          <Wand2 size={14} />
+          <span>{L.wizardBtn}</span>
+        </button>
+
+        <div className="tb-center">
+          <button
+            onClick={() => setAutoCalc(!autoCalc)}
+            className={"tb-live" + (autoCalc ? " on" : "")}
+          >
+            <span className={"tb-live-dot" + (autoCalc && hasInteracted && !hasErrors ? " pulse" : "")} />
+            <span>{L.liveMode}</span>
+            <span className="tb-live-state">{autoCalc ? L.liveOn : L.liveOff}</span>
+          </button>
+
+          <div className="tb-unit">
+            <button onClick={() => switchUnitSystem("SI")} className={unitSystem === "SI" ? "active" : ""}>
+              {L.unitSI}
+            </button>
+            <button onClick={() => switchUnitSystem("IMPERIAL")} className={unitSystem === "IMPERIAL" ? "active" : ""}>
+              {L.unitImperial}
+            </button>
+          </div>
+        </div>
+
+        <button onClick={handleReset} className="tb-btn tb-reset" title={L.reset}>
+          <RotateCcw size={14} />
+        </button>
       </div>
 
-      {/* Mobile tab */}
-      <div className="mobile-tab-bar">
-        <button onClick={function() { setMobileTab("form"); }} className={"mobile-tab-btn" + (mobileTab === "form" ? " active" : "")}>
+      {/* ============ MOBILE TABS ============ */}
+      <div className="sizing-mobile-tabs no-print">
+        <button onClick={() => setMobileTab("form")} className={mobileTab === "form" ? "active" : ""}>
           📝 {L.formTab}
         </button>
-        <button onClick={function() { setMobileTab("results"); }} className={"mobile-tab-btn" + (mobileTab === "results" ? " active" : "")}>
-          📊 {L.resultsTab}
+        <button onClick={() => setMobileTab("result")} className={mobileTab === "result" ? "active" : ""}>
+          📊 {L.resultTab}
+          {result && !result.error && <span className="mobile-tab-dot" />}
         </button>
       </div>
 
-      {/* Main grid */}
-      <div className="sizing-grid">
+      {/* ============ MAIN 2-COLUMN GRID ============ */}
+      <div className="sizing-main-grid">
+        {/* ===== LEFT: FORM ===== */}
+        <div className={"sizing-form-column" + (mobileTab === "form" ? " mobile-show" : "")}>
 
-        {/* LEFT: FORM */}
-        <div className={"no-print sizing-form-col" + (mobileTab === "form" ? " mobile-show" : "")}>
-
-          {/* Presets */}
-          <div className="card-glass" style={{ padding: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
-              ⚡ {L.presets}
+          {/* Fluid Picker */}
+          <div className="sizing-card">
+            <div className="card-head">
+              <FlaskConical size={15} color="#0078D4" />
+              <span className="card-head-text">{L.pickFluid}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
-              {PRESET_SCENARIOS.map(function(p) {
-                return (
-                  <button key={p.id} onClick={function() { applyPreset(p); }}
-                    style={{
-                      padding: 10, borderRadius: 10, background: "#FFFFFF",
-                      border: "1.5px solid var(--border)", cursor: "pointer",
-                      fontFamily: "inherit", textAlign: "start",
-                      display: "flex", alignItems: "center", gap: 8,
-                      transition: "all 0.15s"
-                    }}
-                    onMouseEnter={function(e) {
-                      e.currentTarget.style.borderColor = p.color;
-                      e.currentTarget.style.background = p.color + "08";
-                    }}
-                    onMouseLeave={function(e) {
-                      e.currentTarget.style.borderColor = "var(--border)";
-                      e.currentTarget.style.background = "#FFFFFF";
-                    }}
-                  >
-                    <div style={{
-                      width: 32, height: 32, borderRadius: 9,
-                      display: "grid", placeItems: "center",
-                      background: p.color + "15", fontSize: 16,
-                      flexShrink: 0
-                    }}>{p.icon}</div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 11, fontWeight: 900, color: "var(--text)", lineHeight: 1.3 }}>
-                        {p.name[locale] || p.name.en}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Fluid + Inputs */}
-          <div className="card-glass" style={{ padding: 14 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginBottom: 12, background: "var(--bg-soft)", padding: 5, borderRadius: 11 }}>
+            <button onClick={() => setShowFluidPicker(true)} className="fluid-pick-btn">
+              <div className="fluid-pick-icon">
+                <FlaskConical size={17} />
+              </div>
+              <div className="fluid-pick-text">
+                <div className="fluid-pick-label">{L.selectedFluid}</div>
+                <div className="fluid-pick-value">
+                  {selectedFluidName || (isFa ? "کلیک کنید — ۳۵ سیال" : "Click — 35 fluids")}
+                </div>
+              </div>
+              <ArrowLeft size={14} color="#0078D4" style={{ transform: "rotate(180deg)" }} />
+            </button>
+
+            <div className="fluid-type-chips">
               {[
                 { id: "liquid", icon: Droplets, label: L.liquid },
                 { id: "gas", icon: Wind, label: L.gas },
                 { id: "steam", icon: Flame, label: L.steam }
-              ].map(function(f) {
+              ].map(f => {
                 const Icon = f.icon;
                 const active = fluid === f.id;
                 return (
-                  <button key={f.id} onClick={function() { setFluid(f.id); setResult(null); }}
-                    style={{
-                      padding: "8px 6px", borderRadius: 8, border: "none",
-                      cursor: "pointer", fontFamily: "inherit",
-                      fontSize: 12, fontWeight: 900,
-                      background: active ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "transparent",
-                      color: active ? "#FFFFFF" : "var(--text-soft)",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 5
-                    }}>
-                    <Icon size={14} /> {f.label}
+                  <button key={f.id}
+                    onClick={() => { setFluid(f.id); setHasInteracted(true); setSelectedFluidName(null); }}
+                    className={active ? "active" : ""}
+                  >
+                    <Icon size={13} /> {f.label}
                   </button>
                 );
               })}
             </div>
 
             {fluid === "liquid" && (
-              <div style={{ display: "flex", gap: 5, marginBottom: 12, flexWrap: "wrap" }}>
-                {Object.keys(FLUID_PRESETS).map(function(k) {
-                  return (
-                    <button key={k} onClick={function() { applyFluidPreset(k); }}
-                      style={{
-                        padding: "5px 10px", borderRadius: 8,
-                        background: "var(--bg-soft)", border: "1px solid var(--border)",
-                        color: "var(--text-soft)", fontSize: 11, fontWeight: 800,
-                        cursor: "pointer", fontFamily: "inherit"
-                      }}>
-                      {FLUID_PRESETS[k].name[locale] || FLUID_PRESETS[k].name.en}
-                    </button>
-                  );
-                })}
+              <div className="fluid-presets">
+                {Object.keys(FLUID_PRESETS).map(k => (
+                  <button key={k} onClick={() => applyFluidPreset(k)} className="preset-chip">
+                    {FLUID_PRESETS[k].name[locale] || FLUID_PRESETS[k].name.en}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Presets */}
+          <div className="sizing-card">
+            <div className="card-head">
+              <Sparkles size={14} color="var(--gold)" />
+              <span className="card-head-text">{L.presets}</span>
+              <span className="card-head-hint">{L.presetsHint}</span>
+            </div>
+            <div className="presets-grid">
+              {PRESET_SCENARIOS.map(p => (
+                <button key={p.id} onClick={() => applyPreset(p)}
+                  className="preset-btn"
+                  style={{ "--preset-color": p.color }}
+                >
+                  <div className="preset-icon" style={{ background: p.color + "15" }}>
+                    {p.icon}
+                  </div>
+                  <div className="preset-name">{p.name[locale] || p.name.en}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Parameters */}
+          <div className="sizing-card">
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)" }}>{L.completion}</span>
+                <span style={{ fontSize: 10, fontWeight: 900, color: completion === 100 ? "#10B981" : "var(--gold)" }}>{completion}%</span>
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{
+                  width: completion + "%",
+                  background: completion === 100 ? "linear-gradient(90deg, #10B981, #059669)" : "linear-gradient(90deg, #E0A81A, #B8850A)"
+                }} />
+              </div>
+            </div>
+
+            <div className="card-head" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--gold)" }} />
+              <span className="card-head-text">{L.operatingPoint}</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {fluid === "steam" ? (
+                <Field label="W" unit={sys.flowSteam} value={form.W} onChange={update("W")} help={help.W} error={errors.W} placeholder="500" />
+              ) : (
+                <Field label="Q" unit={fluid === "liquid" ? sys.flowLiquid : sys.flowGas} value={form.Q} onChange={update("Q")} help={help.Q} error={errors.Q} placeholder="100" />
+              )}
+              {fluid === "liquid" && <Field label="Gf" unit="—" value={form.Gf} onChange={update("Gf")} step={0.01} help={help.Gf} error={errors.Gf} placeholder="1.0" />}
+              {fluid === "gas" && <Field label="Gg" unit="—" value={form.Gg} onChange={update("Gg")} step={0.01} help={help.Gg} error={errors.Gg} placeholder="0.65" />}
+              <Field label="P1" unit={sys.pressure} value={form.P1} onChange={update("P1")} step={0.1} help={help.P1} error={errors.P1} placeholder="10" />
+              <Field label="P2" unit={sys.pressure} value={form.P2} onChange={update("P2")} step={0.1} help={help.P2} error={errors.P2} placeholder="6" />
+              {fluid === "liquid" && <Field label="Pv" unit={sys.pressure} value={form.Pv} onChange={update("Pv")} step={0.01} help={help.Pv} error={errors.Pv} placeholder="0.5" />}
+              {fluid !== "liquid" && <Field label="T" unit={sys.temp} value={form.T} onChange={update("T")} help={help.T} error={errors.T} placeholder="25" />}
+              {fluid === "gas" && <Field label="Z" unit="—" value={form.Z} onChange={update("Z")} step={0.01} help={help.Z} placeholder="1.0" />}
+            </div>
+
+            {dP > 0 && (
+              <div className="dp-indicator">
+                <span>{L.deltaP}</span>
+                <strong>{dP} {sys.dP}</strong>
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--border)" }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--gold)" }} />
-              <div style={{ fontSize: 12, fontWeight: 900, color: "var(--text)" }}>{L.operatingPoint}</div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {fluid === "steam" ? (
-                <Field label="W" unit="kg/h" value={form.W} onChange={update("W")} />
-              ) : (
-                <Field label="Q" unit={fluid === "liquid" ? "m³/h" : "Nm³/h"} value={form.Q} onChange={update("Q")} />
-              )}
-              {fluid === "liquid" && <Field label="Gf" unit="—" value={form.Gf} onChange={update("Gf")} step={0.01} />}
-              {fluid === "gas" && <Field label="Gg" unit="—" value={form.Gg} onChange={update("Gg")} step={0.01} />}
-              <Field label="P1" unit="bar" value={form.P1} onChange={update("P1")} step={0.1} />
-              <Field label="P2" unit="bar" value={form.P2} onChange={update("P2")} step={0.1} />
-              {fluid === "liquid" && <Field label="Pv" unit="bar" value={form.Pv} onChange={update("Pv")} step={0.01} />}
-              {fluid !== "liquid" && <Field label="T" unit="°C" value={form.T} onChange={update("T")} />}
-              {fluid === "gas" && <Field label="Z" unit="—" value={form.Z} onChange={update("Z")} step={0.01} />}
-            </div>
-
-            <button onClick={function() { setShowAdvanced(!showAdvanced); }}
-              style={{
-                marginTop: 12, width: "100%", padding: "8px 12px",
-                borderRadius: 9, background: "var(--bg-soft)", border: "1px solid var(--border)",
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
-                fontFamily: "inherit", color: "var(--text-soft)", fontSize: 11.5, fontWeight: 800
-              }}>
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="advanced-toggle">
               <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <Zap size={12} /> {L.advanced}
               </span>
@@ -619,82 +800,83 @@ export default function SizingTool() {
             </button>
 
             {showAdvanced && (
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {fluid === "liquid" && (
                   <>
-                    <Field label="Pc" unit="bar" value={form.Pc} onChange={update("Pc")} />
-                    <Field label="FL" unit="—" value={form.FL} onChange={update("FL")} step={0.01} />
+                    <Field label="Pc" unit={sys.pressure} value={form.Pc} onChange={update("Pc")} help={help.Pc} />
+                    <Field label="FL" unit="—" value={form.FL} onChange={update("FL")} step={0.01} help={help.FL} />
                   </>
                 )}
                 {fluid === "gas" && (
                   <>
-                    <Field label="k" unit="—" value={form.k} onChange={update("k")} step={0.01} />
-                    <Field label="xT" unit="—" value={form.xT} onChange={update("xT")} step={0.01} />
+                    <Field label="k" unit="—" value={form.k} onChange={update("k")} step={0.01} help={help.k} />
+                    <Field label="xT" unit="—" value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} />
                   </>
                 )}
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginTop: 12 }}>
-              <button onClick={calculate} className="btn-gold justify-center" style={{ padding: "12px", fontSize: 13.5 }}>
-                <Calculator size={17} /> {L.calculate}
-              </button>
-              <button onClick={reset} style={{
-                padding: "12px 16px", borderRadius: 10,
-                background: "var(--bg-soft)", border: "1px solid var(--border)",
-                color: "var(--text-soft)", cursor: "pointer",
-                display: "grid", placeItems: "center"
+            {hasErrors && (
+              <div className="error-box">
+                <AlertTriangle size={14} color="#E81123" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <div style={{ fontSize: 11.5, fontWeight: 900, color: "#E81123", marginBottom: 2 }}>
+                    {L.errorsTitle}
+                  </div>
+                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "#E81123", opacity: 0.85 }}>
+                    {L.errorsHint}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => { runCalculation(); setHasInteracted(true); }}
+              disabled={hasErrors}
+              className="btn-gold justify-center"
+              style={{
+                width: "100%", marginTop: 14, padding: "13px", fontSize: 14,
+                opacity: hasErrors ? 0.5 : 1,
+                cursor: hasErrors ? "not-allowed" : "pointer"
               }}>
-                <RotateCcw size={16} />
-              </button>
-            </div>
+              <Calculator size={17} /> {L.calculate}
+            </button>
           </div>
 
           {/* Saved scenarios */}
           {saved.length > 0 && (
-            <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
-              <button onClick={function() { setShowSaved(!showSaved); }}
-                style={{
-                  width: "100%", padding: "10px 14px",
-                  background: "transparent", border: "none",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  cursor: "pointer", fontFamily: "inherit"
-                }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 900, color: "var(--text-soft)" }}>
-                  <Layers size={13} /> {L.savedList} ({saved.length})
+            <div className="sizing-card" style={{ padding: 0, overflow: "hidden" }}>
+              <button onClick={() => setShowSaved(!showSaved)} className="collapse-btn">
+                <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 900, color: "var(--text)" }}>
+                  <Layers size={14} /> {L.savedList} ({saved.length})
                 </span>
-                <ChevronDown size={13} style={{
-                  transform: showSaved ? "rotate(180deg)" : "rotate(0)",
-                  transition: "transform 0.2s", color: "var(--text-muted)"
-                }} />
+                <ChevronDown size={14} style={{ transform: showSaved ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", color: "var(--text-muted)" }} />
               </button>
               {showSaved && (
-                <div style={{ padding: "0 12px 12px" }}>
+                <div style={{ padding: "0 14px 14px" }}>
                   <div style={{ display: "grid", gap: 4 }}>
-                    {saved.map(function(s) {
-                      return (
-                        <div key={s.id} style={{
-                          display: "flex", alignItems: "center", gap: 8,
-                          padding: "6px 10px", borderRadius: 8,
-                          background: "var(--bg-soft)", border: "1px solid var(--border)"
-                        }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 11, fontWeight: 900, color: "var(--text)" }}>{s.name}</div>
-                            <div style={{ fontSize: 9.5, color: "var(--text-muted)", fontFamily: "monospace", direction: "ltr" }}>
-                              Cv {s.result.Cv} · {s.result.size.size} · {s.result.openingPercent}%
-                            </div>
+                    {saved.map(s => (
+                      <div key={s.id} style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        padding: "8px 12px", borderRadius: 8,
+                        background: "var(--bg-soft)", border: "1px solid var(--border)"
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 900, color: "var(--text)" }}>{s.name}</div>
+                          <div style={{ fontSize: 9.5, color: "var(--text-muted)", fontFamily: "monospace", direction: "ltr" }}>
+                            Cv {s.result.Cv} · {s.result.size.size} · {s.result.openingPercent}%
                           </div>
-                          <button onClick={function() { handleRemove(s.id); }}
-                            style={{
-                              width: 22, height: 22, borderRadius: 6,
-                              background: "rgba(232, 17, 35, 0.1)", color: "#E81123",
-                              border: "none", cursor: "pointer", display: "grid", placeItems: "center"
-                            }}>
-                            <X size={10} />
-                          </button>
                         </div>
-                      );
-                    })}
+                        <button onClick={() => handleRemove(s.id)}
+                          style={{
+                            width: 22, height: 22, borderRadius: 6,
+                            background: "rgba(232, 17, 35, 0.1)", color: "#E81123",
+                            border: "none", cursor: "pointer", display: "grid", placeItems: "center"
+                          }}>
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                   <button onClick={handleClearAll} style={{
                     marginTop: 8, fontSize: 10.5, fontWeight: 900, color: "#E81123",
@@ -709,197 +891,232 @@ export default function SizingTool() {
           )}
         </div>
 
-        {/* RIGHT: RESULTS + STANDARDS + MATERIAL */}
-        <div className={"sizing-results-col" + (mobileTab === "results" ? " mobile-show" : "")}>
+        {/* ===== RIGHT: RESULT ===== */}
+        <div className={"sizing-result-column" + (mobileTab === "result" ? " mobile-show" : "")}>
 
-          {/* Empty */}
-          {!result && (
-            <div className="card-glass no-print" style={{
-              padding: 40, minHeight: 220,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              background: "linear-gradient(135deg, rgba(201, 149, 13, 0.04), rgba(201, 149, 13, 0.01))",
-              border: "2px dashed rgba(201, 149, 13, 0.3)", textAlign: "center"
-            }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: 18, marginBottom: 14,
-                display: "grid", placeItems: "center",
-                background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                color: "#FFFFFF",
-                boxShadow: "0 12px 32px rgba(201, 149, 13, 0.35)"
-              }}>
+          {!result || result.error ? (
+            <div className="sizing-card result-empty">
+              <div className="result-empty-icon">
                 <Gauge size={28} />
               </div>
-              <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 4 }}>{L.emptyTitle}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{L.emptyDesc}</div>
+              <div className="result-empty-title">{L.resultEmptyTitle}</div>
+              <div className="result-empty-desc">{L.resultEmptyDesc}</div>
+              <div className="result-empty-hint">{L.resultEmptyHint}</div>
             </div>
-          )}
+          ) : (
+            <>
+              <motion.div
+                key={result.timestamp}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="result-hero-card"
+              >
+                <div className="result-hero-label">{L.cv}</div>
+                <div className="result-hero-value">{result.Cv}</div>
+                <div className="result-hero-sub">Kv {result.Kv}</div>
 
-          {/* Error */}
-          {result && result.error && (
-            <div className="card-glass p-4 no-print" style={{ borderColor: "#E81123", background: "rgba(232, 17, 35, 0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#E81123", fontSize: 12, fontWeight: 900 }}>
-                <AlertTriangle size={16} /> {result.error}
-              </div>
-            </div>
-          )}
-
-          {/* Results */}
-          {result && !result.error && (
-            <motion.div
-              id="sizing-print-area"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{ display: "grid", gap: 10 }}
-            >
-              {/* Print header */}
-              <div className="print-only" style={{ display: "none" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 12, borderBottom: "2px solid #C9950D", marginBottom: 14 }}>
-                  <div style={{
-                    width: 46, height: 46, borderRadius: 11,
-                    display: "grid", placeItems: "center",
-                    background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                    color: "#FFFFFF", fontWeight: 900, fontSize: 13
-                  }}>PSM</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 900, color: "#1A1D21" }}>{L.printTitle}</div>
-                    <div style={{ fontSize: 10, color: "#7A8290" }}>{new Date().toLocaleDateString("fa-IR")}</div>
+                <div className="result-hero-grid">
+                  <div className="result-hero-mini">
+                    <div className="result-mini-label">{L.size}</div>
+                    <div className="result-mini-value gold">{result.size.size}</div>
+                    <div className="result-mini-meta">{result.size.dn}</div>
                   </div>
-                </div>
-              </div>
-
-              {/* Result grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr", gap: 8 }}>
-                <div style={{
-                  padding: 16, borderRadius: 16,
-                  background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                  color: "#FFFFFF", textAlign: "center",
-                  boxShadow: "0 10px 24px rgba(201, 149, 13, 0.35)",
-                  display: "flex", flexDirection: "column", justifyContent: "center"
-                }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 900, opacity: 0.9, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
-                    {L.cv}
-                  </div>
-                  <div style={{ fontSize: 38, fontWeight: 900, lineHeight: 1, fontFamily: "monospace" }}>
-                    {result.Cv}
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 800, opacity: 0.85, marginTop: 6, fontFamily: "monospace" }}>
-                    Kv {result.Kv}
-                  </div>
-                </div>
-
-                <div className="card-glass" style={{ padding: 16, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                    {L.size}
-                  </div>
-                  <div style={{ fontSize: 30, fontWeight: 900, color: "var(--gold)", lineHeight: 1, fontFamily: "monospace" }}>
-                    {result.size.size}
-                  </div>
-                  <div style={{ fontSize: 9.5, color: "var(--text-muted)", marginTop: 6, display: "flex", justifyContent: "center", gap: 6, fontFamily: "monospace" }}>
-                    <span>{result.size.dn}</span>
-                    <span style={{ opacity: 0.5 }}>·</span>
-                    <span>{result.size.nps}</span>
-                  </div>
-                </div>
-
-                <div className="card-glass" style={{ padding: 16, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-                    {L.opening}
-                  </div>
-                  <div style={{ fontSize: 30, fontWeight: 900, color: "var(--text)", lineHeight: 1, fontFamily: "monospace" }}>
-                    {result.openingPercent}%
-                  </div>
-                  <div style={{ height: 4, borderRadius: 2, background: "var(--bg-soft)", marginTop: 8, overflow: "hidden" }}>
-                    <div style={{
-                      width: result.openingPercent + "%", height: "100%",
-                      background: result.openingPercent < 20 || result.openingPercent > 85 ? "#E81123" : "linear-gradient(90deg, #E0A81A, #B8850A)"
-                    }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Metrics */}
-              <div className="card-glass" style={{ padding: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 10 }}>
-                {result.velocity > 0 && <Metric icon={<Activity size={12} />} label={L.velocity} value={result.velocity + " m/s"} />}
-                {result.noise && <Metric icon={<Gauge size={12} />} label={L.noise} value={result.noise + " dB"} />}
-                {result.sigma && <Metric icon={<BarChart3 size={12} />} label="σ" value={result.sigma} />}
-                {result.cavitationRisk && (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "5px 9px", borderRadius: 8,
-                    background: (result.cavitationRisk === "low" ? "#10B981" : result.cavitationRisk === "flashing" ? "#E81123" : "#F59E0B") + "12",
-                    border: "1px solid " + (result.cavitationRisk === "low" ? "#10B981" : result.cavitationRisk === "flashing" ? "#E81123" : "#F59E0B") + "30"
-                  }}>
-                    {result.cavitationRisk === "low" ? <CheckCircle2 size={12} color="#10B981" /> : <AlertTriangle size={12} color={result.cavitationRisk === "flashing" ? "#E81123" : "#F59E0B"} />}
-                    <span style={{
-                      fontSize: 10, fontWeight: 900,
-                      color: result.cavitationRisk === "low" ? "#10B981" : result.cavitationRisk === "flashing" ? "#E81123" : "#F59E0B"
-                    }}>
-                      {L.cav}: {result.cavitationRisk === "low" ? L.low : result.cavitationRisk === "medium" ? L.medium : result.cavitationRisk === "high" ? L.high : L.flashing}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="no-print" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                <Btn onClick={handleDownloadPDF} icon={<Printer size={14} />} label="PDF" highlight />
-                <Btn onClick={handleDownloadCSV} icon={<Save size={14} />} label="Excel" highlight />
-                <Btn onClick={function() { setShowSaveDialog(true); }} icon={<Save size={14} />} label={L.save} />
-                <Btn onClick={shareLink} icon={<Share2 size={14} />} label={L.share} />
-              </div>
-
-              {/* Toggle details */}
-              <button onClick={function() { setShowMore(!showMore); }}
-                className="no-print"
-                style={{
-                  padding: "10px", borderRadius: 10,
-                  background: "var(--bg-soft)", border: "1px dashed var(--border-strong)",
-                  cursor: "pointer", fontFamily: "inherit",
-                  fontSize: 11.5, fontWeight: 900, color: "var(--text-soft)",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-                }}>
-                <ChevronDown size={13} style={{ transform: showMore ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
-                {showMore ? L.less : L.more}
-              </button>
-
-              {showMore && (
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div className="card-glass" style={{ padding: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, color: "var(--text)", marginBottom: 10 }}>{L.whyTitle}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-soft)", lineHeight: 1.7 }}>
-                      ✓ Cv = {result.Cv} محاسبه شده طبق IEC 60534<br />
-                      ✓ بازشدگی {result.openingPercent}% — {result.openingPercent >= 20 && result.openingPercent <= 80 ? "بهینه" : "خارج از محدوده" }<br />
-                      ✓ کاویتاسیون: {result.cavitationRisk || "کم"}<br />
-                      {result.choked && "⚠️ جریان Choked تشخیص داده شد"}
+                  <div className="result-hero-mini">
+                    <div className="result-mini-label">{L.opening}</div>
+                    <div className={"result-mini-value " + (result.openingPercent >= 20 && result.openingPercent <= 80 ? "green" : "amber")}>
+                      {result.openingPercent}%
+                    </div>
+                    <div className="opening-bar">
+                      <div className="opening-fill" style={{
+                        width: result.openingPercent + "%",
+                        background: result.openingPercent < 20 || result.openingPercent > 85 ? "#E81123" : "linear-gradient(90deg, #E0A81A, #B8850A)"
+                      }} />
                     </div>
                   </div>
                 </div>
+
+                <div className="result-hero-metrics">
+                  {result.velocity > 0 && (
+                    <div className="hero-metric">
+                      <Activity size={12} />
+                      <span className="hero-metric-label">{L.velocity}</span>
+                      <span className="hero-metric-value">{result.velocity}</span>
+                    </div>
+                  )}
+                  {result.noise && (
+                    <div className="hero-metric">
+                      <Gauge size={12} />
+                      <span className="hero-metric-label">{L.noise}</span>
+                      <span className="hero-metric-value">{result.noise}</span>
+                    </div>
+                  )}
+                  {result.cavitationRisk && (
+                    <div className={"hero-metric cav-" + result.cavitationRisk}>
+                      {result.cavitationRisk === "low" ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                      <span className="hero-metric-label">{L.cav}</span>
+                      <span className="hero-metric-value">{result.cavitationRisk}</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              <div className="result-actions-row">
+                <button
+                  onClick={() => { setShowReport(true); track.reportOpened(); }}
+                  className="btn-gold result-action-main">
+                  <FileText size={15} /> {L.report}
+                </button>
+                <button
+                  onClick={() => { setShowCompare(true); track.compared(); }}
+                  className="result-action-btn">
+                  <Award size={14} /> {L.compare}
+                </button>
+                <button onClick={() => setShowSaveDialog(true)} className="result-action-btn">
+                  <Save size={14} /> {L.save}
+                </button>
+                <button onClick={shareLink} className="result-action-btn">
+                  <Share2 size={14} /> {L.share}
+                </button>
+              </div>
+
+              <ValveCharacteristicChart result={result} form={form} locale={locale} />
+
+              {topProduct && (
+                <div className="result-product-card" style={{
+                  background: `linear-gradient(135deg, ${topProduct.product.color}10, ${topProduct.product.color}02)`,
+                  border: `1.5px solid ${topProduct.product.color}40`
+                }}>
+                  <div className="product-card-head">
+                    <Package size={14} color={topProduct.product.color} />
+                    <span style={{ fontSize: 11.5, fontWeight: 900, color: "var(--text)" }}>
+                      {L.product}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 10 }}>
+                    <div className="product-icon-sm" style={{
+                      background: topProduct.product.color + "20"
+                    }}>⚙️</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 13.5, fontWeight: 900, color: topProduct.product.color, fontFamily: "monospace", direction: "ltr" }}>
+                          {topProduct.product.series}
+                        </span>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-soft)" }}>
+                          · {topProduct.matchedSize.dn}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600 }}>
+                        Cv {topProduct.matchedSize.cv} · {L.opening} {topProduct.openingPercent}%
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10 }}>
+                    <Link href={"/" + locale + "/contact?product=" + topProduct.product.series}
+                      onClick={() => track.quoteRequested({ product: topProduct.product.series, source: "result_card" })}
+                      className="btn-gold justify-center"
+                      style={{ padding: "8px", fontSize: 11 }}>
+                      {L.reqQuote}
+                    </Link>
+                    <Link href={"/" + locale + "/contact?product=" + topProduct.product.series}
+                      onClick={() => track.productViewed({ product: topProduct.product.series })}
+                      className="btn-secondary justify-center"
+                      style={{ padding: "8px", fontSize: 11 }}>
+                      {L.viewProduct}
+                    </Link>
+                  </div>
+                </div>
               )}
-
-              <Link href={"/" + locale + "/contact"} className="btn-gold justify-center text-sm no-print" style={{ padding: "11px" }}>
-                {L.reqQuote} <ArrowLeft size={14} />
-              </Link>
-            </motion.div>
+            </>
           )}
-
-          {/* Standards — ALWAYS visible */}
-          <StandardsTable locale={locale} />
-
-          {/* Material — ALWAYS visible */}
-          <MaterialGuide form={form} locale={locale} />
         </div>
       </div>
 
-      {/* Save dialog */}
+      {/* ============ REFERENCE TABS ============ */}
+      <div className="reference-section no-print">
+        <div className="reference-head">
+          <Info size={14} color="var(--gold)" />
+          <span>{L.refTitle}</span>
+        </div>
+
+        <div className="reference-tabs">
+          {REF_TABS.map(t => {
+            const Icon = t.icon;
+            const active = referenceTab === t.id;
+            return (
+              <button key={t.id} onClick={() => setReferenceTab(t.id)} className={active ? "active" : ""}>
+                <Icon size={13} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="reference-content">
+          {referenceTab === "reference" && (
+            <TipsAndStandards result={result} form={form} locale={locale} />
+          )}
+          {referenceTab === "material" && (
+            <MaterialGuide form={form} fluid={fluid} locale={locale} />
+          )}
+          {referenceTab === "charts" && (
+            <div style={{ display: "grid", gap: 12 }}>
+              {result && !result.error ? (
+                <>
+                  <AlternativeSizes result={result} locale={locale} />
+                  <InstalledChart result={result} form={form} locale={locale} />
+                  <DeltaPChart result={result} form={form} locale={locale} />
+                </>
+              ) : (
+                <div className="sizing-card" style={{ padding: 40, textAlign: "center" }}>
+                  <BarChart3 size={32} color="var(--text-muted)" style={{ marginBottom: 12 }} />
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
+                    {isFa ? "برای نمایش نمودارها، ابتدا محاسبه کنید" : "Calculate first to view charts"}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ============ MODALS ============ */}
+      <SizingReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        result={result}
+        form={form}
+        fluid={fluid}
+        locale={locale}
+        selectedFluidName={selectedFluidName}
+      />
+
+      <SizingCompare
+        isOpen={showCompare}
+        onClose={() => setShowCompare(false)}
+        result={result}
+        form={form}
+        fluid={fluid}
+        locale={locale}
+      />
+
+      <FluidPicker
+        isOpen={showFluidPicker}
+        onClose={() => setShowFluidPicker(false)}
+        onSelect={handleFluidPick}
+        locale={locale}
+        currentFluidType={fluid}
+      />
+
+      {/* Save Dialog */}
       <AnimatePresence>
         {showSaveDialog && (
           <>
-            <div className="no-print" style={{ position: "fixed", inset: 0, background: "rgba(20, 22, 27, 0.5)", backdropFilter: "blur(4px)", zIndex: 90 }} onClick={function() { setShowSaveDialog(false); }} />
+            <div style={{ position: "fixed", inset: 0, background: "rgba(20, 22, 27, 0.5)", backdropFilter: "blur(4px)", zIndex: 90 }} onClick={() => setShowSaveDialog(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="no-print"
               style={{
                 position: "fixed", top: "50%", left: "50%",
                 transform: "translate(-50%, -50%)", zIndex: 100,
@@ -914,17 +1131,17 @@ export default function SizingTool() {
               <input
                 type="text"
                 value={scenarioName}
-                onChange={function(e) { setScenarioName(e.target.value); }}
+                onChange={e => setScenarioName(e.target.value)}
                 className="form-input"
                 autoFocus
-                onKeyDown={function(e) { if (e.key === "Enter") handleSave(); }}
+                onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
                 style={{ fontSize: 13, padding: "10px 14px" }}
               />
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                 <button onClick={handleSave} className="btn-gold flex-1 justify-center text-sm" style={{ padding: "10px" }}>
                   {L.confirm}
                 </button>
-                <button onClick={function() { setShowSaveDialog(false); }} className="btn-outline" style={{ padding: "10px 16px", fontSize: 13 }}>
+                <button onClick={() => setShowSaveDialog(false)} className="btn-outline" style={{ padding: "10px 16px", fontSize: 13 }}>
                   {L.cancel}
                 </button>
               </div>
@@ -933,14 +1150,13 @@ export default function SizingTool() {
         )}
       </AnimatePresence>
 
-      {/* Share toast */}
+      {/* Share Toast */}
       <AnimatePresence>
         {showShareToast && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="no-print"
             style={{
               position: "fixed", bottom: 90, left: "50%",
               transform: "translateX(-50%)", zIndex: 50,
@@ -951,128 +1167,648 @@ export default function SizingTool() {
               display: "flex", alignItems: "center", gap: 6
             }}
           >
-            <CheckCircle2 size={15} /> لینک کپی شد
+            <CheckCircle2 size={15} /> {isFa ? "لینک کپی شد" : "Link copied"}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Undo Toast */}
+      <AnimatePresence>
+        {showUndo && undoSnapshot && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            style={{
+              position: "fixed", bottom: 90, left: "50%",
+              transform: "translateX(-50%)", zIndex: 60,
+              padding: "10px 14px", borderRadius: 12,
+              background: "#1F2124", color: "#FFFFFF",
+              fontSize: 12, fontWeight: 700,
+              boxShadow: "0 12px 32px rgba(0, 0, 0, 0.35)",
+              display: "flex", alignItems: "center", gap: 12
+            }}
+          >
+            <span>{isFa ? "فرم بازنشانی شد" : "Form reset"}</span>
+            <button onClick={handleUndo}
+              style={{
+                padding: "5px 10px", borderRadius: 8,
+                background: "linear-gradient(135deg, #E0A81A, #B8850A)",
+                color: "#FFFFFF", border: "none", cursor: "pointer",
+                fontFamily: "inherit", fontSize: 11, fontWeight: 900,
+                display: "flex", alignItems: "center", gap: 4
+              }}>
+              <Undo2 size={12} /> {L.undo}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       <style jsx global>{`
-        .mobile-tab-bar { display: none; }
-        .sizing-grid {
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.6); }
+        }
+
+        .sizing-toolbar {
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          gap: 10px;
+          align-items: center;
+          padding: 8px 10px;
+          background: #FFFFFF;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          margin-bottom: 16px;
+          box-shadow: 0 2px 8px rgba(20, 22, 27, 0.04);
+        }
+        .tb-btn {
+          padding: 8px 12px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 11.5px;
+          font-weight: 900;
+          background: #FFFFFF;
+          color: var(--text-soft);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.15s;
+        }
+        .tb-btn:hover { background: var(--bg-soft); }
+        .tb-wizard {
+          background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+          border-color: transparent;
+          color: #FFFFFF;
+        }
+        .tb-wizard:hover { box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35); }
+        .tb-reset { padding: 8px 10px; }
+        .tb-center {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          align-items: center;
+        }
+        .tb-live {
+          padding: 7px 12px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 900;
+          background: #FFFFFF;
+          color: var(--text-soft);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.15s;
+        }
+        .tb-live.on {
+          background: rgba(16, 185, 129, 0.08);
+          border-color: rgba(16, 185, 129, 0.30);
+          color: #10B981;
+        }
+        .tb-live-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #9CA3AF;
+        }
+        .tb-live.on .tb-live-dot { background: #10B981; }
+        .tb-live-dot.pulse { animation: pulse 1.8s infinite; }
+        .tb-live-state {
+          font-size: 9.5px;
+          padding: 2px 6px;
+          border-radius: 5px;
+          background: var(--bg-soft);
+          margin-inline-start: 2px;
+        }
+        .tb-live.on .tb-live-state {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10B981;
+        }
+
+        .tb-unit {
+          display: flex;
+          gap: 2px;
+          padding: 3px;
+          background: var(--bg-soft);
+          border-radius: 10px;
+          border: 1px solid var(--border);
+        }
+        .tb-unit button {
+          padding: 5px 10px;
+          border-radius: 7px;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 10.5px;
+          font-weight: 900;
+          background: transparent;
+          color: var(--text-soft);
+          transition: all 0.15s;
+        }
+        .tb-unit button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+        }
+
+        .sizing-mobile-tabs {
+          display: none;
+          grid-template-columns: 1fr 1fr;
+          gap: 4px;
+          padding: 5px;
+          background: var(--bg-soft);
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          margin-bottom: 12px;
+        }
+        .sizing-mobile-tabs button {
+          padding: 11px;
+          border-radius: 9px;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 900;
+          background: transparent;
+          color: var(--text-soft);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          position: relative;
+          transition: all 0.15s;
+        }
+        .sizing-mobile-tabs button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+        }
+        .mobile-tab-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #10B981;
+        }
+        .sizing-mobile-tabs button.active .mobile-tab-dot { background: #FFFFFF; }
+
+        .sizing-main-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 14px;
+          gap: 16px;
           align-items: start;
+          margin-bottom: 24px;
         }
-        .sizing-form-col, .sizing-results-col {
+        .sizing-form-column,
+        .sizing-result-column {
           display: grid;
-          gap: 10px;
+          gap: 12px;
           align-self: start;
         }
-        @media (max-width: 1023px) {
-          .mobile-tab-bar {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
-            padding: 5px;
-            background: var(--bg-soft);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 12px;
-          }
-          .mobile-tab-btn {
-            padding: 10px;
-            border-radius: 9px;
-            border: none;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 900;
-            background: transparent;
-            color: var(--text-soft);
-            transition: all 0.15s;
-          }
-          .mobile-tab-btn.active {
-            background: linear-gradient(135deg, #E0A81A, #B8850A);
-            color: #FFFFFF;
-          }
-          .sizing-grid { grid-template-columns: 1fr; }
-          .sizing-form-col, .sizing-results-col { display: none; }
-          .sizing-form-col.mobile-show, .sizing-results-col.mobile-show { display: grid; }
+
+        .sizing-card {
+          padding: 16px;
+          border-radius: 16px;
+          background: var(--bg-card, #FFFFFF);
+          border: 1px solid var(--border);
+          box-shadow: 0 1px 3px rgba(20, 22, 27, 0.04);
         }
+        .card-head {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .card-head-text {
+          font-size: 12.5px;
+          font-weight: 900;
+          color: var(--text);
+        }
+        .card-head-hint {
+          margin-inline-start: auto;
+          font-size: 10px;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .fluid-pick-btn {
+          width: 100%;
+          padding: 14px 16px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, rgba(0,120,212,0.06), rgba(0,120,212,0.01));
+          border: 1.5px solid rgba(0,120,212,0.30);
+          cursor: pointer;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          transition: all 0.15s;
+          margin-bottom: 12px;
+          text-align: start;
+        }
+        .fluid-pick-btn:hover {
+          border-color: #0078D4;
+          background: linear-gradient(135deg, rgba(0,120,212,0.10), rgba(0,120,212,0.02));
+        }
+        .fluid-pick-icon {
+          width: 40px; height: 40px; border-radius: 11px;
+          background: linear-gradient(135deg, #0078D4, #005A9E);
+          color: #FFFFFF;
+          display: grid; place-items: center;
+          flex-shrink: 0;
+        }
+        .fluid-pick-text { flex: 1; min-width: 0; }
+        .fluid-pick-label {
+          font-size: 9.5px; font-weight: 900;
+          color: #0078D4;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 3px;
+        }
+        .fluid-pick-value {
+          font-size: 13.5px; font-weight: 900;
+          color: var(--text);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .fluid-type-chips {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 4px;
+          background: var(--bg-soft);
+          padding: 5px;
+          border-radius: 11px;
+          margin-bottom: 12px;
+        }
+        .fluid-type-chips button {
+          padding: 9px 6px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 900;
+          background: transparent;
+          color: var(--text-soft);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          transition: all 0.15s;
+        }
+        .fluid-type-chips button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+        }
+        .fluid-presets {
+          display: flex;
+          gap: 5px;
+          flex-wrap: wrap;
+        }
+        .preset-chip {
+          padding: 6px 12px;
+          border-radius: 8px;
+          background: var(--bg-soft);
+          border: 1px solid var(--border);
+          color: var(--text-soft);
+          font-size: 11px;
+          font-weight: 800;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.15s;
+        }
+        .preset-chip:hover { border-color: #E0A81A; color: #B8850A; }
+
+        .presets-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px;
+        }
+        .preset-btn {
+          padding: 12px;
+          border-radius: 11px;
+          background: #FFFFFF;
+          border: 1.5px solid var(--border);
+          cursor: pointer;
+          font-family: inherit;
+          text-align: start;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: all 0.15s;
+        }
+        .preset-btn:hover {
+          border-color: var(--preset-color);
+        }
+        .preset-icon {
+          width: 34px; height: 34px; border-radius: 10px;
+          display: grid; place-items: center;
+          font-size: 17px;
+          flex-shrink: 0;
+        }
+        .preset-name {
+          font-size: 11.5px; font-weight: 900;
+          color: var(--text);
+          line-height: 1.3;
+        }
+
+        .progress-bar {
+          height: 4px; border-radius: 2px;
+          background: var(--bg-soft); overflow: hidden;
+        }
+        .progress-fill { height: 100%; transition: width 0.4s ease; }
+
+        .dp-indicator {
+          margin-top: 12px; padding: 10px 14px;
+          border-radius: 10px;
+          background: rgba(224, 168, 26, 0.06);
+          border: 1px solid rgba(224, 168, 26, 0.25);
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .dp-indicator span { font-size: 10.5px; font-weight: 900; color: var(--text-soft); }
+        .dp-indicator strong {
+          font-size: 13px; font-weight: 900; color: var(--gold);
+          font-family: monospace; direction: ltr;
+        }
+
+        .advanced-toggle {
+          margin-top: 12px; width: 100%; padding: 10px 14px;
+          border-radius: 10px;
+          background: var(--bg-soft);
+          border: 1px solid var(--border);
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: space-between;
+          font-family: inherit;
+          color: var(--text-soft);
+          font-size: 11.5px; font-weight: 800;
+          transition: all 0.15s;
+        }
+        .advanced-toggle:hover { border-color: #E0A81A; color: #B8850A; }
+
+        .error-box {
+          margin-top: 12px; padding: 11px 14px;
+          border-radius: 10px;
+          background: rgba(232, 17, 35, 0.06);
+          border: 1px solid rgba(232, 17, 35, 0.30);
+          display: flex; align-items: flex-start; gap: 8px;
+        }
+
+        .result-empty {
+          padding: 40px 20px;
+          text-align: center;
+          background: linear-gradient(135deg, rgba(201, 149, 13, 0.04), rgba(201, 149, 13, 0.01));
+          border: 2px dashed rgba(201, 149, 13, 0.25) !important;
+          border-radius: 16px;
+        }
+        .result-empty-icon {
+          width: 68px; height: 68px; border-radius: 20px;
+          margin: 0 auto 16px;
+          display: grid; place-items: center;
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          box-shadow: 0 12px 32px rgba(201, 149, 13, 0.35);
+        }
+        .result-empty-title {
+          font-size: 15px; font-weight: 900;
+          color: var(--text);
+          margin-bottom: 6px;
+        }
+        .result-empty-desc {
+          font-size: 12px; color: var(--text-muted);
+          line-height: 1.6;
+          margin-bottom: 4px;
+        }
+        .result-empty-hint {
+          font-size: 10.5px; color: var(--text-muted);
+          font-weight: 600; opacity: 0.75;
+        }
+
+        .result-hero-card {
+          padding: 18px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          box-shadow: 0 10px 24px rgba(201, 149, 13, 0.30);
+        }
+        .result-hero-label {
+          font-size: 10px; font-weight: 900;
+          opacity: 0.9;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          text-align: center;
+        }
+        .result-hero-value {
+          font-size: 52px; font-weight: 900;
+          line-height: 1; text-align: center;
+          font-family: monospace;
+          margin: 6px 0;
+        }
+        .result-hero-sub {
+          font-size: 11px; font-weight: 800;
+          opacity: 0.85; text-align: center;
+          font-family: monospace;
+        }
+        .result-hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-top: 14px;
+          padding-top: 14px;
+          border-top: 1px solid rgba(255,255,255,0.25);
+        }
+        .result-hero-mini {
+          padding: 10px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.15);
+          text-align: center;
+        }
+        .result-mini-label {
+          font-size: 9px; font-weight: 900;
+          opacity: 0.85;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+        .result-mini-value {
+          font-size: 22px; font-weight: 900;
+          font-family: monospace;
+          line-height: 1;
+        }
+        .result-mini-value.gold { color: #FFF3C4; }
+        .result-mini-value.green { color: #B8F5D4; }
+        .result-mini-value.amber { color: #FFE0A3; }
+        .result-mini-meta {
+          font-size: 9px; font-weight: 700;
+          opacity: 0.75; margin-top: 5px;
+          font-family: monospace;
+        }
+        .opening-bar {
+          height: 3px; border-radius: 2px;
+          background: rgba(255,255,255,0.20);
+          margin-top: 6px; overflow: hidden;
+        }
+        .opening-fill { height: 100%; }
+
+        .result-hero-metrics {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+          gap: 6px;
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid rgba(255,255,255,0.25);
+        }
+        .hero-metric {
+          padding: 6px 8px;
+          border-radius: 8px;
+          background: rgba(255,255,255,0.12);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+        .hero-metric-label {
+          opacity: 0.8;
+          font-size: 9.5px;
+        }
+        .hero-metric-value {
+          margin-inline-start: auto;
+          font-family: monospace;
+          font-weight: 900;
+          font-size: 11px;
+          direction: ltr;
+        }
+        .hero-metric.cav-low { background: rgba(184, 245, 212, 0.20); }
+        .hero-metric.cav-medium,
+        .hero-metric.cav-high { background: rgba(255, 224, 163, 0.25); }
+        .hero-metric.cav-flashing { background: rgba(255, 200, 200, 0.25); }
+
+        .result-actions-row {
+          display: grid;
+          grid-template-columns: 1fr auto auto auto;
+          gap: 6px;
+        }
+        .result-action-main {
+          padding: 11px;
+          font-size: 12.5px;
+        }
+        .result-action-btn {
+          padding: 11px 12px;
+          border-radius: 10px;
+          background: #FFFFFF;
+          border: 1.5px solid var(--border);
+          color: var(--text);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 900;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          transition: all 0.15s;
+        }
+        .result-action-btn:hover { border-color: #E0A81A; color: #B8850A; }
+
+        .result-product-card {
+          padding: 14px;
+          border-radius: 14px;
+        }
+        .product-card-head {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .product-icon-sm {
+          width: 44px; height: 44px; border-radius: 11px;
+          display: grid; place-items: center;
+          font-size: 20px;
+          flex-shrink: 0;
+        }
+
+        .collapse-btn {
+          width: 100%; padding: 14px 16px;
+          background: transparent; border: none;
+          display: flex; align-items: center; justify-content: space-between;
+          cursor: pointer; font-family: inherit;
+        }
+
+        .reference-section {
+          padding: 16px;
+          border-radius: 16px;
+          background: var(--bg-card, #FFFFFF);
+          border: 1px solid var(--border);
+        }
+        .reference-head {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12.5px;
+          font-weight: 900;
+          color: var(--text);
+          margin-bottom: 12px;
+        }
+        .reference-tabs {
+          display: flex;
+          gap: 4px;
+          padding: 4px;
+          background: var(--bg-soft);
+          border-radius: 11px;
+          margin-bottom: 14px;
+        }
+        .reference-tabs button {
+          flex: 1;
+          padding: 10px 8px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 11.5px;
+          font-weight: 900;
+          background: transparent;
+          color: var(--text-soft);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          transition: all 0.15s;
+        }
+        .reference-tabs button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          box-shadow: 0 4px 12px rgba(201, 149, 13, 0.25);
+        }
+
+        @media (max-width: 1023px) {
+          .sizing-mobile-tabs { display: grid; }
+          .sizing-main-grid { grid-template-columns: 1fr; }
+          .sizing-form-column,
+          .sizing-result-column { display: none; }
+          .sizing-form-column.mobile-show,
+          .sizing-result-column.mobile-show { display: grid; }
+          .sizing-toolbar {
+            grid-template-columns: auto 1fr auto;
+            gap: 6px;
+          }
+          .tb-wizard span { display: none; }
+          .tb-live-state { display: none; }
+          .reference-tabs button span { display: none; }
+          .reference-tabs button { flex: none; padding: 10px; }
+        }
+
+        @media (max-width: 640px) {
+          .presets-grid { grid-template-columns: 1fr; }
+          .result-actions-row { grid-template-columns: 1fr 1fr; }
+        }
+
         @media print {
           .no-print, header, footer, nav { display: none !important; }
           body { background: #FFFFFF !important; }
           .sizing-root { padding: 0 !important; }
-          .print-only { display: block !important; }
-          .card-glass { background: #FFFFFF !important; border: 1px solid #D1D5DB !important; box-shadow: none !important; page-break-inside: avoid; }
-          .sizing-grid { display: block !important; }
-          .sizing-form-col, .sizing-results-col { display: block !important; }
+          .sizing-card { background: #FFFFFF !important; border: 1px solid #D1D5DB !important; box-shadow: none !important; page-break-inside: avoid; }
           @page { size: A4; margin: 15mm; }
         }
       `}</style>
     </section>
-  );
-}
-
-function Field({ label, unit, value, onChange, step }) {
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 900, color: "var(--text-muted)" }}>{label}</span>
-        {unit && <span style={{ fontSize: 9, color: "var(--text-muted)", fontFamily: "monospace", fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: "var(--bg-soft)" }}>{unit}</span>}
-      </div>
-      <input
-        type="number"
-        step={step || 1}
-        value={value}
-        onChange={onChange}
-        style={{
-          width: "100%", padding: "9px 10px", borderRadius: 9,
-          border: "1.5px solid var(--border)", background: "var(--bg-soft)",
-          color: "var(--text)", fontFamily: "monospace", fontSize: 13.5, fontWeight: 700
-        }}
-        onFocus={function(e) {
-          e.target.style.borderColor = "#E0A81A";
-          e.target.style.background = "#FFFFFF";
-          e.target.style.boxShadow = "0 0 0 3px rgba(201, 149, 13, 0.12)";
-        }}
-        onBlur={function(e) {
-          e.target.style.borderColor = "var(--border)";
-          e.target.style.background = "var(--bg-soft)";
-          e.target.style.boxShadow = "none";
-        }}
-      />
-    </div>
-  );
-}
-
-function Metric({ icon, label, value }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 4 }}>
-        <span style={{ color: "var(--gold)" }}>{icon}</span>{label}
-      </div>
-      <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", fontFamily: "monospace", direction: "ltr" }}>{value}</div>
-    </div>
-  );
-}
-
-function Btn({ onClick, icon, label, highlight }) {
-  return (
-    <button onClick={onClick}
-      style={{
-        padding: "11px 8px", borderRadius: 10,
-        background: highlight ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "#FFFFFF",
-        border: highlight ? "none" : "1.5px solid var(--border)",
-        color: highlight ? "#FFFFFF" : "var(--text)",
-        cursor: "pointer", fontFamily: "inherit",
-        fontSize: 12, fontWeight: 900,
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-        boxShadow: highlight ? "0 4px 12px rgba(201, 149, 13, 0.25)" : "none",
-        transition: "all 0.15s"
-      }}>
-      {icon} {label}
-    </button>
   );
 }

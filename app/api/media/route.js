@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getMedia, writeJSON } from "@/lib/media";
+import { getMedia, addMediaItem, removeMediaItem, updateMedia } from "@/lib/media";
 
 export async function GET(request) {
   const session = await getSession(request);
@@ -20,16 +20,7 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: "نوع نامعتبر" }, { status: 400 });
   }
 
-  const media = getMedia();
-  const list = media[type] || [];
-  const newItem = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    createdAt: new Date().toISOString(),
-    ...item
-  };
-  list.unshift(newItem);
-  media[type] = list;
-  writeJSON("media.json", media);
+  const newItem = addMediaItem(type, item);
   return NextResponse.json({ ok: true, item: newItem });
 }
 
@@ -41,12 +32,13 @@ export async function DELETE(request) {
   const id = searchParams.get("id");
   const type = searchParams.get("type");
 
-  const media = getMedia();
-  if (media[type]) {
-    media[type] = media[type].filter((m) => m.id !== id);
-    writeJSON("media.json", media);
+  const validTypes = ["videos", "catalogs", "gallery"];
+  if (!validTypes.includes(type)) {
+    return NextResponse.json({ ok: false, error: "نوع نامعتبر" }, { status: 400 });
   }
-  return NextResponse.json({ ok: true });
+
+  const updated = removeMediaItem(type, id);
+  return NextResponse.json({ ok: true, media: updated });
 }
 
 export async function PATCH(request) {
@@ -54,8 +46,6 @@ export async function PATCH(request) {
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
 
   const { introVideoUrl } = await request.json();
-  const media = getMedia();
-  media.introVideoUrl = introVideoUrl || "";
-  writeJSON("media.json", media);
-  return NextResponse.json({ ok: true });
+  const updated = updateMedia({ introVideoUrl: introVideoUrl || "" });
+  return NextResponse.json({ ok: true, media: updated });
 }

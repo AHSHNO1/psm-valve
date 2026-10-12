@@ -1,12 +1,39 @@
 {
   "siteName": "پترو سازه میهن",
+  "siteNameEn": "Petro Sazeh Mihan Co.",
   "tagline": "PSM VALVE",
-  "phone": "۰۸۶-۳۳۰۰۰۰۰۰",
-  "email": "info@psmvalve.com",
-  "address": "اراک، شهرک صنعتی، خیابان صنعت، پلاک ۱۲",
+  "slogan": "آمده‌ایم ملی بسازیم تا بمانیم",
+  "description": "دانش‌بنیان تولیدی نوع یک در زمینه طراحی و تولید شیرهای کنترلی",
+  "phone": "۰۸۶-۳۴۱۳۱۵۳۳",
+  "phone2": "",
+  "mobile": "۰۹۱۸۸۹۳۹۲۰۹",
+  "mobile2": "۰۹۱۲۸۶۱۶۰۶۳",
+  "fax": "۰۸۶-۳۴۱۳۱۵۳۳۱۱۵",
+  "email": "Info@psmvalve.com",
+  "email2": "psmvalve@gmail.com",
+  "address": "اراک، شهرک صنعتی حاجی‌آباد، خیابان صنعت",
+  "addressFactory": "اراک، شهرک صنعتی حاجی‌آباد، خیابان صنعت",
+  "postalCode": "3819958199",
+  "country": "ایران",
+  "website": "https://www.psm-valve.com",
+
+  "social": {
+    "instagram": "https://www.instagram.com/petrosazemihan",
+    "instagramHandle": "@petrosazemihan",
+    "whatsapp": "https://wa.me/989188939209",
+    "whatsappNumber": "989188939209",
+    "aparat": "https://www.aparat.com/petrosazehmihan",
+    "bale": "psm_commercial@",
+    "rubika": "Psm_commercial@",
+    "eita": "Psm_commercial@"
+  },
+
+  "branding": {
+    "logo": "/logo/logo-main.png",
+    "logoIcon": "/logo/logo-icon.png",
+    "favicon": "/favicon.ico"
+  },
+
   "companyVideoUrl": "",
-  "updatedAt": "2026-10-11T04:18:02.400Z",
-  "phone2": "۰۸۶-۳۳۰۰۰۰۰۱",
-  "mobile": "۰۹۱۸-۱۲۳-۴۵۶۷",
-  "fax": "۰۸۶-۳۳۰۰۰۰۰۲"
+  "updatedAt": "2026-10-12T00:00:00.000Z"
 }

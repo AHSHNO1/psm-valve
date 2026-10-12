@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useDictionary } from "./Providers";
+import { COMPANY } from "@/lib/company-info";
 
-// ============ SVG ICONS (inline, no dependencies) ============
+// ============================================================
+// ICONS
+// ============================================================
 function IconPin() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
@@ -18,11 +21,36 @@ function IconPhone() {
     </svg>
   );
 }
-function IconMail() {
+function IconFax() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
+    </svg>
+  );
+}
+function IconMail({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
+    </svg>
+  );
+}
+function IconMobile() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  );
+}
+function IconClock() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
@@ -42,47 +70,31 @@ function IconWhatsapp() {
     </svg>
   );
 }
-function IconYoutube() {
+function IconAparat() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-    </svg>
-  );
-}
-function IconLinkedin() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-    </svg>
-  );
-}
-function IconTelegram() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l7 4.5-7 4.5z" />
     </svg>
   );
 }
 function IconBale() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="10" opacity="0.25" />
-      <path d="M10 17l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z" />
     </svg>
   );
 }
 function IconRubika() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.18L18 8v8l-6 3.82L6 16V8l6-3.82zM12 6l-4 2.5v7l4 2.5 4-2.5v-7L12 6z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.18L18 8v8l-6 3.82L6 16V8l6-3.82z" />
     </svg>
   );
 }
 function IconEitaa() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="10" opacity="0.25" />
-      <path d="M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm3.5 6.5l-4 4c-.2.2-.5.2-.7 0l-2-2c-.2-.2-.2-.5 0-.7s.5-.2.7 0l1.65 1.65 3.65-3.65c.2-.2.5-.2.7 0s.2.5 0 .7z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.41 14.59L6.17 12.17l1.41-1.41L10.59 13.76l5.83-5.83 1.41 1.41-7.24 7.25z" />
     </svg>
   );
 }
@@ -103,12 +115,30 @@ function IconCheck() {
   );
 }
 
+// ============================================================
+// BRAND LOGO — placeholder «PSM» (بعداً عکس واقعی جایگزین شود)
+// ============================================================
+function BrandLogo() {
+  return (
+    <div className="w-12 h-12 rounded-xl grid place-items-center shadow-md overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)" }}>
+      {/* اگر فایل logo در public/logo/logo-icon.png هست، این خط را از کامنت خارج کن: */}
+      {/* <img src="/logo/logo-icon.png" alt="PSM" width="48" height="48" style={{objectFit:"contain"}} /> */}
+      <span className="text-[#1A1D21] font-black text-sm">PSM</span>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN FOOTER
+// ============================================================
 export default function Footer() {
   const { locale, t } = useDictionary();
+  const isFa = locale === "fa";
 
   const links = [
     { h: "/" + locale + "/products", l: t.nav.products },
-    { h: "/" + locale + "/services", l: t.nav.services || (locale === "fa" ? "خدمات" : "Services") },
+    { h: "/" + locale + "/services", l: t.nav.services || (isFa ? "خدمات" : "Services") },
     { h: "/" + locale + "/sizing", l: t.nav.sizing },
     { h: "/" + locale + "/media?tab=articles", l: t.nav.articles },
     { h: "/" + locale + "/about", l: t.nav.about },
@@ -116,17 +146,15 @@ export default function Footer() {
   ];
 
   const intlSocials = [
-    { name: "Instagram", Icon: IconInstagram, url: "https://instagram.com/psmvalve", color: "#E4405F" },
-    { name: "WhatsApp", Icon: IconWhatsapp, url: "https://wa.me/989891234567", color: "#25D366" },
-    { name: "YouTube", Icon: IconYoutube, url: "https://youtube.com/@psmvalve", color: "#FF0000" },
-    { name: "LinkedIn", Icon: IconLinkedin, url: "https://linkedin.com/company/psmvalve", color: "#0A66C2" },
-    { name: "Telegram", Icon: IconTelegram, url: "https://t.me/psmvalve", color: "#0088CC" }
+    { name: "Instagram", Icon: IconInstagram, url: COMPANY.social.instagram, color: "#E4405F", handle: COMPANY.social.instagramHandle },
+    { name: "WhatsApp", Icon: IconWhatsapp, url: COMPANY.social.whatsapp, color: "#25D366", handle: "+98 918 893 9209" },
+    { name: "Aparat", Icon: IconAparat, url: COMPANY.social.aparat, color: "#ED145B", handle: "@petrosazehmihan" }
   ];
 
   const iranianSocials = [
-    { name: "بله", url: "https://ble.ir/psmvalve", color: "#00A650", Icon: IconBale },
-    { name: "روبیکا", url: "https://rubika.ir/psmvalve", color: "#7B2CBF", Icon: IconRubika },
-    { name: "ایتا", url: "https://eitaa.com/psmvalve", color: "#F5A623", Icon: IconEitaa }
+    { name: isFa ? "بله" : "Bale", url: "https://ble.ir/psm_commercial", color: "#00A650", Icon: IconBale },
+    { name: isFa ? "روبیکا" : "Rubika", url: "https://rubika.ir/Psm_commercial", color: "#7B2CBF", Icon: IconRubika },
+    { name: isFa ? "ایتا" : "Eitaa", url: "https://eitaa.com/Psm_commercial", color: "#F5A623", Icon: IconEitaa }
   ];
 
   const knowledgeTexts = {
@@ -137,18 +165,84 @@ export default function Footer() {
   };
   const K = knowledgeTexts[locale] || knowledgeTexts.en;
 
+  const footerLabels = {
+    fa: {
+      office: "دفتر مرکزی",
+      factory: "کارخانه",
+      phone: "تلفن",
+      phone2: "تلفن ۲",
+      fax: "فکس",
+      mobile: "همراه",
+      hours: "ساعات کاری",
+      hoursValue: "شنبه تا پنجشنبه: ۷:۰۰ – ۱۵:۰۰",
+      hoursClosed: "جمعه: تعطیل",
+      socialIntl: "بین‌المللی",
+      socialIran: "پیام‌رسان‌های ایرانی",
+      socialTitle: "شبکه‌های اجتماعی",
+      slogan: "آمده‌ایم ملی بسازیم تا بمانیم",
+      description: "دانش‌بنیان تولیدی نوع یک در زمینه طراحی و تولید شیرهای کنترلی صنعتی طبق استاندارد IEC 60534"
+    },
+    en: {
+      office: "Head Office",
+      factory: "Factory",
+      phone: "Phone",
+      phone2: "Phone 2",
+      fax: "Fax",
+      mobile: "Mobile",
+      hours: "Working Hours",
+      hoursValue: "Sat – Thu: 7:00 – 15:00",
+      hoursClosed: "Friday: Closed",
+      socialIntl: "International",
+      socialIran: "Iranian Messengers",
+      socialTitle: "Follow Us",
+      slogan: "We build nationally to last",
+      description: "Knowledge-based manufacturer of industrial control valves per IEC 60534"
+    },
+    ar: {
+      office: "المكتب الرئيسي",
+      factory: "المصنع",
+      phone: "هاتف",
+      phone2: "هاتف ٢",
+      fax: "فاكس",
+      mobile: "جوال",
+      hours: "ساعات العمل",
+      hoursValue: "السبت – الخميس: ٧:٠٠ – ١٥:٠٠",
+      hoursClosed: "الجمعة: مغلق",
+      socialIntl: "دولي",
+      socialIran: "رسائل إيرانية",
+      socialTitle: "تابعنا",
+      slogan: "نبني وطنياً لنبقى",
+      description: "شركة قائمة على المعرفة لتصنيع صمامات التحكم الصناعية"
+    },
+    ru: {
+      office: "Офис",
+      factory: "Завод",
+      phone: "Телефон",
+      phone2: "Телефон 2",
+      fax: "Факс",
+      mobile: "Мобильный",
+      hours: "Рабочие часы",
+      hoursValue: "Сб – Чт: 7:00 – 15:00",
+      hoursClosed: "Пятница: закрыто",
+      socialIntl: "Международные",
+      socialIran: "Иранские мессенджеры",
+      socialTitle: "Подписаться",
+      slogan: "Строим для страны, чтобы остаться",
+      description: "Наукоемкое производство промышленных регулирующих клапанов"
+    }
+  };
+  const F = footerLabels[locale] || footerLabels.en;
+
   return (
     <footer className="border-t mt-24" style={{ borderColor: "var(--border)" }}>
       <div className="container-x py-14 grid md:grid-cols-2 lg:grid-cols-4 gap-10">
-        {/* Column 1: Brand + Knowledge badge */}
+
+        {/* ============ Column 1: Brand ============ */}
         <div className="lg:col-span-1 md:col-span-2">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-11 h-11 rounded-xl grid place-items-center shadow-md"
-              style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)" }}>
-              <span className="text-[#1A1D21] font-black">PSM</span>
-            </div>
+            <BrandLogo />
             <div>
-              <div className="font-black" style={{ color: "var(--text)" }}>
+              <div className="font-black leading-tight" style={{ color: "var(--text)" }}>
                 {t.common.company}
               </div>
               <div className="text-xs font-semibold tracking-widest" style={{ color: "var(--gold)" }}>
@@ -157,11 +251,14 @@ export default function Footer() {
             </div>
           </div>
 
+          <div className="text-xs font-bold italic mb-3" style={{ color: "var(--gold)" }}>
+            «{F.slogan}»
+          </div>
+
           <p className="text-sm leading-7 max-w-md mb-5" style={{ color: "var(--text-soft)" }}>
-            {t.footer.desc}
+            {F.description}
           </p>
 
-          {/* Knowledge badge */}
           <div className="p-3 rounded-xl flex items-start gap-3"
             style={{
               background: "linear-gradient(135deg, rgba(224, 168, 26, 0.08), rgba(184, 133, 10, 0.04))",
@@ -183,7 +280,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Column 2: Quick links */}
+        {/* ============ Column 2: Quick links ============ */}
         <div>
           <h4 className="font-black mb-5" style={{ color: "var(--gold)" }}>
             {t.footer.quickLinks}
@@ -201,37 +298,133 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Column 3: Contact */}
+        {/* ============ Column 3: Contact ============ */}
         <div>
           <h4 className="font-black mb-5" style={{ color: "var(--gold)" }}>
             {t.footer.contact}
           </h4>
-          <ul className="space-y-3 text-sm" style={{ color: "var(--text-soft)" }}>
+
+          <ul className="space-y-3 text-xs leading-relaxed" style={{ color: "var(--text-soft)" }}>
+            {/* Address */}
             <li className="flex gap-2">
               <span style={{ color: "var(--gold)" }}><IconPin /></span>
-              {t.common.address}
+              <div>
+                <div className="font-bold" style={{ color: "var(--text)" }}>{F.office}</div>
+                <div>{COMPANY.address.office[locale] || COMPANY.address.office.en}</div>
+                <div className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+                  {isFa ? "کدپستی" : "Postal"}: {COMPANY.address.postalCode}
+                </div>
+              </div>
             </li>
+
+            {/* Office Phone 1 */}
             <li className="flex gap-2">
               <span style={{ color: "var(--gold)" }}><IconPhone /></span>
-              {t.common.phone}
+              <div>
+                <div className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>
+                  {F.phone}
+                </div>
+                <a href="tel:+988634131533"
+                  className="font-mono hover:text-gold-500 transition"
+                  style={{ direction: "ltr", display: "inline-block" }}>
+                  +98 86 3413 1533
+                </a>
+              </div>
             </li>
+
+            {/* Office Phone 2 */}
             <li className="flex gap-2">
-              <span style={{ color: "var(--gold)" }}><IconMail /></span>
-              {t.common.email}
+              <span style={{ color: "var(--gold)" }}><IconPhone /></span>
+              <div>
+                <div className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>
+                  {F.phone2}
+                </div>
+                <a href="tel:+988634131918"
+                  className="font-mono hover:text-gold-500 transition"
+                  style={{ direction: "ltr", display: "inline-block" }}>
+                  +98 86 3413 1918
+                </a>
+              </div>
+            </li>
+
+            {/* Mobile */}
+            <li className="flex gap-2">
+              <span style={{ color: "var(--gold)" }}><IconMobile /></span>
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: "var(--text-muted)" }}>
+                  {F.mobile}
+                </div>
+                {COMPANY.phone.mobile.map(function(m, i) {
+                  return (
+                    <a key={i} href={"tel:" + m.replace(/\s/g, "")}
+                      className="font-mono hover:text-gold-500 transition block"
+                      style={{ direction: "ltr" }}>
+                      {m}
+                    </a>
+                  );
+                })}
+              </div>
+            </li>
+
+            {/* Fax */}
+            <li className="flex gap-2">
+              <span style={{ color: "var(--gold)" }}><IconFax /></span>
+              <div>
+                <div className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>
+                  {F.fax}
+                </div>
+                <span className="font-mono" style={{ direction: "ltr", display: "inline-block" }}>
+                  {COMPANY.fax.office}
+                </span>
+              </div>
+            </li>
+
+            {/* Emails with icons */}
+            <li className="flex gap-2">
+              <span style={{ color: "var(--gold)" }}><IconMail size={14} /></span>
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: "var(--text-muted)" }}>
+                  {isFa ? "ایمیل" : "Email"}
+                </div>
+                <a href={"mailto:" + COMPANY.email.primary}
+                  className="hover:text-gold-500 transition block"
+                  style={{ direction: "ltr" }}>
+                  {COMPANY.email.primary}
+                </a>
+                <a href={"mailto:" + COMPANY.email.secondary}
+                  className="hover:text-gold-500 transition block"
+                  style={{ direction: "ltr" }}>
+                  {COMPANY.email.secondary}
+                </a>
+              </div>
+            </li>
+
+            {/* Working Hours (NEW) */}
+            <li className="flex gap-2">
+              <span style={{ color: "var(--gold)" }}><IconClock /></span>
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: "var(--text-muted)" }}>
+                  {F.hours}
+                </div>
+                <div style={{ color: "var(--text)" }}>{F.hoursValue}</div>
+                <div className="mt-0.5" style={{ color: "#E81123", fontWeight: 700 }}>
+                  {F.hoursClosed}
+                </div>
+              </div>
             </li>
           </ul>
         </div>
 
-        {/* Column 4: Social */}
+        {/* ============ Column 4: Social ============ */}
         <div>
           <h4 className="font-black mb-5" style={{ color: "var(--gold)" }}>
-            {locale === "fa" ? "شبکه‌های اجتماعی" : "Follow Us"}
+            {F.socialTitle}
           </h4>
 
           <div className="mb-5">
             <div className="text-[10px] font-black tracking-wider mb-2"
               style={{ color: "var(--text-muted)" }}>
-              {locale === "fa" ? "بین‌المللی" : "International"}
+              {F.socialIntl}
             </div>
             <div className="flex flex-wrap gap-2">
               {intlSocials.map(function(s) {
@@ -243,7 +436,7 @@ export default function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={s.name}
-                    title={s.name}
+                    title={s.name + (s.handle ? " — " + s.handle : "")}
                     className="w-10 h-10 rounded-xl grid place-items-center transition-all hover:scale-110 hover:shadow-lg"
                     style={{
                       background: s.color + "15",
@@ -261,7 +454,7 @@ export default function Footer() {
           <div>
             <div className="text-[10px] font-black tracking-wider mb-2"
               style={{ color: "var(--text-muted)" }}>
-              {locale === "fa" ? "پیام‌رسان‌های ایرانی" : "Iranian Messengers"}
+              {F.socialIran}
             </div>
             <div className="flex flex-wrap gap-2">
               {iranianSocials.map(function(s) {
@@ -273,7 +466,7 @@ export default function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={s.name}
-                    className="h-10 px-3 rounded-xl flex items-center gap-2 text-xs font-black transition-all hover:scale-105 hover:shadow-lg"
+                    className="h-9 px-3 rounded-xl flex items-center gap-1.5 text-xs font-black transition-all hover:scale-105 hover:shadow-lg"
                     style={{
                       background: s.color + "15",
                       border: "1px solid " + s.color + "40",
@@ -281,7 +474,7 @@ export default function Footer() {
                     }}
                   >
                     <Icon />
-                    {s.name}
+                    <span>{s.name}</span>
                   </a>
                 );
               })}
@@ -290,9 +483,24 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t py-6 text-center text-xs"
+      {/* ============ Bottom bar ============ */}
+      <div className="border-t py-5"
         style={{ borderColor: "var(--border)", color: "var(--text-soft)" }}>
-        © {new Date().getFullYear()} {t.common.company} — {t.footer.rights}
+        <div className="container-x flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="text-center sm:text-start" style={{ color: "var(--text-soft)" }}>
+            Designed by <span style={{ color: "var(--gold)", fontWeight: 900 }}>IT Department</span> | All rights reserved ©2027
+          </div>
+          <a
+            href="mailto:it@psmvalve.com"
+            className="flex items-center gap-2 hover:text-gold-500 transition font-mono text-[11px]"
+            style={{ direction: "ltr" }}
+          >
+            <span style={{ color: "var(--gold)" }}>
+              <IconMail size={14} />
+            </span>
+            <span>it@psmvalve.com</span>
+          </a>
+        </div>
       </div>
     </footer>
   );

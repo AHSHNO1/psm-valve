@@ -1,130 +1,255 @@
 "use client";
+import React, { useState } from "react";
 import ContactForm from "./ContactForm";
+import { COMPANY } from "@/lib/company-info";
 
 export default function ContactClient({ dict, settings, locale }) {
+  const isFa = locale === "fa";
+
+  // ===== Map coordinates =====
   const lat = (settings && settings.mapLat) || "34.0917";
   const lng = (settings && settings.mapLng) || "49.6892";
-
   const mapEmbedUrl = "https://maps.google.com/maps?q=" + lat + "," + lng + "&z=14&output=embed&hl=" + (locale === "fa" ? "fa" : locale);
   const mapLinkUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
 
-  const phone1 = (settings && settings.phone) || dict.common.phone;
-  const phone2 = (settings && settings.phone2) || "";
-  const mobile = (settings && settings.mobile) || "";
-  const fax = (settings && settings.fax) || "";
-  const email = (settings && settings.email) || dict.common.email;
-  const address = (settings && settings.address) || dict.common.address;
-  const workingHours = (settings && settings.workingHours) || dict.contact.hoursValue;
+  // ===== Data (fallback to COMPANY) =====
+  const phoneOffice = COMPANY.phone.office;
+  const phoneFactory = COMPANY.phone.factory;
+  const mobile = COMPANY.phone.mobile;
+  const fax = COMPANY.fax.office;
+  const emailPrimary = COMPANY.email.primary;
+  const emailSecondary = COMPANY.email.secondary;
+  const addressOffice = COMPANY.address.office[locale] || COMPANY.address.office.en;
+  const addressFactory = COMPANY.address.factory[locale] || COMPANY.address.factory.en;
+  const postalCode = COMPANY.address.postalCode;
+  const messengers = COMPANY.messengers;
 
+  // ===== Labels =====
   const L = {
     fa: {
       badge: "ارتباط با ما",
       title1: "تماس با",
-      title2: "پترو سازه میهن",
-      subtitle: "تیم ما آماده پاسخگویی به سوالات فنی و مشاوره‌های تخصصی شماست",
+      title2: "پتروسازه میهن",
+      subtitle: "تیم فنی و مهندسی ما آماده پاسخگویی به سوالات تخصصی و ارائه مشاوره است",
       formTitle: "ارسال پیام",
       formSubtitle: "پیام خود را بفرستید و در اسرع وقت پاسخ می‌دهیم",
-      mapTitle: "موقعیت دفتر مرکزی",
+      mapTitle: "موقعیت شرکت",
       mapSubtitle: "مسیریابی",
       infoTitle: "اطلاعات تماس",
-      phone1: "تلفن ۱",
-      phone2: "تلفن ۲",
-      mobile: "موبایل",
-      fax: "فکس",
+      office: "دفتر مرکزی",
+      factory: "کارخانه",
+      phoneLabel: "تلفن",
+      mobileLabel: "همراه",
+      faxLabel: "فکس",
       emailLabel: "ایمیل",
       addressLabel: "آدرس",
-      hoursLabel: "ساعات کاری",
+      postalLabel: "کدپستی",
       socialTitle: "ما را دنبال کنید",
-      iranianSocial: "پیام‌رسان‌های ایرانی"
+      iranianSocial: "پیام‌رسان‌های ایرانی",
+      websiteLabel: "وب‌سایت"
     },
     en: {
       badge: "Contact Us",
       title1: "Contact",
-      title2: "PSM Valve",
-      subtitle: "Our team is ready to answer your technical questions",
+      title2: "Petro Sazeh Mihan",
+      subtitle: "Our engineering team is ready to answer technical questions and provide consultation",
       formTitle: "Send Message",
-      formSubtitle: "Send us a message and we'll respond soon",
-      mapTitle: "Head Office Location",
+      formSubtitle: "Send us a message and we'll respond as soon as possible",
+      mapTitle: "Company Location",
       mapSubtitle: "Get Directions",
       infoTitle: "Contact Information",
-      phone1: "Phone 1",
-      phone2: "Phone 2",
-      mobile: "Mobile",
-      fax: "Fax",
+      office: "Head Office",
+      factory: "Factory",
+      phoneLabel: "Phone",
+      mobileLabel: "Mobile",
+      faxLabel: "Fax",
       emailLabel: "Email",
       addressLabel: "Address",
-      hoursLabel: "Working Hours",
+      postalLabel: "Postal Code",
       socialTitle: "Follow Us",
-      iranianSocial: "Iranian Messengers"
+      iranianSocial: "Iranian Messengers",
+      websiteLabel: "Website"
     },
     ar: {
       badge: "اتصل بنا",
       title1: "اتصل بـ",
-      title2: "بترو سازه ميهن",
-      subtitle: "فريقنا جاهز للإجابة على أسئلتك",
+      title2: "بترو سازه ميهان",
+      subtitle: "فريقنا الهندسي جاهز للإجابة على أسئلتك",
       formTitle: "إرسال رسالة",
-      formSubtitle: "أرسل رسالة وسنرد قريباً",
-      mapTitle: "موقع المكتب",
+      formSubtitle: "أرسل رسالة وسنرد في أقرب وقت",
+      mapTitle: "موقع الشركة",
       mapSubtitle: "الاتجاهات",
       infoTitle: "معلومات الاتصال",
-      phone1: "هاتف ١",
-      phone2: "هاتف ٢",
-      mobile: "جوال",
-      fax: "فاكس",
+      office: "المكتب الرئيسي",
+      factory: "المصنع",
+      phoneLabel: "هاتف",
+      mobileLabel: "جوال",
+      faxLabel: "فاكس",
       emailLabel: "بريد",
       addressLabel: "العنوان",
-      hoursLabel: "ساعات العمل",
+      postalLabel: "الرمز البريدي",
       socialTitle: "تابعنا",
-      iranianSocial: "الرسائل الإيرانية"
+      iranianSocial: "الرسائل الإيرانية",
+      websiteLabel: "الموقع"
     },
     ru: {
       badge: "Контакты",
       title1: "Контакты",
-      title2: "PSM Valve",
-      subtitle: "Наша команда готова ответить на ваши вопросы",
+      title2: "Petro Sazeh Mihan",
+      subtitle: "Наша инженерная команда готова ответить на технические вопросы",
       formTitle: "Отправить сообщение",
-      formSubtitle: "Отправьте сообщение, и мы ответим",
-      mapTitle: "Расположение офиса",
+      formSubtitle: "Отправьте сообщение, и мы скоро ответим",
+      mapTitle: "Расположение компании",
       mapSubtitle: "Маршрут",
       infoTitle: "Контактная информация",
-      phone1: "Телефон 1",
-      phone2: "Телефон 2",
-      mobile: "Мобильный",
-      fax: "Факс",
+      office: "Офис",
+      factory: "Завод",
+      phoneLabel: "Телефон",
+      mobileLabel: "Мобильный",
+      faxLabel: "Факс",
       emailLabel: "Эл. почта",
       addressLabel: "Адрес",
-      hoursLabel: "Часы работы",
+      postalLabel: "Индекс",
       socialTitle: "Подписывайтесь",
-      iranianSocial: "Иранские мессенджеры"
+      iranianSocial: "Иранские мессенджеры",
+      websiteLabel: "Сайт"
     }
   }[locale] || {};
 
+  // ===== Rows for info card =====
   const rows = [];
-  if (phone1) rows.push({ icon: "phone", label: L.phone1, value: phone1, link: "tel:" + phone1.replace(/\s|-/g, ""), color: "#0078D4" });
-  if (phone2) rows.push({ icon: "phone", label: L.phone2, value: phone2, link: "tel:" + phone2.replace(/\s|-/g, ""), color: "#0078D4" });
-  if (mobile) rows.push({ icon: "mobile", label: L.mobile, value: mobile, link: "tel:" + mobile.replace(/\s|-/g, ""), color: "#107C10" });
-  if (fax) rows.push({ icon: "fax", label: L.fax, value: fax, color: "#8764B8" });
-  rows.push({ icon: "mail", label: L.emailLabel, value: email, link: "mailto:" + email, color: "#C9950D" });
-  rows.push({ icon: "map", label: L.addressLabel, value: address, link: mapLinkUrl, color: "#107C10" });
-  rows.push({ icon: "clock", label: L.hoursLabel, value: workingHours, color: "#F59E0B" });
 
+  // Office address
+  rows.push({
+    icon: "map",
+    label: L.office,
+    value: addressOffice,
+    subvalue: L.postalLabel + ": " + postalCode,
+    link: mapLinkUrl,
+    color: "#107C10"
+  });
+
+  // Factory address (if different from office)
+  if (addressFactory && addressFactory !== addressOffice) {
+    rows.push({
+      icon: "factory",
+      label: L.factory,
+      value: addressFactory,
+      subvalue: L.postalLabel + ": " + postalCode,
+      link: mapLinkUrl,
+      color: "#0891B2"
+    });
+  }
+
+  // Office phone
+  rows.push({
+    icon: "phone",
+    label: L.phoneLabel,
+    value: phoneOffice,
+    link: "tel:" + phoneOffice.replace(/\s/g, ""),
+    color: "#0078D4"
+  });
+
+  // Factory phone (if different)
+  if (phoneFactory && phoneFactory !== phoneOffice) {
+    rows.push({
+      icon: "phone",
+      label: L.phoneLabel + " (" + L.factory + ")",
+      value: phoneFactory,
+      link: "tel:" + phoneFactory.replace(/\s/g, ""),
+      color: "#0078D4"
+    });
+  }
+
+  // Mobile numbers
+  mobile.forEach(function(m, i) {
+    rows.push({
+      icon: "mobile",
+      label: L.mobileLabel + (mobile.length > 1 ? " " + (i + 1) : ""),
+      value: m,
+      link: "tel:" + m.replace(/\s/g, ""),
+      color: "#107C10"
+    });
+  });
+
+  // Fax
+  rows.push({
+    icon: "fax",
+    label: L.faxLabel,
+    value: fax,
+    color: "#8764B8"
+  });
+
+  // Emails
+  rows.push({
+    icon: "mail",
+    label: L.emailLabel,
+    value: emailPrimary,
+    link: "mailto:" + emailPrimary,
+    color: "#C9950D"
+  });
+  if (emailSecondary) {
+    rows.push({
+      icon: "mail",
+      label: L.emailLabel + " (Gmail)",
+      value: emailSecondary,
+      link: "mailto:" + emailSecondary,
+      color: "#C9950D"
+    });
+  }
+
+  // ===== Social links (real) =====
   const socialLinks = [
-    { name: "Instagram", url: "https://instagram.com/psmvalve", color: "#E4405F", svg: "instagram" },
-    { name: "WhatsApp", url: "https://wa.me/989891234567", color: "#25D366", svg: "whatsapp" },
-    { name: "Telegram", url: "https://t.me/psmvalve", color: "#0088CC", svg: "telegram" },
-    { name: "LinkedIn", url: "https://linkedin.com/company/psmvalve", color: "#0A66C2", svg: "linkedin" },
-    { name: "YouTube", url: "https://youtube.com/@psmvalve", color: "#FF0000", svg: "youtube" }
+    {
+      name: "Instagram",
+      url: COMPANY.social.instagram,
+      handle: COMPANY.social.instagramHandle,
+      color: "#E4405F",
+      svg: "instagram"
+    },
+    {
+      name: "WhatsApp",
+      url: COMPANY.social.whatsapp,
+      handle: "+98 918 893 9209",
+      color: "#25D366",
+      svg: "whatsapp"
+    },
+    {
+      name: "Aparat",
+      url: COMPANY.social.aparat,
+      handle: "@petrosazehmihan",
+      color: "#ED145B",
+      svg: "aparat"
+    }
   ];
 
   const iranianSocial = [
-    { name: "بله", url: "https://ble.ir/psmvalve", color: "#00A650", svg: "bale" },
-    { name: "روبیکا", url: "https://rubika.ir/psmvalve", color: "#7B2CBF", svg: "rubika" },
-    { name: "ایتا", url: "https://eitaa.com/psmvalve", color: "#F5A623", svg: "eitaa" }
+    {
+      name: isFa ? "بله" : "Bale",
+      url: "https://ble.ir/psm_commercial",
+      handle: messengers.bale,
+      color: "#00A650",
+      svg: "bale"
+    },
+    {
+      name: isFa ? "روبیکا" : "Rubika",
+      url: "https://rubika.ir/Psm_commercial",
+      handle: messengers.rubika,
+      color: "#7B2CBF",
+      svg: "rubika"
+    },
+    {
+      name: isFa ? "ایتا" : "Eitaa",
+      url: "https://eitaa.com/Psm_commercial",
+      handle: messengers.eita,
+      color: "#F5A623",
+      svg: "eitaa"
+    }
   ];
 
   return (
     <div style={{ background: "var(--bg)" }}>
-      {/* Hero */}
+      {/* ============ Hero ============ */}
       <section style={{
         background: "linear-gradient(135deg, #0F1114 0%, #1F2124 50%, #3A3D42 100%)",
         padding: "60px 0 80px",
@@ -145,23 +270,28 @@ export default function ContactClient({ dict, settings, locale }) {
 
         <div className="container-x" style={{ position: "relative", zIndex: 1 }}>
           <div className="text-center max-w-3xl mx-auto">
-            <span className="chip" style={{ background: "rgba(255, 255, 255, 0.1)", borderColor: "rgba(245, 197, 24, 0.4)", color: "#F5C518" }}>
+            <span className="chip" style={{
+              background: "rgba(255, 255, 255, 0.1)",
+              borderColor: "rgba(245, 197, 24, 0.4)",
+              color: "#F5C518"
+            }}>
               {L.badge}
             </span>
             <h1 className="section-title mt-4" style={{ color: "#FFFFFF" }}>
               <span className="heading-gold">{L.title1} {L.title2}</span>
             </h1>
-            <p className="mt-5 text-base leading-8 max-w-2xl mx-auto" style={{ color: "rgba(241, 243, 245, 0.75)" }}>
+            <p className="mt-5 text-base leading-8 max-w-2xl mx-auto"
+              style={{ color: "rgba(241, 243, 245, 0.75)" }}>
               {L.subtitle}
             </p>
           </div>
         </div>
       </section>
 
-      {/* Main content */}
+      {/* ============ Main content ============ */}
       <section className="container-x py-16">
         <div className="grid lg:grid-cols-5 gap-8">
-          {/* Form (bigger) */}
+          {/* Form */}
           <div className="lg:col-span-3">
             <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{
@@ -180,8 +310,8 @@ export default function ContactClient({ dict, settings, locale }) {
                     color: "#FFFFFF"
                   }}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
                     </svg>
                   </div>
                   <div>
@@ -203,8 +333,7 @@ export default function ContactClient({ dict, settings, locale }) {
 
           {/* Info sidebar */}
           <div className="lg:col-span-2 space-y-4">
-
-            {/* ALL info in ONE card */}
+            {/* Info card */}
             <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{
                 padding: "16px 20px",
@@ -221,8 +350,8 @@ export default function ContactClient({ dict, settings, locale }) {
                   color: "#C9950D"
                 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text)" }}>
@@ -235,7 +364,7 @@ export default function ContactClient({ dict, settings, locale }) {
                   const inner = (
                     <div style={{
                       display: "flex",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       gap: 12,
                       padding: "13px 18px",
                       borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none",
@@ -268,17 +397,30 @@ export default function ContactClient({ dict, settings, locale }) {
                           fontSize: 13,
                           fontWeight: 800,
                           color: "var(--text)",
-                          lineHeight: 1.45,
+                          lineHeight: 1.5,
                           wordBreak: "break-word",
                           direction: (r.icon === "phone" || r.icon === "mobile" || r.icon === "fax" || r.icon === "mail") ? "ltr" : "inherit",
-                          textAlign: (r.icon === "phone" || r.icon === "mobile" || r.icon === "fax" || r.icon === "mail") ? "right" : "inherit"
+                          textAlign: (r.icon === "phone" || r.icon === "mobile" || r.icon === "fax" || r.icon === "mail") ? (isFa ? "right" : "left") : "inherit"
                         }}>
                           {r.value}
                         </div>
+                        {r.subvalue && (
+                          <div style={{
+                            fontSize: 10.5,
+                            fontWeight: 600,
+                            color: "var(--text-muted)",
+                            marginTop: 3,
+                            fontFamily: "monospace",
+                            direction: "ltr",
+                            textAlign: isFa ? "right" : "left"
+                          }}>
+                            {r.subvalue}
+                          </div>
+                        )}
                       </div>
                       {r.link && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                          <polyline points="9 18 15 12 9 6"/>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 10 }}>
+                          <polyline points="9 18 15 12 9 6" />
                         </svg>
                       )}
                     </div>
@@ -307,12 +449,12 @@ export default function ContactClient({ dict, settings, locale }) {
             </div>
 
             {/* Social card */}
-            <div className="card-glass p-5">
+            <div className="card-glass" style={{ padding: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", marginBottom: 12 }}>
                 {L.socialTitle}
               </div>
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
                 {socialLinks.map(function(s) {
                   return <SocialIcon key={s.name} {...s} />;
                 })}
@@ -337,13 +479,42 @@ export default function ContactClient({ dict, settings, locale }) {
                   </div>
                 </>
               )}
-            </div>
 
+              {/* Website link */}
+              <div style={{
+                marginTop: 16,
+                paddingTop: 14,
+                borderTop: "1px dashed var(--border)",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10
+              }}>
+                <span>{L.websiteLabel}</span>
+                <a
+                  href={COMPANY.social.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#C9950D",
+                    fontFamily: "monospace",
+                    direction: "ltr",
+                    textDecoration: "none",
+                    fontWeight: 900
+                  }}
+                >
+                  www.psm-valve.com
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Map */}
+      {/* ============ Map ============ */}
       <section className="container-x pb-16">
         <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{
@@ -366,8 +537,8 @@ export default function ContactClient({ dict, settings, locale }) {
                 color: "#FFFFFF"
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
                 </svg>
               </div>
               <div>
@@ -375,7 +546,7 @@ export default function ContactClient({ dict, settings, locale }) {
                   {L.mapTitle}
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>
-                  {address}
+                  {addressOffice}
                 </div>
               </div>
             </div>
@@ -402,14 +573,18 @@ export default function ContactClient({ dict, settings, locale }) {
   );
 }
 
+// ============================================================
+// ICONS
+// ============================================================
 function InfoIcon({ name }) {
   const icons = {
-    phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>,
-    mobile: <><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></>,
-    fax: <><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></>,
-    mail: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>,
-    map: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></>,
-    clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>
+    phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />,
+    mobile: <><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><line x1="12" y1="18" x2="12.01" y2="18" /></>,
+    fax: <><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></>,
+    mail: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></>,
+    map: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></>,
+    factory: <><path d="M2 20h20" /><path d="M4 20V8l6 4V8l6 4V8l4 3v9" /><path d="M9 14v6" /><path d="M15 14v6" /></>,
+    clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>
   };
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -418,49 +593,47 @@ function InfoIcon({ name }) {
   );
 }
 
-function SocialIcon({ name, url, color, svg }) {
+function SocialIcon({ name, url, color, svg, handle }) {
+  const [hovered, setHovered] = React.useState(false);
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={name}
-      style={{
-        width: 42,
-        height: 42,
-        borderRadius: 12,
-        display: "grid",
-        placeItems: "center",
-        background: color + "15",
-        border: "1px solid " + color + "40",
-        color: color,
-        textDecoration: "none",
-        transition: "all 0.18s"
-      }}
-      onMouseEnter={function(e) {
-        e.currentTarget.style.background = color;
-        e.currentTarget.style.color = "#FFFFFF";
-        e.currentTarget.style.transform = "translateY(-3px)";
-        e.currentTarget.style.boxShadow = "0 6px 16px " + color + "50";
-      }}
-      onMouseLeave={function(e) {
-        e.currentTarget.style.background = color + "15";
-        e.currentTarget.style.color = color;
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "none";
-      }}
-    >
-      <SocialSVG name={svg} />
-    </a>
+    <div style={{ position: "relative" }}>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={name + (handle ? " — " + handle : "")}
+        onMouseEnter={function() { setHovered(true); }}
+        onMouseLeave={function() { setHovered(false); }}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          display: "grid",
+          placeItems: "center",
+          background: hovered ? color : color + "15",
+          border: "1px solid " + color + "40",
+          color: hovered ? "#FFFFFF" : color,
+          textDecoration: "none",
+          transition: "all 0.18s",
+          transform: hovered ? "translateY(-3px)" : "translateY(0)",
+          boxShadow: hovered ? "0 8px 20px " + color + "50" : "none"
+        }}
+      >
+        <SocialSVG name={svg} />
+      </a>
+    </div>
   );
 }
 
 function IranianSocial({ name, url, color, svg }) {
+  const [hovered, setHovered] = React.useState(false);
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
+      onMouseEnter={function() { setHovered(true); }}
+      onMouseLeave={function() { setHovered(false); }}
       style={{
         height: 38,
         padding: "0 12px",
@@ -468,24 +641,15 @@ function IranianSocial({ name, url, color, svg }) {
         display: "flex",
         alignItems: "center",
         gap: 6,
-        background: color + "15",
+        background: hovered ? color : color + "15",
         border: "1px solid " + color + "40",
-        color: color,
+        color: hovered ? "#FFFFFF" : color,
         textDecoration: "none",
         transition: "all 0.18s",
         fontSize: 11.5,
         fontWeight: 900,
-        fontFamily: "inherit"
-      }}
-      onMouseEnter={function(e) {
-        e.currentTarget.style.background = color;
-        e.currentTarget.style.color = "#FFFFFF";
-        e.currentTarget.style.transform = "translateY(-2px)";
-      }}
-      onMouseLeave={function(e) {
-        e.currentTarget.style.background = color + "15";
-        e.currentTarget.style.color = color;
-        e.currentTarget.style.transform = "translateY(0)";
+        fontFamily: "inherit",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)"
       }}
     >
       <SocialSVG name={svg} size={13} />
@@ -497,14 +661,15 @@ function IranianSocial({ name, url, color, svg }) {
 function SocialSVG({ name, size }) {
   const s = size || 18;
   const icons = {
-    instagram: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></>,
-    whatsapp: <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="currentColor" stroke="none"/>,
-    telegram: <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="currentColor" stroke="none"/>,
-    linkedin: <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="currentColor" stroke="none"/>,
-    youtube: <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="currentColor" stroke="none"/>,
-    bale: <><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M10 17l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></>,
-    rubika: <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.18L18 8v8l-6 3.82L6 16V8l6-3.82zM12 6l-4 2.5v7l4 2.5 4-2.5v-7L12 6z" fill="currentColor" stroke="none"/>,
-    eitaa: <><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm3.5 6.5l-4 4c-.2.2-.5.2-.7 0l-2-2c-.2-.2-.2-.5 0-.7s.5-.2.7 0l1.65 1.65 3.65-3.65c.2-.2.5-.2.7 0s.2.5 0 .7z"/></>
+    instagram: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></>,
+    whatsapp: <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="currentColor" stroke="none" />,
+    aparat: <><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none" /><path d="M10 8.5v7l6-3.5-6-3.5z" fill="#FFFFFF" stroke="none" /></>,
+    telegram: <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="currentColor" stroke="none" />,
+    linkedin: <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="currentColor" stroke="none" />,
+    youtube: <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="currentColor" stroke="none" />,
+    bale: <><circle cx="12" cy="12" r="10" opacity="0.25" /><path d="M10 17l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></>,
+    rubika: <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.18L18 8v8l-6 3.82L6 16V8l6-3.82zM12 6l-4 2.5v7l4 2.5 4-2.5v-7L12 6z" fill="currentColor" stroke="none" />,
+    eitaa: <><circle cx="12" cy="12" r="10" opacity="0.25" /><path d="M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm3.5 6.5l-4 4c-.2.2-.5.2-.7 0l-2-2c-.2-.2-.2-.5 0-.7s.5-.2.7 0l1.65 1.65 3.65-3.65c.2-.2.5-.2.7 0s.2.5 0 .7z" /></>
   };
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
