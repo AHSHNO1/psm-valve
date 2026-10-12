@@ -1,0 +1,34 @@
+[
+  {
+    "id": "news-welcome",
+    "slug": "welcome",
+    "title": {
+      "fa": "به وب‌سایت جدید پترو سازه میهن خوش آمدید",
+      "en": "Welcome to the new PSM Valve website",
+      "ar": "مرحبًا بكم في موقعنا الجديد",
+      "ru": "Добро пожаловать на новый сайт"
+    },
+    "excerpt": {
+      "fa": "نسخه جدید وب‌سایت با طراحی مدرن و امکانات تازه راه‌اندازی شد.",
+      "en": "New website launched with modern design.",
+      "ar": "تم إطلاق الموقع الجديد.",
+      "ru": "Запущен новый сайт."
+    },
+    "content": {
+      "fa": "",
+      "en": "",
+      "ar": "",
+      "ru": ""
+    },
+    "category": {
+      "fa": "اخبار شرکت",
+      "en": "Company News",
+      "ar": "أخبار الشركة",
+      "ru": "Новости"
+    },
+    "image": "",
+    "date": "1404/07/15",
+    "active": true,
+    "order": 1
+  }
+]

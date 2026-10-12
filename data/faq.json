@@ -1,0 +1,140 @@
+[
+  {
+    "id": "faq-1",
+    "category": {
+      "fa": "محصولات",
+      "en": "Products",
+      "ar": "المنتجات",
+      "ru": "Продукты"
+    },
+    "question": {
+      "fa": "چه نوع شیرهای کنترلی تولید می‌کنید؟",
+      "en": "What types of control valves do you produce?",
+      "ar": "ما أنواع صمامات التحكم التي تنتجها؟",
+      "ru": "Какие типы регулирующих клапанов вы производите?"
+    },
+    "answer": {
+      "fa": "ما شیرهای کنترلی توپی، کروی سگمنتی، کرایوژنیک و انواع با پوشش HVOF تولید می‌کنیم.",
+      "en": "We produce ball control valves, segmented ball valves, cryogenic valves, and HVOF coated types.",
+      "ar": "ننتج صمامات التحكم الكروية والمجزأة والمبردة.",
+      "ru": "Мы производим шаровые, сегментные, криогенные клапаны и с покрытием HVOF."
+    },
+    "order": 1,
+    "active": true
+  },
+  {
+    "id": "faq-2",
+    "category": {
+      "fa": "محصولات",
+      "en": "Products",
+      "ar": "المنتجات",
+      "ru": "Продукты"
+    },
+    "question": {
+      "fa": "حداکثر سایز و فشار کاری شیرها چقدر است؟",
+      "en": "What is the maximum size and pressure?",
+      "ar": "ما هو الحد الأقصى للحجم والضغط؟",
+      "ru": "Каков максимальный размер и давление?"
+    },
+    "answer": {
+      "fa": "شیرهای ما از سایز ۱ اینچ تا ۲۴ اینچ و فشار کاری تا ANSI 2500 تولید می‌شوند.",
+      "en": "Our valves are from 1\" to 24\" with pressure ratings up to ANSI 2500.",
+      "ar": "صماماتنا من 1 بوصة إلى 24 بوصة وفئات ضغط تصل إلى ANSI 2500.",
+      "ru": "Наши клапаны от 1 до 24 дюймов с давлением до ANSI 2500."
+    },
+    "order": 2,
+    "active": true
+  },
+  {
+    "id": "faq-3",
+    "category": {
+      "fa": "سفارش و قیمت",
+      "en": "Ordering",
+      "ar": "الطلب",
+      "ru": "Заказ"
+    },
+    "question": {
+      "fa": "زمان تحویل سفارشات چقدر است؟",
+      "en": "What is the delivery time?",
+      "ar": "ما هي مدة التسليم؟",
+      "ru": "Каково время доставки?"
+    },
+    "answer": {
+      "fa": "بسته به نوع محصول و حجم سفارش، معمولاً بین ۴ تا ۱۲ هفته.",
+      "en": "Depending on product type and order volume, typically 4 to 12 weeks.",
+      "ar": "حسب نوع المنتج وحجم الطلب، عادة من 4 إلى 12 أسبوعًا.",
+      "ru": "В зависимости от типа и объема заказа, обычно от 4 до 12 недель."
+    },
+    "order": 3,
+    "active": true
+  },
+  {
+    "id": "faq-4",
+    "category": {
+      "fa": "خدمات",
+      "en": "Services",
+      "ar": "الخدمات",
+      "ru": "Услуги"
+    },
+    "question": {
+      "fa": "خدمات HVOF دقیقاً چیست؟",
+      "en": "What exactly is HVOF coating?",
+      "ar": "ما هو طلاء HVOF بالضبط؟",
+      "ru": "Что такое покрытие HVOF?"
+    },
+    "answer": {
+      "fa": "پوشش‌دهی HVOF (High Velocity Oxy-Fuel) یک روش پاشش حرارتی است که با سرعت بالا ذرات کاربید تنگستن را روی سطح می‌نشاند و مقاومت سایشی فوق‌العاده‌ای ایجاد می‌کند.",
+      "en": "HVOF (High Velocity Oxy-Fuel) is a thermal spray method that deposits tungsten carbide particles at high speed, creating exceptional wear resistance.",
+      "ar": "HVOF هي طريقة رش حراري تودع جزيئات كربيد التنغستن بسرعة عالية.",
+      "ru": "HVOF — метод термического напыления, наносящий частицы карбида вольфрама с высокой скоростью."
+    },
+    "order": 4,
+    "active": true
+  },
+  {
+    "id": "faq-5",
+    "category": {
+      "fa": "خدمات",
+      "en": "Services",
+      "ar": "الخدمات",
+      "ru": "Услуги"
+    },
+    "question": {
+      "fa": "آیا خدمات در محل نصب انجام می‌دهید؟",
+      "en": "Do you provide on-site services?",
+      "ar": "هل تقدمون خدمات في الموقع؟",
+      "ru": "Предоставляете ли вы выездные услуги?"
+    },
+    "answer": {
+      "fa": "بله، تیم فنی ما برای کالیبراسیون، تعمیر و راه‌اندازی به محل نصب اعزام می‌شود.",
+      "en": "Yes, our technical team is dispatched for calibration, repair and commissioning.",
+      "ar": "نعم، فريقنا الفني يُرسل للمعايرة والإصلاح.",
+      "ru": "Да, наша техническая команда выезжает для калибровки, ремонта и пусконаладки."
+    },
+    "order": 5,
+    "active": true
+  },
+  {
+    "id": "faq-6",
+    "category": {
+      "fa": "گارانتی",
+      "en": "Warranty",
+      "ar": "الضمان",
+      "ru": "Гарантия"
+    },
+    "question": {
+      "fa": "گارانتی محصولات چقدر است؟",
+      "en": "What is the warranty period?",
+      "ar": "ما هي فترة الضمان؟",
+      "ru": "Каков гарантийный срок?"
+    },
+    "answer": {
+      "fa": "محصولات ما بین ۱۲ تا ۲۴ ماه گارانتی دارند. گارانتی شامل قطعات و خدمات می‌شود.",
+      "en": "Our products have a 12 to 24 month warranty covering parts and services.",
+      "ar": "منتجاتنا لديها ضمان من 12 إلى 24 شهرًا.",
+      "ru": "Наши продукты имеют гарантию от 12 до 24 месяцев."
+    },
+    "order": 6,
+    "active": true
+  }
+]

@@ -1,0 +1,95 @@
+[
+  {
+    "id": "proj-1",
+    "title": {
+      "fa": "پروژه پالایشگاه نمونه",
+      "en": "Sample Refinery Project",
+      "ar": "مشروع مصفاة نموذجية",
+      "ru": "Проект НПЗ"
+    },
+    "client": {
+      "fa": "پالایشگاه نمونه",
+      "en": "Sample Refinery",
+      "ar": "مصفاة نموذجية",
+      "ru": "НПЗ"
+    },
+    "industry": {
+      "fa": "نفت و گاز",
+      "en": "Oil & Gas",
+      "ar": "النفط والغاز",
+      "ru": "Нефть и газ"
+    },
+    "description": {
+      "fa": "تأمین ۵۰ عدد شیر کنترلی توپی با پوشش HVOF برای خطوط انتقال محصولات.",
+      "en": "Supply of 50 ball control valves with HVOF coating for product transfer lines.",
+      "ar": "توريد 50 صمام تحكم كروي مع طلاء HVOF.",
+      "ru": "Поставка 50 шаровых регулирующих клапанов с покрытием HVOF."
+    },
+    "image": "",
+    "year": "1403",
+    "order": 1,
+    "active": true
+  },
+  {
+    "id": "proj-2",
+    "title": {
+      "fa": "پروژه پتروشیمی نمونه",
+      "en": "Sample Petrochemical Project",
+      "ar": "مشروع بتروكيماوي نموذجي",
+      "ru": "Нефтехимический проект"
+    },
+    "client": {
+      "fa": "پتروشیمی نمونه",
+      "en": "Sample Petrochemical",
+      "ar": "بتروكيماويات",
+      "ru": "Нефтехимия"
+    },
+    "industry": {
+      "fa": "پتروشیمی",
+      "en": "Petrochemical",
+      "ar": "البتروكيماويات",
+      "ru": "Нефтехимия"
+    },
+    "description": {
+      "fa": "تعمیر و بازسازی ۲۰ عدد شیر کنترلی فرسوده با تکنولوژی HVOF.",
+      "en": "Repair and refurbishment of 20 worn control valves with HVOF technology.",
+      "ar": "إصلاح وتجديد 20 صمام تحكم بتقنية HVOF.",
+      "ru": "Ремонт и восстановление 20 изношенных клапанов с технологией HVOF."
+    },
+    "image": "",
+    "year": "1402",
+    "order": 2,
+    "active": true
+  },
+  {
+    "id": "proj-3",
+    "title": {
+      "fa": "پروژه خط انتقال گاز",
+      "en": "Gas Pipeline Project",
+      "ar": "مشروع خط نقل الغاز",
+      "ru": "Газопроводный проект"
+    },
+    "client": {
+      "fa": "شرکت گاز منطقه‌ای",
+      "en": "Regional Gas Company",
+      "ar": "شركة الغاز الإقليمية",
+      "ru": "Региональная газовая компания"
+    },
+    "industry": {
+      "fa": "گاز",
+      "en": "Gas",
+      "ar": "الغاز",
+      "ru": "Газ"
+    },
+    "description": {
+      "fa": "طراحی و ساخت شیرهای کنترلی سگمنتی برای خطوط اصلی انتقال گاز.",
+      "en": "Design and manufacture of segmented control valves for main gas transmission lines.",
+      "ar": "تصميم وتصنيع صمامات تحكم مجزأة.",
+      "ru": "Проектирование и производство сегментных клапанов."
+    },
+    "image": "",
+    "year": "1402",
+    "order": 3,
+    "active": true
+  }
+]

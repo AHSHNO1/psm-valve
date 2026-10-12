@@ -1,0 +1,128 @@
+[
+  {
+    "slug": "design-manufacturing",
+    "icon": "Cog",
+    "name": {
+      "fa": "طراحی و ساخت شیر",
+      "en": "Valve Design & Manufacturing",
+      "ar": "تصميم وتصنيع",
+      "ru": "Проектирование"
+    },
+    "short": {
+      "fa": "طراحی و ساخت شیرهای کنترلی با استانداردهای جهانی",
+      "en": "Design and manufacturing to global standards",
+      "ar": "تصميم وفق المعايير العالمية",
+      "ru": "Производство по мировым стандартам"
+    },
+    "active": true,
+    "order": 1
+  },
+  {
+    "slug": "calibration",
+    "icon": "Gauge",
+    "name": {
+      "fa": "کالیبراسیون شیر",
+      "en": "Valve Calibration",
+      "ar": "معايرة الصمامات",
+      "ru": "Калибровка"
+    },
+    "short": {
+      "fa": "کالیبراسیون دقیق در محل و کارخانه",
+      "en": "Precise on-site and factory calibration",
+      "ar": "معايرة دقيقة",
+      "ru": "Точная калибровка"
+    },
+    "active": true,
+    "order": 2
+  },
+  {
+    "slug": "repair",
+    "icon": "Wrench",
+    "name": {
+      "fa": "تعمیر و بازسازی",
+      "en": "Repair & Refurbishment",
+      "ar": "الإصلاح والتجديد",
+      "ru": "Ремонт"
+    },
+    "short": {
+      "fa": "تعمیر کامل شیرهای کنترلی فرسوده",
+      "en": "Complete repair of worn control valves",
+      "ar": "إصلاح كامل",
+      "ru": "Полный ремонт"
+    },
+    "active": true,
+    "order": 3
+  },
+  {
+    "slug": "ball-grinding",
+    "icon": "Circle",
+    "name": {
+      "fa": "سنگ‌زنی توپی",
+      "en": "Ball Grinding",
+      "ar": "طحن الكرة",
+      "ru": "Шлифовка шара"
+    },
+    "short": {
+      "fa": "سنگ‌زنی دقیق با دقت میکرون",
+      "en": "Precision ball grinding with micron accuracy",
+      "ar": "طحن دقيق",
+      "ru": "Точная шлифовка"
+    },
+    "active": true,
+    "order": 4
+  },
+  {
+    "slug": "hvf-coating",
+    "icon": "Flame",
+    "name": {
+      "fa": "پوشش‌دهی HVOF",
+      "en": "HVOF Coating",
+      "ar": "طلاء HVOF",
+      "ru": "Покрытие HVOF"
+    },
+    "short": {
+      "fa": "پوشش کاربید تنگستن برای مقاومت سایشی",
+      "en": "Tungsten carbide coating for wear resistance",
+      "ar": "طلاء كربيد التنغستن",
+      "ru": "Покрытие карбидом вольфрама"
+    },
+    "active": true,
+    "order": 5
+  },
+  {
+    "slug": "field-services",
+    "icon": "Truck",
+    "name": {
+      "fa": "خدمات در محل",
+      "en": "Field Services",
+      "ar": "الخدمات الميدانية",
+      "ru": "Выездные услуги"
+    },
+    "short": {
+      "fa": "اعزام تیم فنی برای بازرسی و راه‌اندازی",
+      "en": "Field team for inspection and commissioning",
+      "ar": "فريق ميداني",
+      "ru": "Выездная команда"
+    },
+    "active": true,
+    "order": 6
+  },
+  {
+    "slug": "lop-test",
+    "icon": "Gauge",
+    "name": {
+      "fa": "تست میدانی LOP شیرهای کنترلی",
+      "en": "LOP Field Test for Control Valves",
+      "ar": "اختبار LOP الميداني لصمامات التحكم",
+      "ru": "Полевые испытания LOP для регулирующих клапанов"
+    },
+    "short": {
+      "fa": "تست دقیق عملکرد شیرهای کنترلی در محل نصب با تجهیزات کالیبره",
+      "en": "Precise field testing of control valve performance at installation with calibrated equipment",
+      "ar": "اختبار ميداني دقيق لأداء صمامات التحكم بتجهيزات معايرة",
+      "ru": "Точные полевые испытания регулирующих клапанов с калиброванным оборудованием"
+    },
+    "active": true,
+    "order": 7
+  }
+]

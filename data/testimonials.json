@@ -1,0 +1,52 @@
+[
+  {
+    "id": "test-1",
+    "name": {
+      "fa": "شرکت پتروشیمی نمونه",
+      "en": "Sample Petrochemical Co.",
+      "ar": "شركة بتروكيماويات",
+      "ru": "Нефтехимическая компания"
+    },
+    "role": {
+      "fa": "مدیر فنی",
+      "en": "Technical Manager",
+      "ar": "المدير الفني",
+      "ru": "Технический директор"
+    },
+    "text": {
+      "fa": "کیفیت شیرهای کنترلی پترو سازه میهن فراتر از انتظار ما بود. پشتیبانی فنی سریع و دقیق.",
+      "en": "The quality of PSM control valves exceeded our expectations. Fast and precise technical support.",
+      "ar": "جودة صمامات التحكم تجاوزت توقعاتنا.",
+      "ru": "Качество регулирующих клапанов превзошло наши ожидания."
+    },
+    "rating": 5,
+    "image": "",
+    "active": true,
+    "order": 1
+  },
+  {
+    "id": "test-2",
+    "name": {
+      "fa": "پالایشگاه نمونه",
+      "en": "Sample Refinery",
+      "ar": "مصفاة نموذجية",
+      "ru": "Пример НПЗ"
+    },
+    "role": {
+      "fa": "مدیر پروژه",
+      "en": "Project Manager",
+      "ar": "مدير المشروع",
+      "ru": "Руководитель проекта"
+    },
+    "text": {
+      "fa": "همکاری با تیم پترو سازه میهن تجربه‌ای حرفه‌ای بود. تعهد به زمان‌بندی و کیفیت تحویل عالی بود.",
+      "en": "Working with PSM team was a professional experience. Excellent commitment to schedule and quality.",
+      "ar": "كان العمل مع فريق احترافياً.",
+      "ru": "Работа с командой была профессиональной."
+    },
+    "rating": 5,
+    "image": "",
+    "active": true,
+    "order": 2
+  }
+]

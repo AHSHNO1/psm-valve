@@ -1,0 +1,27 @@
+[
+  {
+    "id": "slide-1",
+    "title": {
+      "fa": "مهندسی دقیق شیرهای کنترلی",
+      "en": "Precision Control Valve Engineering",
+      "ar": "هندسة دقيقة لصمامات التحكم",
+      "ru": "Точная инженерия регулирующих клапанов"
+    },
+    "subtitle": {
+      "fa": "طراحی و ساخت با استانداردهای جهانی",
+      "en": "Design & manufacturing to global standards",
+      "ar": "تصميم وتصنيع وفق المعايير العالمية",
+      "ru": "Проектирование по мировым стандартам"
+    },
+    "image": "",
+    "ctaText": {
+      "fa": "مشاهده محصولات",
+      "en": "View Products",
+      "ar": "عرض المنتجات",
+      "ru": "Смотреть продукты"
+    },
+    "ctaHref": "/products",
+    "order": 1,
+    "active": true
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "p-1",
+    "name": {
+      "fa": "شریک تجاری ۱",
+      "en": "Business Partner 1",
+      "ar": "شريك",
+      "ru": "Партнер"
+    },
+    "logo": "",
+    "url": "#",
+    "active": true,
+    "order": 1
+  },
+  {
+    "id": "p-2",
+    "name": {
+      "fa": "شریک تجاری ۲",
+      "en": "Business Partner 2",
+      "ar": "شريك",
+      "ru": "Партнер"
+    },
+    "logo": "",
+    "url": "#",
+    "active": true,
+    "order": 2
+  },
+  {
+    "id": "p-3",
+    "name": {
+      "fa": "شریک تجاری ۳",
+      "en": "Business Partner 3",
+      "ar": "شريك",
+      "ru": "Партнер"
+    },
+    "logo": "",
+    "url": "#",
+    "active": true,
+    "order": 3
+  },
+  {
+    "id": "p-4",
+    "name": {
+      "fa": "شریک تجاری ۴",
+      "en": "Business Partner 4",
+      "ar": "شريك",
+      "ru": "Партнер"
+    },
+    "logo": "",
+    "url": "#",
+    "active": true,
+    "order": 4
+  },
+  {
+    "id": "p-5",
+    "name": {
+      "fa": "شریک تجاری ۵",
+      "en": "Business Partner 5",
+      "ar": "شريك",
+      "ru": "Партнер"
+    },
+    "logo": "",
+    "url": "#",
+    "active": true,
+    "order": 5
+  },
+  {
+    "id": "p-6",
+    "name": {
+      "fa": "شریک تجاری ۶",
+      "en": "Business Partner 6",
+      "ar": "شريك",
+      "ru": "Партнер"
+    },
+    "logo": "",
+    "url": "#",
+    "active": true,
+    "order": 6
+  }
+]

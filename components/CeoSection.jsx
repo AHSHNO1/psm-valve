@@ -1,0 +1,349 @@
+"use client";
+import { motion } from "framer-motion";
+import { Quote, User, Award, BadgeCheck, FlaskConical } from "lucide-react";
+
+function pick(obj, locale) {
+  if (!obj) return "";
+  if (typeof obj === "string") return obj;
+  return obj[locale] || obj.en || obj.fa || "";
+}
+
+export default function CeoSection({ ceo, locale, certificates }) {
+  if (!ceo || !ceo.name) return null;
+
+  const name = pick(ceo.name, locale);
+  const role = pick(ceo.role, locale);
+  const bio = pick(ceo.bio, locale);
+  const message = pick(ceo.message, locale);
+
+  const labels = {
+    fa: {
+      badge: "مدیریت ارشد",
+      bioTitle: "معرفی مدیرعامل",
+      msgTitle: "سخن مدیرعامل",
+      knowledge: "شرکت دانش‌بنیان",
+      knowledgeType: "تولیدی نوع یک",
+      knowledgeDesc: "تأیید شده توسط معاونت علمی و فناوری ریاست جمهوری",
+      standards: "گواهینامه‌ها و استانداردهای بین‌المللی",
+      standardsSub: "اعتبار جهانی محصولات ما"
+    },
+    en: {
+      badge: "Leadership",
+      bioTitle: "About the CEO",
+      msgTitle: "CEO Message",
+      knowledge: "Knowledge-Based Company",
+      knowledgeType: "Production Type I",
+      knowledgeDesc: "Approved by Vice Presidency for Science & Technology",
+      standards: "International Certificates & Standards",
+      standardsSub: "Global recognition of our products"
+    },
+    ar: {
+      badge: "القيادة",
+      bioTitle: "عن الرئيس التنفيذي",
+      msgTitle: "رسالة الرئيس",
+      knowledge: "شركة قائمة على المعرفة",
+      knowledgeType: "إنتاجية النوع الأول",
+      knowledgeDesc: "معتمدة من نائب رئيس العلوم والتكنولوجيا",
+      standards: "الشهادات والمعايير الدولية",
+      standardsSub: "الاعتراف العالمي بمنتجاتنا"
+    },
+    ru: {
+      badge: "Руководство",
+      bioTitle: "О директоре",
+      msgTitle: "Слово директора",
+      knowledge: "Наукоемкая компания",
+      knowledgeType: "Производство тип I",
+      knowledgeDesc: "Одобрено Вице-президентом по науке и технологиям",
+      standards: "Международные сертификаты и стандарты",
+      standardsSub: "Мировое признание нашей продукции"
+    }
+  };
+  const L = labels[locale] || labels.en;
+
+  const activeCerts = (certificates || []).filter(function(c) { return c.active !== false; });
+
+  return (
+    <section className="container-x py-14 sm:py-20">
+      <span className="chip">{L.badge}</span>
+
+      {/* Two-column CEO section */}
+      <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 mt-5 items-start">
+        {/* LEFT: Photo */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="lg:col-span-2"
+        >
+          <div className="relative aspect-[4/5] rounded-3xl overflow-hidden w-full"
+            style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}>
+            {ceo.photo ? (
+              <img src={ceo.photo} alt={name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full grid place-items-center"
+                style={{ background: "linear-gradient(135deg, var(--bg-soft), var(--bg-card))" }}>
+                <User size={80} style={{ color: "var(--text-muted)" }} />
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 p-5"
+              style={{ background: "linear-gradient(to top, rgba(15, 17, 20, 0.9), transparent)" }}>
+              <div className="font-black text-lg text-white">{name}</div>
+              <div className="text-sm text-silver-300 mt-0.5">{role}</div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* RIGHT: Bio + Message */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="lg:col-span-3 space-y-5"
+        >
+          <div className="card-glass p-6 sm:p-8">
+            <h3 className="font-black text-lg sm:text-xl mb-4" style={{ color: "var(--gold)" }}>
+              {L.bioTitle}
+            </h3>
+            <p className="leading-8 text-sm sm:text-base" style={{ color: "var(--text-soft)" }}>
+              {bio}
+            </p>
+          </div>
+
+          {message && (
+            <div className="relative card-glass p-6 sm:p-8 overflow-hidden">
+              <Quote size={80} className="absolute top-4 left-4 opacity-10" style={{ color: "var(--gold)" }} />
+              <h3 className="font-black text-lg sm:text-xl mb-4 relative z-10" style={{ color: "var(--gold)" }}>
+                {L.msgTitle}
+              </h3>
+              <p className="leading-8 text-sm sm:text-base relative z-10 italic" style={{ color: "var(--text-soft)" }}>
+                «{message}»
+              </p>
+              <div className="mt-5 pt-5 relative z-10 flex items-center gap-3"
+                style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="w-10 h-1 rounded-full" style={{ background: "var(--gold)" }} />
+                <div>
+                  <div className="font-black text-sm" style={{ color: "var(--text)" }}>{name}</div>
+                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>{role}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ★ دانش‌بنیان ویژه — زیر سخن مدیرعامل */}
+          <div className="relative rounded-2xl p-6 overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #FFF9E6 0%, #FEF3C7 100%)",
+              border: "2px solid #E0A81A",
+              boxShadow: "0 12px 32px rgba(201, 149, 13, 0.20)"
+            }}>
+            {/* Decorative corner */}
+            <div style={{
+              position: "absolute",
+              top: -30,
+              left: -30,
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(224, 168, 26, 0.25), transparent 70%)",
+              filter: "blur(20px)"
+            }} />
+
+            <div className="relative flex items-start gap-5">
+              <div style={{
+                width: 72,
+                height: 72,
+                borderRadius: 20,
+                display: "grid",
+                placeItems: "center",
+                background: "linear-gradient(135deg, #E0A81A, #B8850A)",
+                color: "#FFFFFF",
+                flexShrink: 0,
+                boxShadow: "0 10px 24px rgba(201, 149, 13, 0.4)"
+              }}>
+                <FlaskConical size={36} strokeWidth={1.8} />
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <BadgeCheck size={18} style={{ color: "#B8850A" }} />
+                  <div style={{
+                    fontSize: 16,
+                    fontWeight: 900,
+                    color: "#8A6508",
+                    letterSpacing: "0.01em"
+                  }}>
+                    {L.knowledge}
+                  </div>
+                </div>
+
+                <div style={{
+                  display: "inline-block",
+                  padding: "6px 14px",
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #E0A81A, #B8850A)",
+                  color: "#FFFFFF",
+                  fontSize: 14,
+                  fontWeight: 900,
+                  marginBottom: 8,
+                  letterSpacing: "0.03em"
+                }}>
+                  {L.knowledgeType}
+                </div>
+
+                <div style={{
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: "#8A6508",
+                  lineHeight: 1.6
+                }}>
+                  {L.knowledgeDesc}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ★ Certificates as picture frames — big, side by side */}
+      {activeCerts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mt-16"
+        >
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
+              style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}>
+              <Award size={14} style={{ color: "var(--gold)" }} />
+              <span style={{ fontSize: 12, fontWeight: 900, color: "var(--text-soft)", letterSpacing: "0.05em" }}>
+                {L.standards}
+              </span>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 10, fontWeight: 600 }}>
+              {L.standardsSub}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+            {activeCerts.slice(0, 8).map(function(c, i) {
+              return (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06 }}
+                  className="group relative"
+                >
+                  {/* Picture frame */}
+                  <div style={{
+                    position: "relative",
+                    aspectRatio: "1",
+                    borderRadius: 16,
+                    padding: 12,
+                    background: "linear-gradient(135deg, #F8F9FB, #EEF1F6)",
+                    border: "3px solid #E0A81A",
+                    boxShadow: "0 8px 24px rgba(201, 149, 13, 0.15), inset 0 2px 6px rgba(0, 0, 0, 0.04)",
+                    transition: "all 0.3s",
+                    overflow: "hidden"
+                  }}>
+                    {/* Inner white frame */}
+                    <div style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: 10,
+                      background: "#FFFFFF",
+                      display: "grid",
+                      placeItems: "center",
+                      padding: 12,
+                      boxShadow: "inset 0 0 0 1px rgba(0, 0, 0, 0.05)"
+                    }}>
+                      {c.image ? (
+                        <img
+                          src={c.image}
+                          alt={pick(c.title, locale)}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
+                          }}
+                        />
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "0 8px" }}>
+                          <div style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 14,
+                            margin: "0 auto 10px",
+                            display: "grid",
+                            placeItems: "center",
+                            background: "linear-gradient(135deg, #E0A81A, #B8850A)",
+                            color: "#FFFFFF",
+                            boxShadow: "0 6px 16px rgba(201, 149, 13, 0.3)"
+                          }}>
+                            <Award size={26} strokeWidth={2} />
+                          </div>
+                          <div style={{
+                            fontSize: 12,
+                            fontWeight: 900,
+                            color: "var(--text)",
+                            lineHeight: 1.3
+                          }}>
+                            {pick(c.title, locale)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ribbon corner */}
+                    <div style={{
+                      position: "absolute",
+                      top: 0,
+                      insetInlineEnd: 0,
+                      width: 0,
+                      height: 0,
+                      borderStyle: "solid",
+                      borderWidth: "0 42px 42px 0",
+                      borderColor: "transparent " + "#E0A81A" + " transparent transparent",
+                      opacity: 0.9
+                    }} />
+                  </div>
+
+                  {/* Issuer label below */}
+                  <div style={{
+                    textAlign: "center",
+                    marginTop: 12,
+                    padding: "0 6px"
+                  }}>
+                    <div style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      color: "var(--text)",
+                      lineHeight: 1.35,
+                      marginBottom: 2
+                    }}>
+                      {pick(c.title, locale)}
+                    </div>
+                    <div style={{
+                      fontSize: 10,
+                      color: "var(--text-muted)",
+                      fontWeight: 600,
+                      lineHeight: 1.4
+                    }}>
+                      {pick(c.issuer, locale)}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </section>
+  );
+}
