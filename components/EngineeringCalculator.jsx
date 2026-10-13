@@ -7,7 +7,8 @@ import {
 } from "@/lib/sizing-advanced";
 import {
   Calculator, ArrowLeftRight, Copy, Check, Activity, RotateCcw,
-  Ruler, Zap, Sigma, Droplet, Wind, Gauge, Flame, Package, Scale, Box, Rocket, Bolt, Power, Beaker, Hand
+  Ruler, Zap, Sigma, Droplet, Wind, Gauge, Flame, Package, Scale, Box,
+  Rocket, Bolt, Power, Beaker, Hand, History, X, Clock
 } from "lucide-react";
 
 // ============================================================
@@ -62,8 +63,9 @@ function unitLabel(code, locale) {
 // ============================================================
 // MAIN
 // ============================================================
-export default function EngineeringCalculator({ locale }) {
+export default function EngineeringCalculator({ locale = "fa" }) {
   const [tab, setTab] = useState("converter");
+  const isFa = locale === "fa";
 
   const L = {
     fa: { converter: "تبدیل واحد", pipe: "محاسبات لوله", scientific: "ماشین‌حساب علمی" },
@@ -80,33 +82,18 @@ export default function EngineeringCalculator({ locale }) {
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      {/* Tab bar — big, prominent */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: 6,
-        marginBottom: 16,
-        padding: 5,
-        background: "var(--bg-soft)",
-        borderRadius: 14,
-        border: "1px solid var(--border)"
-      }}>
-        {tabs.map(function(t) {
-          const active = tab === t.id;
+      {/* Tab bar */}
+      <div className="eng-tab-bar">
+        {tabs.map(function (t) {
           const Icon = t.icon;
+          const active = tab === t.id;
           return (
-            <button key={t.id} onClick={function() { setTab(t.id); }}
-              style={{
-                padding: "12px 16px", borderRadius: 10, border: "none",
-                cursor: "pointer", fontFamily: "inherit",
-                fontSize: 13, fontWeight: 900,
-                background: active ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "transparent",
-                color: active ? "#FFFFFF" : "var(--text-soft)",
-                boxShadow: active ? "0 6px 16px rgba(201, 149, 13, 0.35)" : "none",
-                transition: "all 0.2s",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-              }}>
-              <Icon size={16} /> {t.label}
+            <button
+              key={t.id}
+              onClick={function () { setTab(t.id); }}
+              className={active ? "active" : ""}
+            >
+              <Icon size={16} /> <span>{t.label}</span>
             </button>
           );
         })}
@@ -115,12 +102,49 @@ export default function EngineeringCalculator({ locale }) {
       {tab === "converter" && <UnitConverter locale={locale} />}
       {tab === "pipe" && <PipeCalculator locale={locale} />}
       {tab === "scientific" && <ScientificCalculator locale={locale} />}
+
+      <style jsx global>{`
+        .eng-tab-bar {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          margin-bottom: 16px;
+          padding: 5px;
+          background: var(--bg-soft);
+          border-radius: 14px;
+          border: 1px solid var(--border);
+        }
+        .eng-tab-bar button {
+          padding: 12px 16px;
+          border-radius: 10px;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 900;
+          background: transparent;
+          color: var(--text-soft);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.2s;
+        }
+        .eng-tab-bar button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          box-shadow: 0 6px 16px rgba(201, 149, 13, 0.35);
+        }
+        @media (max-width: 640px) {
+          .eng-tab-bar button span { display: none; }
+        }
+      `}</style>
     </div>
   );
 }
 
 // ============================================================
-// UNIT CONVERTER — full width, bigger
+// UNIT CONVERTER
 // ============================================================
 function UnitConverter({ locale }) {
   const [category, setCategory] = useState("length");
@@ -130,8 +154,7 @@ function UnitConverter({ locale }) {
   const [copied, setCopied] = useState(false);
   const [convHistory, setConvHistory] = useState([]);
 
-  // Load history from localStorage
-  useEffect(function() {
+  useEffect(function () {
     if (typeof window === "undefined") return;
     try {
       const saved = localStorage.getItem("psm_conv_history");
@@ -140,8 +163,8 @@ function UnitConverter({ locale }) {
   }, []);
 
   function addToHistory(entry) {
-    setConvHistory(function(prev) {
-      const filtered = prev.filter(function(h) {
+    setConvHistory(function (prev) {
+      const filtered = prev.filter(function (h) {
         return !(h.from === entry.from && h.to === entry.to && h.value === entry.value);
       });
       const next = [entry].concat(filtered).slice(0, 8);
@@ -156,7 +179,7 @@ function UnitConverter({ locale }) {
     ? ["C", "F", "K"]
     : Object.keys(UNIT_CONVERTERS[category].units);
 
-  const activeCat = CATEGORIES.find(function(c) { return c.id === category; });
+  const activeCat = CATEGORIES.find(function (c) { return c.id === category; });
 
   function changeCategory(cat) {
     setCategory(cat);
@@ -178,7 +201,7 @@ function UnitConverter({ locale }) {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(formatted);
       setCopied(true);
-      setTimeout(function() { setCopied(false); }, 1500);
+      setTimeout(function () { setCopied(false); }, 1500);
       addToHistory({
         id: Date.now(),
         from: fromUnit,
@@ -191,61 +214,24 @@ function UnitConverter({ locale }) {
   }
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "220px 1fr",
-      gap: 14
-    }} className="conv-layout">
-
-      {/* Category picker — tile grid */}
-      <div style={{
-        background: "#FFFFFF",
-        border: "1px solid var(--border)",
-        borderRadius: 14,
-        padding: 10,
-        boxShadow: "0 1px 3px rgba(20, 22, 27, 0.04)",
-        alignSelf: "start"
-      }}>
-        <div style={{
-          fontSize: 10, fontWeight: 900,
-          color: "var(--text-muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          padding: "0 4px",
-          marginBottom: 8
-        }}>
+    <div className="conv-layout">
+      {/* Category picker */}
+      <div className="conv-cat-panel">
+        <div className="conv-cat-title">
           {locale === "fa" ? "دسته‌بندی" : "Category"}
         </div>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 5
-        }}>
-          {CATEGORIES.map(function(c) {
+        <div className="conv-cat-grid">
+          {CATEGORIES.map(function (c) {
             const active = category === c.id;
             const Icon = c.icon;
             return (
-              <button key={c.id} onClick={function() { changeCategory(c.id); }}
+              <button
+                key={c.id}
+                onClick={function () { changeCategory(c.id); }}
                 title={locale === "fa" ? c.fa : c.en}
-                style={{
-                  padding: "10px 4px",
-                  borderRadius: 10,
-                  border: "1px solid " + (active ? "transparent" : "var(--border)"),
-                  background: active
-                    ? "linear-gradient(135deg, " + c.color + ", " + c.color + "cc)"
-                    : "#FFFFFF",
-                  color: active ? "#FFFFFF" : "var(--text-soft)",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: 10,
-                  fontWeight: 900,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 4,
-                  boxShadow: active ? "0 4px 12px " + c.color + "40" : "none",
-                  transition: "all 0.15s"
-                }}>
+                className={active ? "active" : ""}
+                style={{ "--cat-color": c.color }}
+              >
                 <Icon size={16} />
                 <span>{locale === "fa" ? c.fa : c.en}</span>
               </button>
@@ -255,284 +241,134 @@ function UnitConverter({ locale }) {
       </div>
 
       {/* Converter card */}
-      <div style={{
-        background: "#FFFFFF",
-        border: "1px solid var(--border)",
-        borderRadius: 14,
-        padding: 22,
-        boxShadow: "0 1px 3px rgba(20, 22, 27, 0.04)",
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        {/* Category header */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          paddingBottom: 14, marginBottom: 18,
-          borderBottom: "1px solid var(--border)"
-        }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 11,
-            display: "grid", placeItems: "center",
-            background: activeCat.color + "15",
-            color: activeCat.color
-          }}>
+      <div className="conv-card">
+        {/* Header */}
+        <div className="conv-head">
+          <div
+            className="conv-head-icon"
+            style={{ background: activeCat.color + "20", color: activeCat.color }}
+          >
             <activeCat.icon size={20} />
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: "var(--text)" }}>
+            <div className="conv-head-title">
               {locale === "fa" ? activeCat.fa : activeCat.en}
             </div>
-            <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600 }}>
+            <div className="conv-head-sub">
               {units.length} {locale === "fa" ? "واحد" : "units"}
             </div>
           </div>
         </div>
 
         {/* From / To */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 52px 1fr",
-          gap: 12,
-          alignItems: "center",
-          flex: 1
-        }}>
-          {/* From */}
-          <div>
-            <div style={{
-              fontSize: 10, fontWeight: 900,
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: 8
-            }}>
-              {locale === "fa" ? "از" : "From"}
-            </div>
+        <div className="conv-row">
+          <div className="conv-field">
+            <div className="conv-label">{locale === "fa" ? "از" : "From"}</div>
             <input
               type="number"
               value={value}
-              onChange={function(e) { setValue(e.target.value); }}
-              className="form-input"
-              style={{
-                fontFamily: "monospace",
-                fontSize: 28,
-                fontWeight: 900,
-                padding: "16px 14px",
-                textAlign: "center",
-                marginBottom: 10,
-                lineHeight: 1,
-                border: "2px solid var(--border)"
-              }}
+              onChange={function (e) { setValue(e.target.value); }}
+              className="conv-input-big"
             />
-            <select value={fromUnit} onChange={function(e) { setFromUnit(e.target.value); }}
-              className="form-input" style={{ fontSize: 12.5, fontWeight: 700, padding: "10px 12px" }}>
-              {units.map(function(u) {
+            <select
+              value={fromUnit}
+              onChange={function (e) { setFromUnit(e.target.value); }}
+              className="conv-select"
+            >
+              {units.map(function (u) {
                 return <option key={u} value={u}>{unitLabel(u, locale)}</option>;
               })}
             </select>
           </div>
 
-          {/* Swap button */}
-          <button onClick={swap}
-            style={{
-              width: 52, height: 52, borderRadius: 14,
-              display: "grid", placeItems: "center",
-              background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-              color: "#FFFFFF", border: "none", cursor: "pointer",
-              boxShadow: "0 6px 16px rgba(201, 149, 13, 0.35)",
-              transition: "all 0.3s",
-              justifySelf: "center",
-              marginTop: 20
-            }}
-            onMouseEnter={function(e) { e.currentTarget.style.transform = "rotate(180deg) scale(1.1)"; }}
-            onMouseLeave={function(e) { e.currentTarget.style.transform = "rotate(0) scale(1)"; }}
-          >
+          <button onClick={swap} className="conv-swap" title="Swap">
             <ArrowLeftRight size={20} />
           </button>
 
-          {/* To */}
-          <div>
-            <div style={{
-              fontSize: 10, fontWeight: 900,
-              color: "var(--text-muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: 8
-            }}>
-              {locale === "fa" ? "به" : "To"}
-            </div>
-            <div style={{ position: "relative", marginBottom: 10 }}>
+          <div className="conv-field">
+            <div className="conv-label">{locale === "fa" ? "به" : "To"}</div>
+            <div className="conv-output-wrap">
               <input
                 type="text"
                 value={formatted}
                 readOnly
-                className="form-input"
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: 28,
-                  fontWeight: 900,
-                  padding: "16px 52px 16px 14px",
-                  textAlign: "center",
-                  color: "#B8850A",
-                  background: "linear-gradient(135deg, #FFFBF0, #FFF9E6)",
-                  border: "2px solid #E0A81A",
-                  lineHeight: 1,
-                  cursor: "pointer"
-                }}
+                className="conv-input-big conv-output"
               />
-              <button onClick={copy}
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  insetInlineEnd: 10,
-                  transform: "translateY(-50%)",
-                  width: 36, height: 36, borderRadius: 10,
-                  display: "grid", placeItems: "center",
-                  background: copied ? "#10B981" : "rgba(201, 149, 13, 0.15)",
-                  color: copied ? "#FFFFFF" : "#8A6508",
-                  border: "none", cursor: "pointer",
-                  transition: "all 0.2s"
-                }}>
+              <button onClick={copy} className="conv-copy">
                 {copied ? <Check size={16} /> : <Copy size={16} />}
               </button>
             </div>
-            <select value={toUnit} onChange={function(e) { setToUnit(e.target.value); }}
-              className="form-input" style={{ fontSize: 12.5, fontWeight: 700, padding: "10px 12px" }}>
-              {units.map(function(u) {
+            <select
+              value={toUnit}
+              onChange={function (e) { setToUnit(e.target.value); }}
+              className="conv-select"
+            >
+              {units.map(function (u) {
                 return <option key={u} value={u}>{unitLabel(u, locale)}</option>;
               })}
             </select>
           </div>
         </div>
 
-        {/* Recent conversions history */}
-      {convHistory.length > 0 && (
-        <div style={{
-          marginTop: 12,
-          padding: "10px 12px",
-          background: "#FFFFFF",
-          borderRadius: 10,
-          border: "1px solid var(--border)"
-        }}>
-          <div style={{
-            fontSize: 9.5,
-            fontWeight: 900,
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}>
-            <span>{locale === "fa" ? "تبدیل‌های اخیر" : "Recent"}</span>
-            <button
-              onClick={function() {
-                setConvHistory([]);
-                try { localStorage.removeItem("psm_conv_history"); } catch (e) {}
-              }}
-              style={{
-                fontSize: 9,
-                color: "#E81123",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 900
-              }}>
-              {locale === "fa" ? "پاک" : "Clear"}
-            </button>
+        {/* History */}
+        {convHistory.length > 0 && (
+          <div className="conv-history">
+            <div className="conv-history-head">
+              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <Clock size={11} /> {locale === "fa" ? "تبدیل‌های اخیر" : "Recent"}
+              </span>
+              <button
+                onClick={function () {
+                  setConvHistory([]);
+                  try { localStorage.removeItem("psm_conv_history"); } catch (e) {}
+                }}
+                className="conv-history-clear"
+              >
+                {locale === "fa" ? "پاک" : "Clear"}
+              </button>
+            </div>
+            <div className="conv-history-list">
+              {convHistory.map(function (h) {
+                return (
+                  <button
+                    key={h.id}
+                    onClick={function () {
+                      setCategory(h.category);
+                      setFromUnit(h.from);
+                      setToUnit(h.to);
+                      setValue(h.value);
+                    }}
+                    className="conv-history-item"
+                  >
+                    <span>
+                      {h.value} {h.from} → <strong>{h.result} {h.to}</strong>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div style={{
-            display: "grid",
-            gap: 4
-          }}>
-            {convHistory.map(function(h) {
-              return (
-                <button
-                  key={h.id}
-                  onClick={function() {
-                    setCategory(h.category);
-                    setFromUnit(h.from);
-                    setToUnit(h.to);
-                    setValue(h.value);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    background: "var(--bg-soft)",
-                    border: "1px solid var(--border)",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    color: "var(--text-soft)",
-                    transition: "all 0.15s"
-                  }}
-                  onMouseEnter={function(e) {
-                    e.currentTarget.style.borderColor = "#E0A81A";
-                    e.currentTarget.style.background = "#FFFBF0";
-                  }}
-                  onMouseLeave={function(e) {
-                    e.currentTarget.style.borderColor = "var(--border)";
-                    e.currentTarget.style.background = "var(--bg-soft)";
-                  }}
-                >
-                  <span style={{ fontFamily: "monospace", direction: "ltr" }}>
-                    {h.value} {h.from} → <strong style={{ color: "#B8850A" }}>{h.result} {h.to}</strong>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Quick reference */}
-        <div style={{
-          marginTop: 18,
-          padding: "12px 14px",
-          background: "var(--bg-soft)",
-          borderRadius: 11,
-          border: "1px solid var(--border)"
-        }}>
-          <div style={{
-            fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)",
-            textTransform: "uppercase", letterSpacing: "0.05em",
-            marginBottom: 8
-          }}>
+        {/* Quick reference */}
+        <div className="conv-quick">
+          <div className="conv-quick-title">
             {locale === "fa" ? "تبدیل سریع ۱ واحد" : "Quick: 1 Unit"}
           </div>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-            gap: 6
-          }}>
-            {units.slice(0, 8).map(function(u) {
+          <div className="conv-quick-grid">
+            {units.slice(0, 8).map(function (u) {
               if (u === fromUnit) return null;
               const quick = category === "temperature"
                 ? convertTemperature(1, fromUnit, u)
                 : convertUnit(category, 1, fromUnit, u);
               const active = u === toUnit;
               return (
-                <button key={u} onClick={function() { setToUnit(u); }}
-                  style={{
-                    padding: "6px 10px",
-                    background: active ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "#FFFFFF",
-                    borderRadius: 8,
-                    border: "1px solid " + (active ? "transparent" : "var(--border)"),
-                    fontSize: 10.5,
-                    fontFamily: "monospace",
-                    direction: "ltr",
-                    textAlign: "center",
-                    color: active ? "#FFFFFF" : "var(--text-soft)",
-                    cursor: "pointer",
-                    transition: "all 0.15s"
-                  }}>
-                  <strong style={{ color: active ? "#FFFFFF" : "#B8850A" }}>
-                    {Number(quick.toFixed(3))}
-                  </strong> {u}
+                <button
+                  key={u}
+                  onClick={function () { setToUnit(u); }}
+                  className={active ? "active" : ""}
+                >
+                  <strong>{Number(quick.toFixed(3))}</strong> {u}
                 </button>
               );
             })}
@@ -541,8 +377,306 @@ function UnitConverter({ locale }) {
       </div>
 
       <style jsx global>{`
+        .conv-layout {
+          display: grid;
+          grid-template-columns: 220px 1fr;
+          gap: 14px;
+        }
+        .conv-cat-panel {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 10px;
+          box-shadow: var(--shadow-sm);
+          align-self: start;
+        }
+        .conv-cat-title {
+          font-size: 10px;
+          font-weight: 900;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 0 4px;
+          margin-bottom: 8px;
+        }
+        .conv-cat-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 5px;
+        }
+        .conv-cat-grid button {
+          padding: 10px 4px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: var(--bg-soft);
+          color: var(--text-soft);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 10px;
+          font-weight: 900;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          transition: all 0.15s;
+        }
+        .conv-cat-grid button:hover {
+          border-color: var(--cat-color);
+          color: var(--cat-color);
+        }
+        .conv-cat-grid button.active {
+          background: linear-gradient(135deg, var(--cat-color), var(--cat-color));
+          color: #FFFFFF;
+          border-color: transparent;
+          box-shadow: 0 4px 12px var(--cat-color);
+          opacity: 0.95;
+        }
+
+        .conv-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 22px;
+          box-shadow: var(--shadow-sm);
+        }
+        .conv-head {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding-bottom: 14px;
+          margin-bottom: 18px;
+          border-bottom: 1px solid var(--border);
+        }
+        .conv-head-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 11px;
+          display: grid;
+          place-items: center;
+        }
+        .conv-head-title {
+          font-size: 15px;
+          font-weight: 900;
+          color: var(--text);
+        }
+        .conv-head-sub {
+          font-size: 10.5px;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .conv-row {
+          display: grid;
+          grid-template-columns: 1fr 52px 1fr;
+          gap: 12px;
+          align-items: center;
+        }
+        .conv-field { min-width: 0; }
+        .conv-label {
+          font-size: 10px;
+          font-weight: 900;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 8px;
+        }
+        .conv-input-big {
+          width: 100%;
+          padding: 16px 14px;
+          border-radius: 11px;
+          font-family: monospace;
+          font-size: 22px;
+          font-weight: 900;
+          text-align: center;
+          margin-bottom: 10px;
+          line-height: 1;
+          border: 2px solid var(--border-strong);
+          background: var(--bg-soft);
+          color: var(--text);
+          outline: none;
+        }
+        .conv-input-big:focus {
+          border-color: var(--gold);
+          background: var(--bg-card);
+          box-shadow: 0 0 0 3px var(--glow);
+        }
+        .conv-output-wrap {
+          position: relative;
+          margin-bottom: 10px;
+        }
+        .conv-output-wrap .conv-output {
+          margin-bottom: 0;
+          padding-inline-end: 52px;
+          color: var(--gold);
+          border-color: var(--gold);
+          background: rgba(224, 168, 26, 0.08);
+        }
+        .conv-copy {
+          position: absolute;
+          top: 50%;
+          inset-inline-end: 10px;
+          transform: translateY(-50%);
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          display: grid;
+          place-items: center;
+          background: rgba(224, 168, 26, 0.15);
+          color: var(--gold);
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .conv-copy:hover {
+          background: var(--gold);
+          color: #FFFFFF;
+        }
+
+        .conv-swap {
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 6px 16px rgba(201, 149, 13, 0.35);
+          transition: all 0.3s;
+          justify-self: center;
+          margin-top: 20px;
+        }
+        .conv-swap:hover {
+          transform: rotate(180deg) scale(1.1);
+        }
+
+        .conv-select {
+          width: 100%;
+          padding: 10px 12px;
+          border-radius: 9px;
+          font-size: 12.5px;
+          font-weight: 700;
+          background: var(--bg-soft);
+          color: var(--text);
+          border: 1.5px solid var(--border-strong);
+          font-family: inherit;
+          cursor: pointer;
+          outline: none;
+        }
+        .conv-select:focus {
+          border-color: var(--gold);
+          box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        .conv-history {
+          margin-top: 14px;
+          padding: 12px 14px;
+          background: var(--bg-soft);
+          border-radius: 11px;
+          border: 1px solid var(--border);
+        }
+        .conv-history-head {
+          font-size: 9.5px;
+          font-weight: 900;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .conv-history-clear {
+          background: transparent;
+          border: none;
+          color: #E81123;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 9px;
+          font-weight: 900;
+        }
+        .conv-history-list {
+          display: grid;
+          gap: 4px;
+        }
+        .conv-history-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 7px 10px;
+          border-radius: 8px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 10.5px;
+          font-weight: 700;
+          color: var(--text-soft);
+          transition: all 0.15s;
+          text-align: start;
+        }
+        .conv-history-item:hover {
+          border-color: var(--gold);
+          background: rgba(224, 168, 26, 0.05);
+        }
+        .conv-history-item span {
+          font-family: monospace;
+          direction: ltr;
+        }
+        .conv-history-item strong { color: var(--gold); }
+
+        .conv-quick {
+          margin-top: 18px;
+          padding: 12px 14px;
+          background: var(--bg-soft);
+          border-radius: 11px;
+          border: 1px solid var(--border);
+        }
+        .conv-quick-title {
+          font-size: 9.5px;
+          font-weight: 900;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 8px;
+        }
+        .conv-quick-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 6px;
+        }
+        .conv-quick-grid button {
+          padding: 6px 10px;
+          background: var(--bg-card);
+          border-radius: 8px;
+          border: 1px solid var(--border);
+          font-size: 10.5px;
+          font-family: monospace;
+          direction: ltr;
+          text-align: center;
+          color: var(--text-soft);
+          cursor: pointer;
+          transition: all 0.15s;
+          font-family: inherit;
+        }
+        .conv-quick-grid button:hover {
+          border-color: var(--gold);
+        }
+        .conv-quick-grid button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          border-color: transparent;
+        }
+        .conv-quick-grid button strong {
+          color: var(--gold);
+        }
+        .conv-quick-grid button.active strong { color: #FFFFFF; }
+
         @media (max-width: 900px) {
-          .conv-layout { grid-template-columns: 1fr !important; }
+          .conv-layout { grid-template-columns: 1fr; }
+          .conv-row { grid-template-columns: 1fr; }
+          .conv-swap { margin-top: 0; }
         }
       `}</style>
     </div>
@@ -589,8 +723,9 @@ function PipeCalculator({ locale }) {
     },
     ar: {
       flow: "التدفق", diameter: "القطر", friction: "الفقدان", velocity: "السرعة",
-      inDiameter: "القطر (mm)", inVelocity: "السرعة (m/s)", inFlow: "التدفق (m³/h)",
-      inDensity: "الكثافة", inViscosity: "اللزوجة", inLength: "الطول", inRoughness: "المادة",
+      inDiameter: "القطر", inVelocity: "السرعة", inFlow: "التدفق",
+      inDensity: "الكثافة", inViscosity: "اللزوجة",
+      inLength: "الطول", inRoughness: "المادة",
       results: "النتائج", flowRate: "التدفق", diameterOut: "القطر",
       velocityOut: "السرعة", area: "المقطع",
       reynolds: "رينولدز", regime: "النظام",
@@ -601,7 +736,8 @@ function PipeCalculator({ locale }) {
     ru: {
       flow: "Расход из D", diameter: "Диаметр из Q", friction: "Потери", velocity: "Скорость",
       inDiameter: "Диаметр (mm)", inVelocity: "Скорость (m/s)", inFlow: "Расход (m³/h)",
-      inDensity: "Плотность", inViscosity: "Вязкость", inLength: "Длина", inRoughness: "Материал",
+      inDensity: "Плотность", inViscosity: "Вязкость",
+      inLength: "Длина", inRoughness: "Материал",
       results: "Результаты", flowRate: "Расход", diameterOut: "Диаметр",
       velocityOut: "Скорость", area: "Сечение",
       reynolds: "Рейнольдс", regime: "Режим",
@@ -658,78 +794,52 @@ function PipeCalculator({ locale }) {
   return (
     <div style={{ display: "grid", gap: 12 }}>
       {/* Mode selector */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5,
-        padding: 5, background: "var(--bg-soft)",
-        borderRadius: 12, border: "1px solid var(--border)"
-      }}>
-        {modes.map(function(m) {
+      <div className="pipe-modes">
+        {modes.map(function (m) {
           const active = mode === m.id;
           return (
-            <button key={m.id} onClick={function() { setMode(m.id); }}
-              style={{
-                padding: "10px 8px", borderRadius: 9, border: "none",
-                cursor: "pointer", fontFamily: "inherit",
-                fontSize: 12, fontWeight: 900,
-                background: active ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "transparent",
-                color: active ? "#FFFFFF" : "var(--text-soft)",
-                boxShadow: active ? "0 4px 12px rgba(201, 149, 13, 0.3)" : "none",
-                transition: "all 0.18s"
-              }}>
+            <button
+              key={m.id}
+              onClick={function () { setMode(m.id); }}
+              className={active ? "active" : ""}
+            >
               {m.label}
             </button>
           );
         })}
       </div>
 
-      {/* Inputs + Results side by side */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 12
-      }} className="pipe-2col">
-
+      <div className="pipe-grid">
         {/* Inputs */}
-        <div style={{
-          background: "#FFFFFF",
-          border: "1px solid var(--border)",
-          borderRadius: 14,
-          padding: 18,
-          boxShadow: "0 1px 3px rgba(20, 22, 27, 0.04)"
-        }}>
-          <div style={{
-            fontSize: 11, fontWeight: 900,
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: 14
-          }}>
-            {locale === "fa" ? "ورودی‌ها" : "Inputs"}
-          </div>
+        <div className="pipe-inputs">
+          <div className="pipe-title">{locale === "fa" ? "ورودی‌ها" : "Inputs"}</div>
           <div style={{ display: "grid", gap: 12 }}>
             {(mode === "flow" || mode === "friction" || mode === "velocity") && (
-              <FieldCompact label={L.inDiameter} value={inputs.diameter} onChange={function(v) { upd("diameter", v); }} />
+              <FieldCompact label={L.inDiameter} value={inputs.diameter} onChange={function (val) { upd("diameter", val); }} />
             )}
             {(mode === "diameter" || mode === "friction" || mode === "velocity") && (
-              <FieldCompact label={L.inFlow} value={inputs.flow} onChange={function(v) { upd("flow", v); }} />
+              <FieldCompact label={L.inFlow} value={inputs.flow} onChange={function (val) { upd("flow", val); }} />
             )}
             {(mode === "flow" || mode === "diameter") && (
-              <FieldCompact label={L.inVelocity} value={inputs.velocity} onChange={function(v) { upd("velocity", v); }} />
+              <FieldCompact label={L.inVelocity} value={inputs.velocity} onChange={function (val) { upd("velocity", val); }} />
             )}
             {mode === "friction" && (
               <>
-                <FieldCompact label={L.inLength} value={inputs.length} onChange={function(v) { upd("length", v); }} />
+                <FieldCompact label={L.inLength} value={inputs.length} onChange={function (val) { upd("length", val); }} />
                 <div>
-                  <label style={{ fontSize: 10.5, fontWeight: 900, color: "var(--text-muted)", marginBottom: 5, display: "block" }}>
-                    {L.inRoughness}
-                  </label>
-                  <select value={inputs.roughness} onChange={function(e) { upd("roughness", e.target.value); }}
-                    className="form-input" style={{ fontSize: 12, fontWeight: 700, padding: "9px 11px" }}>
-                    {Object.keys(PIPE_ROUGHNESS).map(function(k) {
+                  <label className="pipe-field-label">{L.inRoughness}</label>
+                  <select
+                    value={inputs.roughness}
+                    onChange={function (e) { upd("roughness", e.target.value); }}
+                    className="pipe-select"
+                  >
+                    {Object.keys(PIPE_ROUGHNESS).map(function (k) {
                       const r = PIPE_ROUGHNESS[k];
-                      return <option key={k} value={k}>
-                        {r.label[locale] || r.label.en} ({r.value} mm)
-                      </option>;
+                      return (
+                        <option key={k} value={k}>
+                          {r.label[locale] || r.label.en} ({r.value} mm)
+                        </option>
+                      );
                     })}
                   </select>
                 </div>
@@ -737,52 +847,27 @@ function PipeCalculator({ locale }) {
             )}
             {(mode === "flow" || mode === "friction" || mode === "diameter") && (
               <>
-                <FieldCompact label={L.inDensity} value={inputs.density} onChange={function(v) { upd("density", v); }} />
-                <FieldCompact label={L.inViscosity} value={inputs.viscosity} onChange={function(v) { upd("viscosity", v); }} />
+                <FieldCompact label={L.inDensity} value={inputs.density} onChange={function (val) { upd("density", val); }} />
+                <FieldCompact label={L.inViscosity} value={inputs.viscosity} onChange={function (val) { upd("viscosity", val); }} />
               </>
             )}
           </div>
         </div>
 
         {/* Results */}
-        <div style={{
-          background: "linear-gradient(135deg, rgba(201, 149, 13, 0.06), rgba(201, 149, 13, 0.01))",
-          border: "1.5px solid rgba(201, 149, 13, 0.3)",
-          borderRadius: 14,
-          padding: 18
-        }}>
-          <div style={{
-            fontSize: 11, fontWeight: 900,
-            color: "var(--gold)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            marginBottom: 14,
-            display: "flex", alignItems: "center", gap: 6
-          }}>
+        <div className="pipe-results">
+          <div className="pipe-results-title">
             <Activity size={13} /> {L.results}
           </div>
 
           {!results && (
-            <div style={{
-              padding: "40px 20px",
-              textAlign: "center",
-              color: "var(--text-muted)",
-              fontSize: 12,
-              fontWeight: 600
-            }}>
+            <div className="pipe-results-empty">
               {locale === "fa" ? "برای مشاهده نتایج، ورودی‌ها را پر کنید" : "Fill inputs to see results"}
             </div>
           )}
 
           {results && results.error && (
-            <div style={{
-              padding: 12, borderRadius: 10,
-              background: "rgba(232, 17, 35, 0.08)",
-              border: "1px solid rgba(232, 17, 35, 0.3)",
-              color: "#E81123", fontSize: 12, fontWeight: 900
-            }}>
-              {results.error}
-            </div>
+            <div className="pipe-results-error">{results.error}</div>
           )}
 
           {results && !results.error && (
@@ -821,49 +906,19 @@ function PipeCalculator({ locale }) {
               )}
 
               {reynoldsInfo && reynoldsInfo.Re > 0 && (
-                <div style={{
-                  marginTop: 4,
-                  padding: 12,
-                  borderRadius: 11,
-                  background: "#FFFFFF",
-                  border: "1px solid " + regimeColor(reynoldsInfo.regime) + "40",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10
-                }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 10,
-                    display: "grid", placeItems: "center",
-                    background: regimeColor(reynoldsInfo.regime) + "15",
-                    color: regimeColor(reynoldsInfo.regime),
-                    fontWeight: 900, fontSize: 12
+                <div className="reynolds-box">
+                  <div className="reynolds-icon" style={{
+                    background: regimeColor(reynoldsInfo.regime) + "20",
+                    color: regimeColor(reynoldsInfo.regime)
                   }}>Re</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontSize: 9, fontWeight: 900,
-                      color: "var(--text-muted)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      marginBottom: 3
-                    }}>
-                      {L.reynolds}
-                    </div>
-                    <div style={{
-                      fontSize: 16, fontWeight: 900,
-                      color: "var(--text)",
-                      fontFamily: "monospace",
-                      direction: "ltr"
-                    }}>
-                      {reynoldsInfo.Re.toLocaleString()}
-                    </div>
+                    <div className="reynolds-label">{L.reynolds}</div>
+                    <div className="reynolds-value">{reynoldsInfo.Re.toLocaleString()}</div>
                   </div>
-                  <div style={{
-                    padding: "5px 11px", borderRadius: 8,
-                    background: regimeColor(reynoldsInfo.regime) + "15",
+                  <div className="reynolds-badge" style={{
+                    background: regimeColor(reynoldsInfo.regime) + "20",
                     color: regimeColor(reynoldsInfo.regime),
-                    fontSize: 11, fontWeight: 900,
-                    border: "1px solid " + regimeColor(reynoldsInfo.regime) + "40",
-                    whiteSpace: "nowrap"
+                    borderColor: regimeColor(reynoldsInfo.regime) + "40"
                   }}>
                     {regimeLabel(reynoldsInfo.regime)}
                   </div>
@@ -875,8 +930,157 @@ function PipeCalculator({ locale }) {
       </div>
 
       <style jsx global>{`
+        .pipe-modes {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 5px;
+          padding: 5px;
+          background: var(--bg-soft);
+          border-radius: 12px;
+          border: 1px solid var(--border);
+        }
+        .pipe-modes button {
+          padding: 10px 8px;
+          border-radius: 9px;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 900;
+          background: transparent;
+          color: var(--text-soft);
+          transition: all 0.18s;
+        }
+        .pipe-modes button.active {
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          box-shadow: 0 4px 12px rgba(201, 149, 13, 0.3);
+        }
+
+        .pipe-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .pipe-inputs,
+        .pipe-results {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 18px;
+          box-shadow: var(--shadow-sm);
+        }
+        .pipe-results {
+          background: linear-gradient(135deg, rgba(201, 149, 13, 0.08), rgba(201, 149, 13, 0.02));
+          border: 1.5px solid rgba(201, 149, 13, 0.35);
+        }
+        .pipe-title {
+          font-size: 11px;
+          font-weight: 900;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 14px;
+        }
+        .pipe-field-label {
+          font-size: 10.5px;
+          font-weight: 900;
+          color: var(--text-muted);
+          margin-bottom: 5px;
+          display: block;
+        }
+        .pipe-select {
+          width: 100%;
+          padding: 9px 11px;
+          border-radius: 9px;
+          background: var(--bg-soft);
+          color: var(--text);
+          border: 1.5px solid var(--border);
+          font-size: 12px;
+          font-weight: 700;
+          font-family: inherit;
+          cursor: pointer;
+          outline: none;
+        }
+        .pipe-select:focus {
+          border-color: var(--gold);
+          box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        .pipe-results-title {
+          font-size: 11px;
+          font-weight: 900;
+          color: var(--gold);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .pipe-results-empty {
+          padding: 40px 20px;
+          text-align: center;
+          color: var(--text-muted);
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .pipe-results-error {
+          padding: 12px;
+          border-radius: 10px;
+          background: rgba(232, 17, 35, 0.08);
+          border: 1px solid rgba(232, 17, 35, 0.35);
+          color: #E81123;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .reynolds-box {
+          margin-top: 4px;
+          padding: 12px;
+          border-radius: 11px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .reynolds-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          display: grid;
+          place-items: center;
+          font-weight: 900;
+          font-size: 12px;
+        }
+        .reynolds-label {
+          font-size: 9px;
+          font-weight: 900;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 3px;
+        }
+        .reynolds-value {
+          font-size: 16px;
+          font-weight: 900;
+          color: var(--text);
+          font-family: monospace;
+          direction: ltr;
+        }
+        .reynolds-badge {
+          padding: 5px 11px;
+          border-radius: 8px;
+          font-size: 11px;
+          font-weight: 900;
+          border: 1px solid;
+          white-space: nowrap;
+        }
+
         @media (max-width: 900px) {
-          .pipe-2col { grid-template-columns: 1fr !important; }
+          .pipe-grid { grid-template-columns: 1fr; }
+          .pipe-modes { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
     </div>
@@ -886,23 +1090,33 @@ function PipeCalculator({ locale }) {
 function FieldCompact({ label, value, onChange }) {
   return (
     <div>
-      <label style={{
-        fontSize: 10.5, fontWeight: 900,
-        color: "var(--text-muted)",
-        marginBottom: 5, display: "block"
-      }}>
-        {label}
-      </label>
+      <label className="pipe-field-label">{label}</label>
       <input
         type="number"
         value={value}
-        onChange={function(e) { onChange(e.target.value); }}
-        className="form-input"
+        onChange={function (e) { onChange(e.target.value); }}
+        className="pipe-input-field"
         style={{
           fontFamily: "monospace",
           fontWeight: 700,
           fontSize: 13,
-          padding: "10px 12px"
+          padding: "10px 12px",
+          width: "100%",
+          borderRadius: 9,
+          background: "var(--bg-soft)",
+          color: "var(--text)",
+          border: "1.5px solid var(--border)",
+          outline: "none"
+        }}
+        onFocus={function (e) {
+          e.target.style.borderColor = "var(--gold)";
+          e.target.style.background = "var(--bg-card)";
+          e.target.style.boxShadow = "0 0 0 3px var(--glow)";
+        }}
+        onBlur={function (e) {
+          e.target.style.borderColor = "var(--border)";
+          e.target.style.background = "var(--bg-soft)";
+          e.target.style.boxShadow = "none";
         }}
       />
     </div>
@@ -923,7 +1137,8 @@ function ResultBig({ label, value, unit }) {
       boxShadow: "0 6px 16px rgba(201, 149, 13, 0.3)"
     }}>
       <div style={{
-        fontSize: 10, fontWeight: 900,
+        fontSize: 10,
+        fontWeight: 900,
         opacity: 0.9,
         textTransform: "uppercase",
         letterSpacing: "0.05em"
@@ -931,11 +1146,11 @@ function ResultBig({ label, value, unit }) {
         {label}
       </div>
       <div style={{
-        fontSize: 24, fontWeight: 900,
+        fontSize: 24,
+        fontWeight: 900,
         fontFamily: "monospace",
         direction: "ltr",
-        lineHeight: 1,
-        textShadow: "0 2px 6px rgba(0,0,0,0.15)"
+        lineHeight: 1
       }}>
         {value}
         {unit && (
@@ -956,7 +1171,7 @@ function ResultSmall({ label, value, unit }) {
     <div style={{
       padding: 10,
       borderRadius: 10,
-      background: "#FFFFFF",
+      background: "var(--bg-card)",
       border: "1px solid var(--border)"
     }}>
       <div style={{
@@ -990,45 +1205,45 @@ function ResultSmall({ label, value, unit }) {
 }
 
 // ============================================================
-// SCIENTIFIC CALCULATOR — bigger, cleaner
+// SCIENTIFIC CALCULATOR
 // ============================================================
 function ScientificCalculator({ locale }) {
   const [expr, setExpr] = useState("");
   const [history, setHistory] = useState([]);
   const [lastAnswer, setLastAnswer] = useState(0);
 
-  useEffect(function() {
+  useEffect(function () {
     function onKey(e) {
       const k = e.key;
       if (["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1) return;
-      if (/[0-9]/.test(k)) setExpr(function(x) { return x + k; });
-      else if (".+-*/()".indexOf(k) !== -1 && k.length === 1) setExpr(function(x) { return x + k; });
+      if (/[0-9]/.test(k)) setExpr(function (x) { return x + k; });
+      else if (".+-*/()".indexOf(k) !== -1 && k.length === 1) setExpr(function (x) { return x + k; });
       else if (k === "Enter" || k === "=") { e.preventDefault(); evaluate(); }
-      else if (k === "Backspace") setExpr(function(x) { return x.slice(0, -1); });
+      else if (k === "Backspace") setExpr(function (x) { return x.slice(0, -1); });
       else if (k === "Escape") setExpr("");
     }
     window.addEventListener("keydown", onKey);
-    return function() { window.removeEventListener("keydown", onKey); };
+    return function () { window.removeEventListener("keydown", onKey); };
   });
 
   function evaluate() {
     const r = safeEval(expr);
     if (r !== null) {
-      setHistory(function(h) { return [{ expr: expr, result: r, id: Date.now() }].concat(h).slice(0, 15); });
+      setHistory(function (h) { return [{ expr: expr, result: r, id: Date.now() }].concat(h).slice(0, 15); });
       setLastAnswer(r);
       setExpr(String(r));
     } else {
       setExpr("Error");
-      setTimeout(function() { setExpr(""); }, 800);
+      setTimeout(function () { setExpr(""); }, 800);
     }
   }
 
   function click(t) {
     if (t === "C") { setExpr(""); return; }
-    if (t === "⌫") { setExpr(function(e) { return e.slice(0, -1); }); return; }
+    if (t === "⌫") { setExpr(function (e) { return e.slice(0, -1); }); return; }
     if (t === "=") { evaluate(); return; }
-    if (t === "ANS") { setExpr(function(e) { return e + lastAnswer; }); return; }
-    setExpr(function(e) { return e + t; });
+    if (t === "ANS") { setExpr(function (e) { return e + lastAnswer; }); return; }
+    setExpr(function (e) { return e + t; });
   }
 
   const buttons = [
@@ -1040,86 +1255,40 @@ function ScientificCalculator({ locale }) {
     { l: "cos", t: "cos(", s: "fn" }, { l: "0", t: "0" }, { l: ".", t: "." }, { l: "ANS", t: "ANS", s: "fn" }, { l: "=", t: "=", s: "eq" }
   ];
 
-  function style(s) {
+  function btnStyle(s) {
     switch (s) {
-      case "op": return { bg: "rgba(0, 120, 212, 0.10)", color: "#0078D4" };
-      case "fn": return { bg: "rgba(135, 100, 184, 0.10)", color: "#8764B8" };
-      case "eq": return { bg: "linear-gradient(135deg, #E0A81A, #B8850A)", color: "#FFFFFF" };
-      case "danger": return { bg: "rgba(232, 17, 35, 0.10)", color: "#E81123" };
-      case "warn": return { bg: "rgba(245, 158, 11, 0.10)", color: "#D97706" };
-      default: return { bg: "#F4F5F7", color: "#1A1D21" };
+      case "op": return { background: "rgba(0, 120, 212, 0.12)", color: "#0078D4" };
+      case "fn": return { background: "rgba(135, 100, 184, 0.12)", color: "#8764B8" };
+      case "eq": return { background: "linear-gradient(135deg, #E0A81A, #B8850A)", color: "#FFFFFF" };
+      case "danger": return { background: "rgba(232, 17, 35, 0.12)", color: "#E81123" };
+      case "warn": return { background: "rgba(245, 158, 11, 0.12)", color: "#D97706" };
+      default: return { background: "var(--bg-soft)", color: "var(--text)" };
     }
   }
 
   const preview = safeEval(expr);
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 260px",
-      gap: 12
-    }} className="sci-2col">
-      {/* Calculator */}
-      <div style={{
-        background: "#FFFFFF",
-        border: "1px solid var(--border)",
-        borderRadius: 14,
-        overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(20, 22, 27, 0.04)"
-      }}>
+    <div className="sci-layout">
+      <div className="sci-main">
         {/* Display */}
-        <div style={{
-          padding: "22px 26px 18px",
-          background: "linear-gradient(135deg, #0F1114, #1A1C22)",
-          borderBottom: "1px solid var(--border)"
-        }}>
-          <div style={{
-            fontSize: 18, fontWeight: 700,
-            color: "rgba(241, 243, 245, 0.55)",
-            fontFamily: "monospace",
-            direction: "ltr",
-            textAlign: "right",
-            wordBreak: "break-all",
-            marginBottom: 10,
-            minHeight: 24
-          }}>
-            {expr || "0"}
-          </div>
-          <div style={{
-            fontSize: 32, fontWeight: 900,
-            color: "#F5C518",
-            fontFamily: "monospace",
-            direction: "ltr",
-            textAlign: "right",
-            minHeight: 38,
-            textShadow: "0 0 20px rgba(245, 197, 24, 0.4)"
-          }}>
+        <div className="sci-display">
+          <div className="sci-expr">{expr || "0"}</div>
+          <div className="sci-preview">
             {preview !== null && expr ? "= " + Number(preview.toFixed(8)) : ""}
           </div>
         </div>
 
         {/* Keypad */}
-        <div style={{
-          padding: 12,
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 6
-        }}>
-          {buttons.map(function(b, i) {
-            const st = style(b.s);
+        <div className="sci-keypad">
+          {buttons.map(function (b, i) {
+            const st = btnStyle(b.s);
             return (
-              <button key={i} onClick={function() { click(b.t); }}
-                style={{
-                  padding: "16px 8px",
-                  borderRadius: 11,
-                  border: "none",
-                  background: st.bg, color: st.color,
-                  fontSize: 15, fontWeight: 900,
-                  fontFamily: "monospace", cursor: "pointer",
-                  transition: "all 0.1s"
-                }}
-                onMouseEnter={function(e) { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={function(e) { e.currentTarget.style.transform = "translateY(0)"; }}
+              <button
+                key={i}
+                onClick={function () { click(b.t); }}
+                style={st}
+                className="sci-key"
               >
                 {b.l}
               </button>
@@ -1128,86 +1297,37 @@ function ScientificCalculator({ locale }) {
         </div>
       </div>
 
-      {/* History */}
-      <div style={{
-        background: "#FFFFFF",
-        border: "1px solid var(--border)",
-        borderRadius: 14,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(20, 22, 27, 0.04)"
-      }}>
-        <div style={{
-          padding: "14px 16px",
-          borderBottom: "1px solid var(--border)",
-          fontSize: 12, fontWeight: 900,
-          color: "var(--text)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
-        }}>
-          <span>{locale === "fa" ? "تاریخچه" : "History"}</span>
+      <div className="sci-history">
+        <div className="sci-history-head">
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <History size={12} />
+            {locale === "fa" ? "تاریخچه" : "History"}
+          </span>
           {history.length > 0 && (
-            <button onClick={function() { setHistory([]); }}
-              style={{
-                width: 26, height: 26, borderRadius: 8,
-                background: "rgba(232, 17, 35, 0.10)",
-                color: "#E81123",
-                border: "none", cursor: "pointer",
-                display: "grid", placeItems: "center"
-              }}
-              title={locale === "fa" ? "پاک‌کردن" : "Clear"}>
+            <button
+              onClick={function () { setHistory([]); }}
+              className="sci-history-clear"
+              title={locale === "fa" ? "پاک‌کردن" : "Clear"}
+            >
               <RotateCcw size={12} />
             </button>
           )}
         </div>
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="sci-history-body">
           {history.length === 0 ? (
-            <div style={{
-              padding: 30, textAlign: "center",
-              color: "var(--text-muted)",
-              fontSize: 11, fontWeight: 700
-            }}>
+            <div className="sci-history-empty">
               {locale === "fa" ? "محاسبه‌ای انجام نشده" : "No calculations yet"}
             </div>
           ) : (
-            history.map(function(h) {
+            history.map(function (h) {
               return (
-                <button key={h.id} onClick={function() { setExpr(String(h.result)); }}
-                  style={{
-                    display: "block", width: "100%",
-                    padding: "10px 14px",
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: "1px solid var(--border)",
-                    textAlign: "start",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    transition: "background 0.15s"
-                  }}
-                  onMouseEnter={function(e) { e.currentTarget.style.background = "var(--bg-soft)"; }}
-                  onMouseLeave={function(e) { e.currentTarget.style.background = "transparent"; }}
+                <button
+                  key={h.id}
+                  onClick={function () { setExpr(String(h.result)); }}
+                  className="sci-history-item"
                 >
-                  <div style={{
-                    fontSize: 10.5, color: "var(--text-muted)",
-                    fontFamily: "monospace",
-                    direction: "ltr",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    marginBottom: 3
-                  }}>
-                    {h.expr}
-                  </div>
-                  <div style={{
-                    fontSize: 14, fontWeight: 900,
-                    color: "#B8850A",
-                    fontFamily: "monospace",
-                    direction: "ltr"
-                  }}>
-                    = {Number(h.result.toFixed(8))}
-                  </div>
+                  <div className="sci-history-expr">{h.expr}</div>
+                  <div className="sci-history-result">= {Number(h.result.toFixed(8))}</div>
                 </button>
               );
             })
@@ -1216,8 +1336,148 @@ function ScientificCalculator({ locale }) {
       </div>
 
       <style jsx global>{`
+        .sci-layout {
+          display: grid;
+          grid-template-columns: 1fr 260px;
+          gap: 12px;
+        }
+        .sci-main {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          overflow: hidden;
+          box-shadow: var(--shadow-sm);
+        }
+        .sci-display {
+          padding: 22px 26px 18px;
+          background: var(--bg-soft);
+          border-bottom: 1px solid var(--border);
+        }
+        .dark .sci-display {
+          background: linear-gradient(135deg, #0F1114, #1A1C20);
+        }
+        .sci-expr {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text-soft);
+          font-family: monospace;
+          direction: ltr;
+          text-align: right;
+          word-break: break-all;
+          margin-bottom: 10px;
+          min-height: 24px;
+        }
+        .sci-preview {
+          font-size: 32px;
+          font-weight: 900;
+          color: var(--gold);
+          font-family: monospace;
+          direction: ltr;
+          text-align: right;
+          min-height: 38px;
+        }
+
+        .sci-keypad {
+          padding: 12px;
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 6px;
+        }
+        .sci-key {
+          padding: 16px 8px;
+          border-radius: 11px;
+          border: none;
+          font-size: 15px;
+          font-weight: 900;
+          font-family: monospace;
+          cursor: pointer;
+          transition: all 0.1s;
+        }
+        .sci-key:hover {
+          transform: translateY(-2px);
+        }
+        .sci-key:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        .sci-history {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: var(--shadow-sm);
+          max-height: 520px;
+        }
+        .sci-history-head {
+          padding: 14px 16px;
+          border-bottom: 1px solid var(--border);
+          font-size: 12px;
+          font-weight: 900;
+          color: var(--text);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .sci-history-clear {
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
+          background: rgba(232, 17, 35, 0.12);
+          color: #E81123;
+          border: none;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+        }
+        .sci-history-body {
+          flex: 1;
+          overflow-y: auto;
+        }
+        .sci-history-empty {
+          padding: 30px;
+          text-align: center;
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .sci-history-item {
+          display: block;
+          width: 100%;
+          padding: 10px 14px;
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid var(--border);
+          text-align: start;
+          cursor: pointer;
+          font-family: inherit;
+          transition: background 0.15s;
+        }
+        .sci-history-item:hover {
+          background: var(--bg-soft);
+        }
+        .sci-history-expr {
+          font-size: 10.5px;
+          color: var(--text-muted);
+          font-family: monospace;
+          direction: ltr;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          margin-bottom: 3px;
+        }
+        .sci-history-result {
+          font-size: 14px;
+          font-weight: 900;
+          color: var(--gold);
+          font-family: monospace;
+          direction: ltr;
+        }
+
         @media (max-width: 900px) {
-          .sci-2col { grid-template-columns: 1fr !important; }
+          .sci-layout { grid-template-columns: 1fr; }
+          .sci-history { max-height: 260px; }
         }
       `}</style>
     </div>

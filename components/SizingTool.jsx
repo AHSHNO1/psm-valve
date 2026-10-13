@@ -161,15 +161,16 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder })
         style={{
           width: "100%", padding: "10px 12px", borderRadius: 9,
           border: "1.5px solid " + (isError ? "#E81123" : "var(--border)"),
-          background: isError ? "rgba(232,17,35,0.04)" : "var(--bg-soft)",
+          background: isError ? "rgba(232,17,35,0.06)" : "var(--bg-soft)",
           color: isError ? "#E81123" : "var(--text)",
-          fontFamily: "monospace", fontSize: 13.5, fontWeight: 700
+          fontFamily: "monospace", fontSize: 13.5, fontWeight: 700,
+          transition: "all 0.2s"
         }}
         onFocus={e => {
           if (!isError) {
-            e.target.style.borderColor = "#E0A81A";
-            e.target.style.background = "#FFFFFF";
-            e.target.style.boxShadow = "0 0 0 3px rgba(201, 149, 13, 0.12)";
+            e.target.style.borderColor = "var(--gold)";
+            e.target.style.background = "var(--bg-card)";
+            e.target.style.boxShadow = "0 0 0 3px var(--glow)";
           }
         }}
         onBlur={e => {
@@ -197,9 +198,10 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder })
             style={{
               position: "absolute", top: "100%", right: 0, left: 0,
               marginTop: 6, padding: "8px 11px", borderRadius: 9,
-              background: "#1F2124", color: "#FFFFFF",
+              background: "var(--bg)", color: "var(--text)",
+              border: "1px solid var(--border-strong)",
               fontSize: 10.5, fontWeight: 600, lineHeight: 1.6,
-              zIndex: 30, boxShadow: "0 8px 24px rgba(0,0,0,0.25)"
+              zIndex: 30, boxShadow: "var(--shadow-md)"
             }}
           >
             {help}
@@ -681,7 +683,7 @@ export default function SizingTool() {
           {/* Fluid Picker */}
           <div className="sizing-card">
             <div className="card-head">
-              <FlaskConical size={15} color="#0078D4" />
+              <FlaskConical size={15} color="var(--gold)" />
               <span className="card-head-text">{L.pickFluid}</span>
             </div>
 
@@ -695,7 +697,7 @@ export default function SizingTool() {
                   {selectedFluidName || (isFa ? "کلیک کنید — ۳۵ سیال" : "Click — 35 fluids")}
                 </div>
               </div>
-              <ArrowLeft size={14} color="#0078D4" style={{ transform: "rotate(180deg)" }} />
+              <ArrowLeft size={14} color="var(--gold)" style={{ transform: "rotate(180deg)" }} />
             </button>
 
             <div className="fluid-type-chips">
@@ -760,7 +762,7 @@ export default function SizingTool() {
               <div className="progress-bar">
                 <div className="progress-fill" style={{
                   width: completion + "%",
-                  background: completion === 100 ? "linear-gradient(90deg, #10B981, #059669)" : "linear-gradient(90deg, #E0A81A, #B8850A)"
+                  background: completion === 100 ? "linear-gradient(90deg, #10B981, #059669)" : "linear-gradient(135deg, #E0A81A, #B8850A)"
                 }} />
               </div>
             </div>
@@ -984,8 +986,8 @@ export default function SizingTool() {
 
               {topProduct && (
                 <div className="result-product-card" style={{
-                  background: `linear-gradient(135deg, ${topProduct.product.color}10, ${topProduct.product.color}02)`,
-                  border: `1.5px solid ${topProduct.product.color}40`
+                  background: `linear-gradient(135deg, ${topProduct.product.color}18, ${topProduct.product.color}06)`,
+                  border: `1.5px solid ${topProduct.product.color}50`
                 }}>
                   <div className="product-card-head">
                     <Package size={14} color={topProduct.product.color} />
@@ -995,7 +997,7 @@ export default function SizingTool() {
                   </div>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 10 }}>
                     <div className="product-icon-sm" style={{
-                      background: topProduct.product.color + "20"
+                      background: topProduct.product.color + "25"
                     }}>⚙️</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
@@ -1112,7 +1114,7 @@ export default function SizingTool() {
       <AnimatePresence>
         {showSaveDialog && (
           <>
-            <div style={{ position: "fixed", inset: 0, background: "rgba(20, 22, 27, 0.5)", backdropFilter: "blur(4px)", zIndex: 90 }} onClick={() => setShowSaveDialog(false)} />
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", zIndex: 90 }} onClick={() => setShowSaveDialog(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1120,9 +1122,9 @@ export default function SizingTool() {
               style={{
                 position: "fixed", top: "50%", left: "50%",
                 transform: "translate(-50%, -50%)", zIndex: 100,
-                background: "var(--bg-card)", border: "1px solid var(--border)",
+                background: "var(--bg-card)", border: "1px solid var(--border-strong)",
                 borderRadius: 18, padding: 22, width: "90%", maxWidth: 400,
-                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+                boxShadow: "var(--shadow-lg)"
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)", marginBottom: 12 }}>
@@ -1135,7 +1137,13 @@ export default function SizingTool() {
                 className="form-input"
                 autoFocus
                 onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
-                style={{ fontSize: 13, padding: "10px 14px" }}
+                style={{
+                  fontSize: 13, padding: "10px 14px",
+                  width: "100%", borderRadius: 9,
+                  background: "var(--bg-soft)", color: "var(--text)",
+                  border: "1.5px solid var(--border-strong)",
+                  fontFamily: "inherit"
+                }}
               />
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                 <button onClick={handleSave} className="btn-gold flex-1 justify-center text-sm" style={{ padding: "10px" }}>
@@ -1183,9 +1191,10 @@ export default function SizingTool() {
               position: "fixed", bottom: 90, left: "50%",
               transform: "translateX(-50%)", zIndex: 60,
               padding: "10px 14px", borderRadius: 12,
-              background: "#1F2124", color: "#FFFFFF",
+              background: "var(--bg-card)", color: "var(--text)",
+              border: "1px solid var(--border-strong)",
               fontSize: 12, fontWeight: 700,
-              boxShadow: "0 12px 32px rgba(0, 0, 0, 0.35)",
+              boxShadow: "var(--shadow-lg)",
               display: "flex", alignItems: "center", gap: 12
             }}
           >
@@ -1210,17 +1219,18 @@ export default function SizingTool() {
           50% { opacity: 0.5; transform: scale(1.6); }
         }
 
+        /* ==== TOOLBAR ==== */
         .sizing-toolbar {
           display: grid;
           grid-template-columns: auto 1fr auto;
           gap: 10px;
           align-items: center;
           padding: 8px 10px;
-          background: #FFFFFF;
+          background: var(--bg-card);
           border: 1px solid var(--border);
           border-radius: 14px;
           margin-bottom: 16px;
-          box-shadow: 0 2px 8px rgba(20, 22, 27, 0.04);
+          box-shadow: var(--shadow-sm);
         }
         .tb-btn {
           padding: 8px 12px;
@@ -1230,20 +1240,20 @@ export default function SizingTool() {
           font-family: inherit;
           font-size: 11.5px;
           font-weight: 900;
-          background: #FFFFFF;
+          background: var(--bg-soft);
           color: var(--text-soft);
           display: flex;
           align-items: center;
           gap: 6px;
           transition: all 0.15s;
         }
-        .tb-btn:hover { background: var(--bg-soft); }
+        .tb-btn:hover { background: var(--bg-card-hover); color: var(--text); }
         .tb-wizard {
           background: linear-gradient(135deg, #8B5CF6, #7C3AED);
           border-color: transparent;
           color: #FFFFFF;
         }
-        .tb-wizard:hover { box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35); }
+        .tb-wizard:hover { box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35); color: #FFFFFF; }
         .tb-reset { padding: 8px 10px; }
         .tb-center {
           display: flex;
@@ -1259,7 +1269,7 @@ export default function SizingTool() {
           font-family: inherit;
           font-size: 11px;
           font-weight: 900;
-          background: #FFFFFF;
+          background: var(--bg-soft);
           color: var(--text-soft);
           display: flex;
           align-items: center;
@@ -1267,8 +1277,8 @@ export default function SizingTool() {
           transition: all 0.15s;
         }
         .tb-live.on {
-          background: rgba(16, 185, 129, 0.08);
-          border-color: rgba(16, 185, 129, 0.30);
+          background: rgba(16, 185, 129, 0.10);
+          border-color: rgba(16, 185, 129, 0.35);
           color: #10B981;
         }
         .tb-live-dot {
@@ -1281,11 +1291,12 @@ export default function SizingTool() {
           font-size: 9.5px;
           padding: 2px 6px;
           border-radius: 5px;
-          background: var(--bg-soft);
+          background: rgba(0,0,0,0.05);
           margin-inline-start: 2px;
         }
+        .dark .tb-live-state { background: rgba(255,255,255,0.08); }
         .tb-live.on .tb-live-state {
-          background: rgba(16, 185, 129, 0.15);
+          background: rgba(16, 185, 129, 0.18);
           color: #10B981;
         }
 
@@ -1368,9 +1379,9 @@ export default function SizingTool() {
         .sizing-card {
           padding: 16px;
           border-radius: 16px;
-          background: var(--bg-card, #FFFFFF);
+          background: var(--bg-card);
           border: 1px solid var(--border);
-          box-shadow: 0 1px 3px rgba(20, 22, 27, 0.04);
+          box-shadow: var(--shadow-sm);
         }
         .card-head {
           display: flex;
@@ -1394,8 +1405,8 @@ export default function SizingTool() {
           width: 100%;
           padding: 14px 16px;
           border-radius: 12px;
-          background: linear-gradient(135deg, rgba(0,120,212,0.06), rgba(0,120,212,0.01));
-          border: 1.5px solid rgba(0,120,212,0.30);
+          background: linear-gradient(135deg, rgba(0,120,212,0.10), rgba(0,120,212,0.03));
+          border: 1.5px solid rgba(0,120,212,0.35);
           cursor: pointer;
           font-family: inherit;
           display: flex;
@@ -1407,7 +1418,7 @@ export default function SizingTool() {
         }
         .fluid-pick-btn:hover {
           border-color: #0078D4;
-          background: linear-gradient(135deg, rgba(0,120,212,0.10), rgba(0,120,212,0.02));
+          background: linear-gradient(135deg, rgba(0,120,212,0.15), rgba(0,120,212,0.05));
         }
         .fluid-pick-icon {
           width: 40px; height: 40px; border-radius: 11px;
@@ -1424,6 +1435,7 @@ export default function SizingTool() {
           letter-spacing: 0.05em;
           margin-bottom: 3px;
         }
+        .dark .fluid-pick-label { color: #4DA6FF; }
         .fluid-pick-value {
           font-size: 13.5px; font-weight: 900;
           color: var(--text);
@@ -1478,7 +1490,7 @@ export default function SizingTool() {
           font-family: inherit;
           transition: all 0.15s;
         }
-        .preset-chip:hover { border-color: #E0A81A; color: #B8850A; }
+        .preset-chip:hover { border-color: var(--gold); color: var(--gold); }
 
         .presets-grid {
           display: grid;
@@ -1488,7 +1500,7 @@ export default function SizingTool() {
         .preset-btn {
           padding: 12px;
           border-radius: 11px;
-          background: #FFFFFF;
+          background: var(--bg-soft);
           border: 1.5px solid var(--border);
           cursor: pointer;
           font-family: inherit;
@@ -1500,6 +1512,7 @@ export default function SizingTool() {
         }
         .preset-btn:hover {
           border-color: var(--preset-color);
+          background: var(--bg-card-hover);
         }
         .preset-icon {
           width: 34px; height: 34px; border-radius: 10px;
@@ -1522,8 +1535,8 @@ export default function SizingTool() {
         .dp-indicator {
           margin-top: 12px; padding: 10px 14px;
           border-radius: 10px;
-          background: rgba(224, 168, 26, 0.06);
-          border: 1px solid rgba(224, 168, 26, 0.25);
+          background: rgba(224, 168, 26, 0.10);
+          border: 1px solid rgba(224, 168, 26, 0.30);
           display: flex; align-items: center; justify-content: space-between;
         }
         .dp-indicator span { font-size: 10.5px; font-weight: 900; color: var(--text-soft); }
@@ -1544,21 +1557,21 @@ export default function SizingTool() {
           font-size: 11.5px; font-weight: 800;
           transition: all 0.15s;
         }
-        .advanced-toggle:hover { border-color: #E0A81A; color: #B8850A; }
+        .advanced-toggle:hover { border-color: var(--gold); color: var(--gold); }
 
         .error-box {
           margin-top: 12px; padding: 11px 14px;
           border-radius: 10px;
-          background: rgba(232, 17, 35, 0.06);
-          border: 1px solid rgba(232, 17, 35, 0.30);
+          background: rgba(232, 17, 35, 0.08);
+          border: 1px solid rgba(232, 17, 35, 0.35);
           display: flex; align-items: flex-start; gap: 8px;
         }
 
         .result-empty {
           padding: 40px 20px;
           text-align: center;
-          background: linear-gradient(135deg, rgba(201, 149, 13, 0.04), rgba(201, 149, 13, 0.01));
-          border: 2px dashed rgba(201, 149, 13, 0.25) !important;
+          background: linear-gradient(135deg, rgba(201, 149, 13, 0.06), rgba(201, 149, 13, 0.02));
+          border: 2px dashed rgba(201, 149, 13, 0.35) !important;
           border-radius: 16px;
         }
         .result-empty-icon {
@@ -1597,17 +1610,20 @@ export default function SizingTool() {
           letter-spacing: 0.08em;
           text-transform: uppercase;
           text-align: center;
+          color: #FFFFFF;
         }
         .result-hero-value {
           font-size: 52px; font-weight: 900;
           line-height: 1; text-align: center;
           font-family: monospace;
           margin: 6px 0;
+          color: #FFFFFF;
         }
         .result-hero-sub {
           font-size: 11px; font-weight: 800;
           opacity: 0.85; text-align: center;
           font-family: monospace;
+          color: #FFFFFF;
         }
         .result-hero-grid {
           display: grid;
@@ -1629,11 +1645,13 @@ export default function SizingTool() {
           letter-spacing: 0.05em;
           text-transform: uppercase;
           margin-bottom: 4px;
+          color: #FFFFFF;
         }
         .result-mini-value {
           font-size: 22px; font-weight: 900;
           font-family: monospace;
           line-height: 1;
+          color: #FFFFFF;
         }
         .result-mini-value.gold { color: #FFF3C4; }
         .result-mini-value.green { color: #B8F5D4; }
@@ -1642,6 +1660,7 @@ export default function SizingTool() {
           font-size: 9px; font-weight: 700;
           opacity: 0.75; margin-top: 5px;
           font-family: monospace;
+          color: #FFFFFF;
         }
         .opening-bar {
           height: 3px; border-radius: 2px;
@@ -1667,6 +1686,7 @@ export default function SizingTool() {
           gap: 6px;
           font-size: 10px;
           font-weight: 800;
+          color: #FFFFFF;
         }
         .hero-metric-label {
           opacity: 0.8;
@@ -1696,7 +1716,7 @@ export default function SizingTool() {
         .result-action-btn {
           padding: 11px 12px;
           border-radius: 10px;
-          background: #FFFFFF;
+          background: var(--bg-card);
           border: 1.5px solid var(--border);
           color: var(--text);
           cursor: pointer;
@@ -1708,7 +1728,7 @@ export default function SizingTool() {
           gap: 5px;
           transition: all 0.15s;
         }
-        .result-action-btn:hover { border-color: #E0A81A; color: #B8850A; }
+        .result-action-btn:hover { border-color: var(--gold); color: var(--gold); }
 
         .result-product-card {
           padding: 14px;
@@ -1736,7 +1756,7 @@ export default function SizingTool() {
         .reference-section {
           padding: 16px;
           border-radius: 16px;
-          background: var(--bg-card, #FFFFFF);
+          background: var(--bg-card);
           border: 1px solid var(--border);
         }
         .reference-head {

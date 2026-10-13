@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Target, Calculator, Sparkles } from "lucide-react";
 import SizingTool from "@/components/SizingTool";
 import EngineeringCalculator from "@/components/EngineeringCalculator";
+import "./sizing-hub.css";
 
 const SITE_URL = "https://www.psm-valve.com";
 
@@ -162,86 +163,74 @@ export default function SizingPage({ params, searchParams }) {
   };
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"}>
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="sizing-hub-root"
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       <div className="container-x pt-8 pb-3">
+        {/* ===== Hero ===== */}
         <div className="text-center max-w-[720px] mx-auto mb-7">
-          <div
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3.5 text-[11px] font-black"
-            style={{
-              background: "linear-gradient(135deg, rgba(224,168,26,0.15), rgba(184,133,10,0.05))",
-              border: "1px solid rgba(224,168,26,0.35)",
-              color: "#B8850A"
-            }}
-          >
+          <div className="hub-badge">
             <Sparkles size={12} />
             {H.badge}
           </div>
 
-          <h1 className="font-black mb-3 leading-tight" style={{ fontSize: "clamp(22px, 4vw, 34px)", color: "var(--text)" }}>
+          <h1 className="hub-title">
             <span className="heading-grad">{H.title1}</span>{H.title2}
           </h1>
 
-          <p className="font-semibold leading-relaxed max-w-[560px] mx-auto" style={{ fontSize: 14, color: "var(--text-muted)" }}>
+          <p className="hub-sub">
             {H.sub}
           </p>
         </div>
 
+        {/* ===== Tool Tabs ===== */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[900px] mx-auto">
           {TABS.map(t => {
             const Icon = t.icon;
             const active = tool === t.id;
             const href = "/" + locale + "/sizing?tool=" + t.id;
             return (
-              <Link key={t.id} href={href}
-                className="p-5 rounded-2xl flex flex-col gap-3 no-underline cursor-pointer transition-all duration-300"
-                style={{
-                  background: active ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "#FFFFFF",
-                  border: "1.5px solid " + (active ? "transparent" : "var(--border)"),
-                  boxShadow: active ? "0 16px 40px rgba(201, 149, 13, 0.35)" : "none"
-                }}>
-                <div className="flex items-center justify-between">
-                  <div className="grid place-items-center rounded-xl"
+              <Link
+                key={t.id}
+                href={href}
+                scroll={false}
+                className={"hub-card" + (active ? " hub-card-active" : "")}
+                style={{ "--card-accent": t.accent }}
+              >
+                <div className="hub-card-top">
+                  <div
+                    className="hub-card-icon"
                     style={{
-                      width: 46, height: 46,
-                      background: active ? "rgba(255,255,255,0.22)" : t.accent + "15",
+                      background: active
+                        ? "rgba(255,255,255,0.22)"
+                        : t.accent + "18",
                       color: active ? "#FFFFFF" : t.accent
-                    }}>
+                    }}
+                  >
                     <Icon size={22} strokeWidth={2.4} />
                   </div>
-                  <div className="px-2.5 py-1 rounded-full text-[10px] font-black"
-                    style={{
-                      fontFamily: "monospace",
-                      background: active ? "rgba(255,255,255,0.2)" : "var(--bg-soft)",
-                      color: active ? "#FFFFFF" : "var(--text-muted)"
-                    }}>
+                  <div className="hub-card-badge">
                     {t.badge}
                   </div>
                 </div>
 
-                <div className="text-base font-black leading-snug" style={{ color: active ? "#FFFFFF" : "var(--text)" }}>
+                <div className="hub-card-title">
                   {t.title[locale] || t.title.en}
                 </div>
 
-                <div className="text-xs font-semibold leading-relaxed"
-                  style={{ color: active ? "rgba(255,255,255,0.88)" : "var(--text-muted)", minHeight: 38 }}>
+                <div className="hub-card-desc">
                   {t.desc[locale] || t.desc.en}
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
+                <div className="hub-card-chips">
                   {(t.chips[locale] || t.chips.en).map((c, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded-md text-[9.5px] font-extrabold"
-                      style={{
-                        background: active ? "rgba(255,255,255,0.18)" : "var(--bg-soft)",
-                        color: active ? "#FFFFFF" : "var(--text-soft)",
-                        border: "1px solid " + (active ? "rgba(255,255,255,0.22)" : "var(--border)")
-                      }}>
-                      {c}
-                    </span>
+                    <span key={i} className="hub-chip">{c}</span>
                   ))}
                 </div>
               </Link>
@@ -250,13 +239,16 @@ export default function SizingPage({ params, searchParams }) {
         </div>
       </div>
 
-      {tool === "sizing" && <SizingTool />}
+      {/* ===== Tool Content ===== */}
+      <div className="hub-content-wrapper">
+        {tool === "sizing" && <SizingTool />}
 
-      {tool === "calculator" && (
-        <section className="container-x py-6">
-          <EngineeringCalculator locale={locale} />
-        </section>
-      )}
+        {tool === "calculator" && (
+          <section className="container-x py-6">
+            <EngineeringCalculator locale={locale} />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

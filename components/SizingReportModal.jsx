@@ -13,15 +13,7 @@ import { VALVE_SIZES } from "@/lib/sizing-advanced";
 import { generateSizingPDF } from "@/lib/pdf-generator";
 import { track } from "@/lib/analytics";
 
-export default function SizingReportModal({
-  isOpen,
-  onClose,
-  result,
-  form,
-  fluid,
-  locale = "fa",
-  selectedFluidName
-}) {
+export default function SizingReportModal({ isOpen, onClose, result, form, fluid, locale = "fa", selectedFluidName }) {
   const [mounted, setMounted] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [shotLoading, setShotLoading] = useState(false);
@@ -32,149 +24,66 @@ export default function SizingReportModal({
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape" && isOpen) onClose();
-    }
+    function onKey(e) { if (e.key === "Escape" && isOpen) onClose(); }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
   const L = {
     fa: {
-      title: "گزارش سایزینگ شیر کنترلی",
-      subtitle: "طبق استاندارد IEC 60534",
-      reportRef: "شماره گزارش",
-      date: "تاریخ",
-      inputs: "پارامترهای ورودی",
-      chart: "مشخصه جریان شیر",
-      candidates: "سایزهای پیشنهادی",
-      candidateHint: "سه سایز حول نقطه کار شما",
-      tips: "توصیه‌های مهندسی",
-      exports: "خروجی گزارش",
-      fullReport: "گزارش کامل PDF",
-      image: "تصویر گزارش",
-      excel: "Excel (CSV)",
-      copy: "کپی متن",
-      copied: "کپی شد",
-      share: "اشتراک‌گذاری",
-      copyLink: "کپی لینک",
-      linkCopied: "لینک کپی شد",
-      reqQuote: "درخواست قیمت",
-      close: "بستن",
-      fluidLbl: "سیال",
-      flowLbl: "دبی",
-      p1Lbl: "فشار ورودی",
-      p2Lbl: "فشار خروجی",
-      dpLbl: "افت فشار",
-      gfLbl: "چگالی نسبی",
-      ggLbl: "چگالی گاز",
-      pvLbl: "فشار بخار",
-      tLbl: "دما",
-      cvLbl: "ضریب Cv",
-      kvLbl: "ضریب Kv",
-      sizeLbl: "سایز",
-      openingLbl: "بازشدگی",
-      velocityLbl: "سرعت",
-      noiseLbl: "نویز",
-      cavLbl: "کاویتاسیون",
-      bestMatch: "بهترین تطابق",
-      recommended: "پیشنهاد",
-      tooSmall: "خیلی کوچک",
-      small: "کوچک",
-      optimal: "بهینه",
-      large: "بزرگ",
-      tooLarge: "خیلی بزرگ",
-      verdict: "ارزیابی",
-      materialLabel: "متریال",
-      pressureLabel: "کلاس فشاری",
-      tempLabel: "دمای کاری"
+      title: "گزارش سایزینگ شیر کنترلی", subtitle: "طبق استاندارد IEC 60534",
+      reportRef: "شماره گزارش", date: "تاریخ",
+      inputs: "پارامترهای ورودی", chart: "مشخصه جریان شیر",
+      candidates: "سایزهای پیشنهادی", candidateHint: "سه سایز حول نقطه کار شما",
+      tips: "توصیه‌های مهندسی", exports: "خروجی گزارش",
+      fullReport: "گزارش کامل PDF", image: "تصویر گزارش", excel: "Excel (CSV)",
+      copy: "کپی متن", copied: "کپی شد", copyLink: "کپی لینک", linkCopied: "لینک کپی شد",
+      reqQuote: "درخواست قیمت", close: "بستن",
+      fluidLbl: "سیال", flowLbl: "دبی", p1Lbl: "فشار ورودی", p2Lbl: "فشار خروجی",
+      dpLbl: "افت فشار", gfLbl: "چگالی نسبی", ggLbl: "چگالی گاز", pvLbl: "فشار بخار", tLbl: "دما",
+      cvLbl: "ضریب Cv", kvLbl: "ضریب Kv", sizeLbl: "سایز", openingLbl: "بازشدگی",
+      velocityLbl: "سرعت", noiseLbl: "نویز", cavLbl: "کاویتاسیون",
+      recommended: "پیشنهاد", tooSmall: "خیلی کوچک", small: "کوچک", optimal: "بهینه", large: "بزرگ", tooLarge: "خیلی بزرگ"
     },
     en: {
-      title: "Control Valve Sizing Report",
-      subtitle: "Per IEC 60534 Standard",
-      reportRef: "Report No.",
-      date: "Date",
-      inputs: "Input Parameters",
-      chart: "Valve Flow Characteristic",
-      candidates: "Suggested Valve Sizes",
-      candidateHint: "Three sizes around your operating point",
-      tips: "Engineering Recommendations",
-      exports: "Report Exports",
-      fullReport: "Full PDF Report",
-      image: "Report Image",
-      excel: "Excel (CSV)",
-      copy: "Copy Text",
-      copied: "Copied",
-      share: "Share",
-      copyLink: "Copy Link",
-      linkCopied: "Link copied",
-      reqQuote: "Request Quote",
-      close: "Close",
-      fluidLbl: "Fluid",
-      flowLbl: "Flow",
-      p1Lbl: "Inlet pressure",
-      p2Lbl: "Outlet pressure",
-      dpLbl: "Pressure drop",
-      gfLbl: "Specific gravity",
-      ggLbl: "Gas gravity",
-      pvLbl: "Vapor pressure",
-      tLbl: "Temperature",
-      cvLbl: "Cv Factor",
-      kvLbl: "Kv Factor",
-      sizeLbl: "Size",
-      openingLbl: "Opening",
-      velocityLbl: "Velocity",
-      noiseLbl: "Noise",
-      cavLbl: "Cavitation",
-      bestMatch: "Best Match",
-      recommended: "Recommended",
-      tooSmall: "Too Small",
-      small: "Small",
-      optimal: "Optimal",
-      large: "Large",
-      tooLarge: "Too Large",
-      verdict: "Verdict",
-      materialLabel: "Material",
-      pressureLabel: "Pressure Class",
-      tempLabel: "Working Temp"
+      title: "Control Valve Sizing Report", subtitle: "Per IEC 60534 Standard",
+      reportRef: "Report No.", date: "Date",
+      inputs: "Input Parameters", chart: "Valve Flow Characteristic",
+      candidates: "Suggested Valve Sizes", candidateHint: "Three sizes around your operating point",
+      tips: "Engineering Recommendations", exports: "Report Exports",
+      fullReport: "Full PDF Report", image: "Report Image", excel: "Excel (CSV)",
+      copy: "Copy Text", copied: "Copied", copyLink: "Copy Link", linkCopied: "Link copied",
+      reqQuote: "Request Quote", close: "Close",
+      fluidLbl: "Fluid", flowLbl: "Flow", p1Lbl: "Inlet pressure", p2Lbl: "Outlet pressure",
+      dpLbl: "Pressure drop", gfLbl: "Specific gravity", ggLbl: "Gas gravity", pvLbl: "Vapor pressure", tLbl: "Temperature",
+      cvLbl: "Cv Factor", kvLbl: "Kv Factor", sizeLbl: "Size", openingLbl: "Opening",
+      velocityLbl: "Velocity", noiseLbl: "Noise", cavLbl: "Cavitation",
+      recommended: "Recommended", tooSmall: "Too Small", small: "Small", optimal: "Optimal", large: "Large", tooLarge: "Too Large"
     },
     ar: {
-      title: "تقرير تحديد حجم الصمام",
-      subtitle: "وفقًا لـ IEC 60534",
+      title: "تقرير تحديد حجم الصمام", subtitle: "وفقًا لـ IEC 60534",
       reportRef: "رقم التقرير", date: "التاريخ",
       inputs: "المدخلات", chart: "الرسم", candidates: "الأحجام المقترحة",
       candidateHint: "ثلاثة أحجام", tips: "التوصيات", exports: "التصدير",
-      fullReport: "PDF", image: "صورة", excel: "Excel",
-      copy: "نسخ", copied: "تم", share: "مشاركة",
-      copyLink: "نسخ الرابط", linkCopied: "تم النسخ",
-      reqQuote: "طلب سعر", close: "إغلاق",
+      fullReport: "PDF", image: "صورة", excel: "Excel", copy: "نسخ", copied: "تم",
+      copyLink: "نسخ الرابط", linkCopied: "تم النسخ", reqQuote: "طلب سعر", close: "إغلاق",
       fluidLbl: "السائل", flowLbl: "التدفق", p1Lbl: "الدخول", p2Lbl: "الخروج",
-      dpLbl: "الفرق", gfLbl: "الكثافة", ggLbl: "كثافة الغاز", pvLbl: "ضغط البخار",
-      tLbl: "الحرارة", cvLbl: "Cv", kvLbl: "Kv", sizeLbl: "الحجم",
-      openingLbl: "الفتح", velocityLbl: "السرعة", noiseLbl: "الضجيج", cavLbl: "التجويف",
-      bestMatch: "الأفضل", recommended: "موصى به",
-      tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل",
-      large: "كبير", tooLarge: "كبير جدًا", verdict: "الحكم",
-      materialLabel: "المادة", pressureLabel: "الفئة", tempLabel: "الحرارة"
+      dpLbl: "الفرق", gfLbl: "الكثافة", ggLbl: "كثافة الغاز", pvLbl: "ضغط البخار", tLbl: "الحرارة",
+      cvLbl: "Cv", kvLbl: "Kv", sizeLbl: "الحجم", openingLbl: "الفتح",
+      velocityLbl: "السرعة", noiseLbl: "الضجيج", cavLbl: "التجويف",
+      recommended: "موصى به", tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل", large: "كبير", tooLarge: "كبير جدًا"
     },
     ru: {
-      title: "Отчет по подбору клапана",
-      subtitle: "По IEC 60534",
-      reportRef: "№", date: "Дата",
-      inputs: "Входные данные", chart: "График", candidates: "Размеры",
-      candidateHint: "Три варианта", tips: "Рекомендации", exports: "Экспорт",
-      fullReport: "PDF", image: "Изображение", excel: "Excel",
-      copy: "Копировать", copied: "Скопировано", share: "Поделиться",
-      copyLink: "Копировать ссылку", linkCopied: "Ссылка скопирована",
-      reqQuote: "Запросить", close: "Закрыть",
+      title: "Отчет по подбору клапана", subtitle: "По IEC 60534",
+      reportRef: "№", date: "Дата", inputs: "Входные данные", chart: "График",
+      candidates: "Размеры", candidateHint: "Три варианта", tips: "Рекомендации", exports: "Экспорт",
+      fullReport: "PDF", image: "Изображение", excel: "Excel", copy: "Копировать", copied: "Скопировано",
+      copyLink: "Копировать ссылку", linkCopied: "Ссылка скопирована", reqQuote: "Запросить", close: "Закрыть",
       fluidLbl: "Среда", flowLbl: "Расход", p1Lbl: "Вход", p2Lbl: "Выход",
-      dpLbl: "Перепад", gfLbl: "Плотность", ggLbl: "Газ", pvLbl: "Давл. паров",
-      tLbl: "Темп.", cvLbl: "Cv", kvLbl: "Kv", sizeLbl: "Размер",
-      openingLbl: "Открытие", velocityLbl: "Скорость", noiseLbl: "Шум", cavLbl: "Кавитация",
-      bestMatch: "Лучший", recommended: "Рекомендуется",
-      tooSmall: "Слишком мал", small: "Мал", optimal: "Оптимально",
-      large: "Велик", tooLarge: "Слишком велик", verdict: "Оценка",
-      materialLabel: "Материал", pressureLabel: "Класс", tempLabel: "Темп."
+      dpLbl: "Перепад", gfLbl: "Плотность", ggLbl: "Газ", pvLbl: "Давл. паров", tLbl: "Темп.",
+      cvLbl: "Cv", kvLbl: "Kv", sizeLbl: "Размер", openingLbl: "Открытие",
+      velocityLbl: "Скорость", noiseLbl: "Шум", cavLbl: "Кавитация",
+      recommended: "Рекомендуется", tooSmall: "Слишком мал", small: "Мал", optimal: "Оптимально", large: "Велик", tooLarge: "Слишком велик"
     }
   }[locale] || {};
 
@@ -184,11 +93,7 @@ export default function SizingReportModal({
     const recIdx = VALVE_SIZES.findIndex(s => s.size === result.size.size);
     if (recIdx < 0) return [];
 
-    const indices = [
-      Math.max(0, recIdx - 1),
-      recIdx,
-      Math.min(VALVE_SIZES.length - 1, recIdx + 1)
-    ];
+    const indices = [Math.max(0, recIdx - 1), recIdx, Math.min(VALVE_SIZES.length - 1, recIdx + 1)];
     const uniqueIndices = [...new Set(indices)];
 
     return uniqueIndices.map((idx) => {
@@ -224,10 +129,7 @@ export default function SizingReportModal({
       const chartEl = document.getElementById("report-chart-for-pdf");
       if (!chartEl) return null;
       const canvas = await html2canvas(chartEl, {
-        backgroundColor: "#FFFFFF",
-        scale: 2,
-        useCORS: true,
-        logging: false
+        backgroundColor: "#FFFFFF", scale: 2, useCORS: true, logging: false
       });
       return canvas.toDataURL("image/png");
     } catch (e) {
@@ -241,12 +143,7 @@ export default function SizingReportModal({
     setPdfLoading(true);
     try {
       const chartImage = await captureChartImage();
-      await generateSizingPDF({
-        result, form, fluid, locale,
-        selectedFluidName,
-        candidates,
-        chartImage
-      });
+      await generateSizingPDF({ result, form, fluid, locale, selectedFluidName, candidates, chartImage });
       track.pdfDownloaded({ cv: result.Cv, size: result.size.size, fluid });
     } catch (err) {
       console.error(err);
@@ -282,34 +179,26 @@ export default function SizingReportModal({
   function handleDownloadCSV() {
     if (!result) return;
     const rows = [
-      ["PSM VALVE — Petro Sazeh Mihan"],
-      ["IT Department"], [""],
+      ["PSM VALVE — Petro Sazeh Mihan"], ["IT Department"], [""],
       ["Parameter", "Value", "Unit"],
       [L.fluidLbl, selectedFluidName || fluid, ""],
       [L.flowLbl, fluid === "steam" ? form.W : form.Q, fluid === "steam" ? "kg/h" : (fluid === "liquid" ? "m³/h" : "Nm³/h")],
-      [L.p1Lbl, form.P1, "bar"],
-      [L.p2Lbl, form.P2, "bar"],
+      [L.p1Lbl, form.P1, "bar"], [L.p2Lbl, form.P2, "bar"],
       [L.dpLbl, (form.P1 - form.P2).toFixed(2), "bar"],
       ...(fluid === "liquid" ? [[L.gfLbl, form.Gf, "—"], [L.pvLbl, form.Pv, "bar"]] : []),
       ...(fluid === "gas" ? [[L.ggLbl, form.Gg, "—"]] : []),
       ...(fluid !== "liquid" ? [[L.tLbl, form.T, "°C"]] : []),
-      [""],
-      ["Result", "", ""],
-      [L.cvLbl, result.Cv, ""],
-      [L.kvLbl, result.Kv, ""],
-      [L.sizeLbl, result.size.size, ""],
-      ["DN", result.size.dn, ""],
+      [""], ["Result", "", ""],
+      [L.cvLbl, result.Cv, ""], [L.kvLbl, result.Kv, ""],
+      [L.sizeLbl, result.size.size, ""], ["DN", result.size.dn, ""],
       [L.openingLbl, result.openingPercent + "%", ""],
       [L.velocityLbl, result.velocity || "-", "m/s"],
       [L.noiseLbl, result.noise || "-", "dB"],
       [L.cavLbl, result.cavitationRisk || "-", ""],
-      [""],
-      ["Alternative Sizes", "", ""],
+      [""], ["Alternative Sizes", "", ""],
       ["Size", "Cv", "Opening %", "Verdict"]
     ];
-    candidates.forEach(c => {
-      rows.push([c.size.size, c.size.cv, c.opening + "%", c.verdict]);
-    });
+    candidates.forEach(c => rows.push([c.size.size, c.size.cv, c.opening + "%", c.verdict]));
 
     const csv = rows.map(r => r.map(c => '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"').join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -326,24 +215,17 @@ export default function SizingReportModal({
     if (!result) return;
     const dP = (form.P1 - form.P2).toFixed(2);
     const text = [
-      "═══════════════════════════════",
-      "  PSM VALVE — Sizing Report",
-      "═══════════════════════════════",
-      "",
+      "═══════════════════════════════", "  PSM VALVE — Sizing Report", "═══════════════════════════════", "",
       `${L.fluidLbl}: ${selectedFluidName || fluid}`,
       `${L.flowLbl}: ${fluid === "steam" ? form.W + " kg/h" : form.Q + " " + (fluid === "liquid" ? "m³/h" : "Nm³/h")}`,
-      `P1: ${form.P1} bar · P2: ${form.P2} bar · ΔP: ${dP} bar`,
-      "",
+      `P1: ${form.P1} bar · P2: ${form.P2} bar · ΔP: ${dP} bar`, "",
       "───────── RESULT ─────────",
       `Cv: ${result.Cv} · Kv: ${result.Kv}`,
       `${L.sizeLbl}: ${result.size.size} (${result.size.dn})`,
-      `${L.openingLbl}: ${result.openingPercent}%`,
-      "",
+      `${L.openingLbl}: ${result.openingPercent}%`, "",
       "───── ALTERNATIVE SIZES ─────",
-      ...candidates.map(c => `${c.size.size}: Cv ${c.size.cv} · ${c.opening}% · ${c.verdict}`),
-      "",
-      `Generated: ${new Date().toLocaleString()}`,
-      "PSM Valve · psm-valve.com"
+      ...candidates.map(c => `${c.size.size}: Cv ${c.size.cv} · ${c.opening}% · ${c.verdict}`,),
+      "", `Generated: ${new Date().toLocaleString()}`, "PSM Valve · psm-valve.com"
     ].join("\n");
 
     if (navigator.clipboard) {
@@ -359,7 +241,7 @@ export default function SizingReportModal({
     try {
       const params = new URLSearchParams();
       params.set("fluid", fluid);
-      Object.keys(form).forEach(k => params.set(k, String(form[k])));
+      Object.keys(form).forEach(k => { if (form[k] != null) params.set(k, String(form[k])); });
       const url = window.location.origin + window.location.pathname + "?" + params.toString();
       if (navigator.clipboard) navigator.clipboard.writeText(url);
       setCopied(true);
@@ -367,8 +249,7 @@ export default function SizingReportModal({
     } catch (e) {}
   }
 
-  if (!mounted) return null;
-  if (!result || result.error) return null;
+  if (!mounted || !result || result.error) return null;
 
   const modal = (
     <AnimatePresence>
@@ -382,20 +263,17 @@ export default function SizingReportModal({
             className="no-print"
             style={{
               position: "fixed", inset: 0,
-              background: "rgba(10, 12, 16, 0.75)",
+              background: "rgba(10, 12, 16, 0.78)",
               backdropFilter: "blur(8px)",
               zIndex: 9998
             }}
           />
-
           <div
             className="no-print"
             style={{
               position: "fixed", inset: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
-              padding: 12,
-              zIndex: 9999,
-              pointerEvents: "none"
+              padding: 12, zIndex: 9999, pointerEvents: "none"
             }}
           >
             <motion.div
@@ -404,13 +282,12 @@ export default function SizingReportModal({
               exit={{ opacity: 0, y: 20, scale: 0.97 }}
               transition={{ type: "spring", damping: 26, stiffness: 260 }}
               style={{
-                width: "100%", maxWidth: 880,
-                maxHeight: "94vh",
+                width: "100%", maxWidth: 880, maxHeight: "94vh",
                 display: "flex", flexDirection: "column",
                 background: "var(--bg-card)",
                 borderRadius: 20,
-                border: "1px solid var(--border)",
-                boxShadow: "0 40px 80px rgba(0, 0, 0, 0.45)",
+                border: "1px solid var(--border-strong)",
+                boxShadow: "var(--shadow-lg)",
                 pointerEvents: "auto",
                 overflow: "hidden"
               }}
@@ -430,20 +307,15 @@ export default function SizingReportModal({
                     fontFamily: "monospace"
                   }}>PSM</div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)" }}>
-                      {L.title}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>
-                      {L.subtitle}
-                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text)" }}>{L.title}</div>
+                    <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{L.subtitle}</div>
                   </div>
                 </div>
                 <button onClick={onClose}
                   style={{
                     width: 34, height: 34, borderRadius: 10,
                     background: "var(--bg-soft)", border: "none", cursor: "pointer",
-                    display: "grid", placeItems: "center",
-                    color: "var(--text-soft)"
+                    display: "grid", placeItems: "center", color: "var(--text-soft)"
                   }}>
                   <X size={16} />
                 </button>
@@ -471,18 +343,12 @@ export default function SizingReportModal({
                       <div style={{ fontSize: 9.5, fontWeight: 900, opacity: 0.9, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
                         {L.cvLbl}
                       </div>
-                      <div style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, fontFamily: "monospace" }}>
-                        {result.Cv}
-                      </div>
-                      <div style={{ fontSize: 10, fontWeight: 800, opacity: 0.85, marginTop: 8, fontFamily: "monospace" }}>
-                        Kv {result.Kv}
-                      </div>
+                      <div style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, fontFamily: "monospace" }}>{result.Cv}</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, opacity: 0.85, marginTop: 8, fontFamily: "monospace" }}>Kv {result.Kv}</div>
                     </div>
 
                     <div className="card-glass" style={{ padding: 16, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 6 }}>
-                        {L.sizeLbl}
-                      </div>
+                      <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 6 }}>{L.sizeLbl}</div>
                       <div style={{ fontSize: 32, fontWeight: 900, color: "var(--gold)", lineHeight: 1, fontFamily: "monospace" }}>
                         {result.size.size}
                       </div>
@@ -492,9 +358,7 @@ export default function SizingReportModal({
                     </div>
 
                     <div className="card-glass" style={{ padding: 16, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 6 }}>
-                        {L.openingLbl}
-                      </div>
+                      <div style={{ fontSize: 9.5, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 6 }}>{L.openingLbl}</div>
                       <div style={{ fontSize: 32, fontWeight: 900, color: "var(--text)", lineHeight: 1, fontFamily: "monospace" }}>
                         {result.openingPercent}%
                       </div>
@@ -508,13 +372,7 @@ export default function SizingReportModal({
                   </div>
 
                   <div>
-                    <div style={{
-                      fontSize: 11.5, fontWeight: 900, color: "var(--text)",
-                      textTransform: "uppercase", letterSpacing: "0.05em",
-                      paddingBottom: 8, marginBottom: 10,
-                      borderBottom: "2px solid #C9950D",
-                      display: "flex", alignItems: "center", gap: 6
-                    }}>
+                    <div className="report-heading">
                       <FileText size={13} color="var(--gold)" />
                       {L.inputs}
                     </div>
@@ -539,13 +397,7 @@ export default function SizingReportModal({
                   </div>
 
                   <div>
-                    <div style={{
-                      fontSize: 11.5, fontWeight: 900, color: "var(--text)",
-                      textTransform: "uppercase", letterSpacing: "0.05em",
-                      paddingBottom: 8, marginBottom: 10,
-                      borderBottom: "2px solid #C9950D",
-                      display: "flex", alignItems: "center", gap: 6
-                    }}>
+                    <div className="report-heading">
                       <BarChart3 size={13} color="var(--gold)" />
                       {L.chart}
                     </div>
@@ -555,13 +407,7 @@ export default function SizingReportModal({
                   </div>
 
                   <div>
-                    <div style={{
-                      fontSize: 11.5, fontWeight: 900, color: "var(--text)",
-                      textTransform: "uppercase", letterSpacing: "0.05em",
-                      paddingBottom: 8, marginBottom: 10,
-                      borderBottom: "2px solid #C9950D",
-                      display: "flex", alignItems: "center", gap: 6
-                    }}>
+                    <div className="report-heading">
                       <Package size={13} color="var(--gold)" />
                       {L.candidates}
                     </div>
@@ -579,9 +425,7 @@ export default function SizingReportModal({
                         return (
                           <div key={i} style={{
                             padding: 14, borderRadius: 12,
-                            background: c.isRecommended
-                              ? "linear-gradient(135deg, rgba(224,168,26,0.10), rgba(184,133,10,0.02))"
-                              : "#FFFFFF",
+                            background: c.isRecommended ? "rgba(224,168,26,0.10)" : "var(--bg-soft)",
                             border: c.isRecommended ? "2px solid #E0A81A" : "1px solid var(--border)",
                             position: "relative"
                           }}>
@@ -596,45 +440,30 @@ export default function SizingReportModal({
                                 <Star size={7} fill="#FFFFFF" /> {L.recommended}
                               </div>
                             )}
-                            <div style={{
-                              fontSize: 20, fontWeight: 900, fontFamily: "monospace",
-                              color: c.isRecommended ? "#B8850A" : "var(--text)",
-                              textAlign: "center", marginBottom: 4, direction: "ltr"
-                            }}>
+                            <div style={{ fontSize: 20, fontWeight: 900, fontFamily: "monospace", color: c.isRecommended ? "var(--gold)" : "var(--text)", textAlign: "center", marginBottom: 4, direction: "ltr" }}>
                               {c.size.size}
                             </div>
-                            <div style={{
-                              fontSize: 9.5, color: "var(--text-muted)",
-                              textAlign: "center", fontFamily: "monospace",
-                              marginBottom: 10, direction: "ltr"
-                            }}>
+                            <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "center", fontFamily: "monospace", marginBottom: 10, direction: "ltr" }}>
                               {c.size.dn}
                             </div>
-                            <div style={{
-                              display: "flex", justifyContent: "space-between",
-                              padding: "6px 0",
-                              borderBottom: "1px dashed var(--border)"
-                            }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px dashed var(--border)" }}>
                               <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>Cv</span>
-                              <span style={{ fontSize: 11, fontWeight: 900, fontFamily: "monospace" }}>{c.size.cv}</span>
+                              <span style={{ fontSize: 11, fontWeight: 900, fontFamily: "monospace", color: "var(--text)" }}>{c.size.cv}</span>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
                               <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>{L.openingLbl}</span>
-                              <span style={{
-                                fontSize: 11, fontWeight: 900, fontFamily: "monospace",
-                                color: c.isOptimal ? "#10B981" : c.verdictColor
-                              }}>{c.opening}%</span>
+                              <span style={{ fontSize: 11, fontWeight: 900, fontFamily: "monospace", color: c.isOptimal ? "#10B981" : c.verdictColor }}>
+                                {c.opening}%
+                              </span>
                             </div>
                             <div style={{
                               marginTop: 8, padding: "6px 8px", borderRadius: 8,
-                              background: c.verdictColor + "12",
-                              border: "1px solid " + c.verdictColor + "40",
+                              background: c.verdictColor + "15",
+                              border: "1px solid " + c.verdictColor + "45",
                               display: "flex", alignItems: "center", justifyContent: "center", gap: 4
                             }}>
                               <VIcon size={11} color={c.verdictColor} strokeWidth={2.8} />
-                              <span style={{ fontSize: 10, fontWeight: 900, color: c.verdictColor }}>
-                                {c.verdict}
-                              </span>
+                              <span style={{ fontSize: 10, fontWeight: 900, color: c.verdictColor }}>{c.verdict}</span>
                             </div>
                           </div>
                         );
@@ -643,13 +472,7 @@ export default function SizingReportModal({
                   </div>
 
                   <div>
-                    <div style={{
-                      fontSize: 11.5, fontWeight: 900, color: "var(--text)",
-                      textTransform: "uppercase", letterSpacing: "0.05em",
-                      paddingBottom: 8, marginBottom: 10,
-                      borderBottom: "2px solid #C9950D",
-                      display: "flex", alignItems: "center", gap: 6
-                    }}>
+                    <div className="report-heading">
                       <CheckCircle2 size={13} color="var(--gold)" />
                       {L.tips}
                     </div>
@@ -672,8 +495,7 @@ export default function SizingReportModal({
               }}>
                 <div style={{
                   fontSize: 10.5, fontWeight: 900, color: "var(--text-muted)",
-                  textTransform: "uppercase", letterSpacing: "0.05em",
-                  marginBottom: 10
+                  textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10
                 }}>
                   {L.exports}
                 </div>
@@ -683,51 +505,40 @@ export default function SizingReportModal({
                   gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
                   gap: 8
                 }}>
-                  <ExportBtn
-                    onClick={handleDownloadPDF}
-                    icon={pdfLoading ? <Activity size={18} /> : <Printer size={18} />}
-                    label={pdfLoading ? "..." : "PDF"}
-                    sub={isFa ? "گزارش کامل" : "Full report"}
-                    highlight
-                  />
-                  <ExportBtn
-                    onClick={handleScreenshot}
-                    icon={shotLoading ? <Activity size={18} /> : <Camera size={18} />}
-                    label={isFa ? "تصویر" : "Image"}
-                    sub={isFa ? "PNG" : "PNG"}
-                    highlight
-                  />
-                  <ExportBtn
-                    onClick={handleDownloadCSV}
-                    icon={<Save size={18} />}
-                    label="Excel"
-                    sub={isFa ? "CSV" : "CSV"}
-                  />
-                  <ExportBtn
-                    onClick={handleCopy}
-                    icon={copied ? <Check size={18} /> : <Copy size={18} />}
-                    label={copied ? L.copied : L.copy}
-                    sub={isFa ? "متن گزارش" : "Report text"}
-                  />
+                  <ExportBtn onClick={handleDownloadPDF} icon={pdfLoading ? <Activity size={18} /> : <Printer size={18} />} label={pdfLoading ? "..." : "PDF"} sub={isFa ? "گزارش کامل" : "Full report"} highlight />
+                  <ExportBtn onClick={handleScreenshot} icon={shotLoading ? <Activity size={18} /> : <Camera size={18} />} label={isFa ? "تصویر" : "Image"} sub={isFa ? "PNG" : "PNG"} highlight />
+                  <ExportBtn onClick={handleDownloadCSV} icon={<Save size={18} />} label="Excel" sub={isFa ? "CSV" : "CSV"} />
+                  <ExportBtn onClick={handleCopy} icon={copied ? <Check size={18} /> : <Copy size={18} />} label={copied ? L.copied : L.copy} sub={isFa ? "متن گزارش" : "Report text"} />
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-                  <button onClick={handleShare} className="btn-secondary" style={{ justifyContent: "center", padding: "10px" }}>
+                  <button onClick={handleShare} className="btn-outline" style={{ justifyContent: "center", padding: "10px" }}>
                     <Share2 size={14} />
                     <span style={{ fontSize: 11.5, fontWeight: 900 }}>
                       {copied ? L.linkCopied : L.copyLink}
                     </span>
                   </button>
-                  <Link
-                    href={"/" + locale + "/contact"}
-                    className="btn-gold justify-center"
-                    style={{ padding: "10px", fontSize: 11.5 }}
-                    onClick={onClose}
-                  >
+                  <Link href={"/" + locale + "/contact"} className="btn-gold justify-center" style={{ padding: "10px", fontSize: 11.5 }} onClick={onClose}>
                     {L.reqQuote} <ArrowLeft size={13} />
                   </Link>
                 </div>
               </div>
+
+              <style jsx global>{`
+                .report-heading {
+                  font-size: 11.5px;
+                  font-weight: 900;
+                  color: var(--text);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                  padding-bottom: 8px;
+                  margin-bottom: 10px;
+                  border-bottom: 2px solid #C9950D;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                }
+              `}</style>
             </motion.div>
           </div>
         </>
@@ -761,7 +572,7 @@ function ExportBtn({ onClick, icon, label, sub, highlight }) {
       style={{
         padding: "12px 10px",
         borderRadius: 12,
-        background: highlight ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "#FFFFFF",
+        background: highlight ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "var(--bg-soft)",
         border: highlight ? "none" : "1.5px solid var(--border)",
         color: highlight ? "#FFFFFF" : "var(--text)",
         cursor: "pointer",
@@ -777,7 +588,7 @@ function ExportBtn({ onClick, icon, label, sub, highlight }) {
         <span style={{
           display: "grid", placeItems: "center",
           width: 30, height: 30, borderRadius: 8,
-          background: highlight ? "rgba(255,255,255,0.20)" : "var(--bg-soft)",
+          background: highlight ? "rgba(255,255,255,0.20)" : "var(--bg-card)",
           color: highlight ? "#FFFFFF" : "var(--text)"
         }}>{icon}</span>
         <span style={{ fontSize: 12.5, fontWeight: 900 }}>{label}</span>
