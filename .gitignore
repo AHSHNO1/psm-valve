@@ -45,3 +45,4 @@ public/uploads/*
 # Cache
 .cache/
 *.tsbuildinfo
+echo *.backup.jsx >> .gitignore

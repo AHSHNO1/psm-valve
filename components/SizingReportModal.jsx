@@ -224,7 +224,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       `${L.sizeLbl}: ${result.size.size} (${result.size.dn})`,
       `${L.openingLbl}: ${result.openingPercent}%`, "",
       "───── ALTERNATIVE SIZES ─────",
-      ...candidates.map(c => `${c.size.size}: Cv ${c.size.cv} · ${c.opening}% · ${c.verdict}`,),
+      ...candidates.map(c => `${c.size.size}: Cv ${c.size.cv} · ${c.opening}% · ${c.verdict}`),
       "", `Generated: ${new Date().toLocaleString()}`, "PSM Valve · psm-valve.com"
     ].join("\n");
 
