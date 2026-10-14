@@ -1,9 +1,9 @@
 import { getDictionary } from "@/lib/getDictionary";
 import { services } from "@/lib/services";
 import Link from "next/link";
-import { Cog, Gauge, Wrench, Circle, Flame, Truck, ArrowLeft } from "lucide-react";
+import { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings, ArrowLeft } from "lucide-react";
 
-const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck };
+const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings };
 
 export default async function ServicesPage({ params }) {
   const { locale } = params;
@@ -29,12 +29,26 @@ export default async function ServicesPage({ params }) {
           const Icon = ICONS[s.icon] || Cog;
           return (
             <div key={s.slug} className="card-glass p-6 sm:p-8 group hover:border-gold-500/50 transition">
-              <div
-                className="w-14 h-14 rounded-xl grid place-items-center mb-5"
-                style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)", color: "#1A1D21" }}
-              >
-                <Icon size={26} />
-              </div>
+              {s.image ? (
+                <div
+                  className="rounded-xl overflow-hidden bg-white mb-5 aspect-[4/3] grid place-items-center"
+                  style={{ border: "1px solid var(--border)" }}
+                >
+                  <img
+                    src={s.image}
+                    alt={s.name[locale] || s.name.fa}
+                    className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div
+                  className="w-14 h-14 rounded-xl grid place-items-center mb-5"
+                  style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)", color: "#1A1D21" }}
+                >
+                  <Icon size={26} />
+                </div>
+              )}
               <h3 className="font-bold text-lg mb-2" style={{ color: "var(--text)" }}>
                 {s.name[locale] || s.name.fa}
               </h3>
