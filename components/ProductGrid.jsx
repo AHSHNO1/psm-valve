@@ -46,11 +46,23 @@ export default function ProductGrid({ limit }) {
             >
               <div className="relative aspect-square grid place-items-center overflow-hidden"
                 style={{ background: "linear-gradient(135deg, var(--bg-soft), var(--bg-card))" }}>
-                <div className="w-20 h-20 rounded-full bg-gold-gradient opacity-20 blur-2xl group-hover:opacity-40 transition" />
-                <div className="absolute w-16 h-16 rounded-full border-2 grid place-items-center"
-                  style={{ borderColor: "var(--border-strong)" }}>
-                  <div className="w-9 h-9 rounded-full bg-gold-gradient" />
-                </div>
+                {p.image ? (
+                  <img
+                    src={p.image}
+                    alt={pick(p.name, locale)}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-contain p-3 sm:p-5 transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <>
+                    <div className="w-20 h-20 rounded-full bg-gold-gradient opacity-20 blur-2xl group-hover:opacity-40 transition" />
+                    <div className="absolute w-16 h-16 rounded-full border-2 grid place-items-center"
+                      style={{ borderColor: "var(--border-strong)" }}>
+                      <div className="w-9 h-9 rounded-full bg-gold-gradient" />
+                    </div>
+                  </>
+                )}
                 <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[9px] font-black"
                   style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--gold)" }}>
                   {p.series}

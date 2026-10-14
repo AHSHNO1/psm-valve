@@ -12,15 +12,44 @@ export default async function ProjectsPage({ params }) {
   const content = getContent();
   const meta = content.projects || {};
 
-  const title = pick(meta.title, locale) || (locale === "fa" ? "پروژه‌های موفق" : "Projects");
-  const subtitle = pick(meta.subtitle, locale) || "";
-
   const labels = {
-    fa: { badge: "نمونه کارها", empty: "به‌زودی پروژه‌ها اضافه می‌شود" },
-    en: { badge: "Portfolio", empty: "Projects coming soon" },
-    ar: { badge: "الأعمال", empty: "المشاريع قريباً" },
-    ru: { badge: "Портфолио", empty: "Скоро" }
-  }[locale] || { badge: "Projects", empty: "Coming soon" };
+    fa: {
+      badge: "پروژه‌های منتشرشده",
+      title: "تجربه در میدان عمل",
+      subtitle: "نمونه‌ای از پروژه‌ها و فعالیت‌های فنی پترو سازه میهن که در وب‌سایت شرکت معرفی شده‌اند.",
+      count: "فعالیت فنی",
+      empty: "پروژه‌ای برای نمایش وجود ندارد."
+    },
+    en: {
+      badge: "Published projects",
+      title: "Engineering in practice",
+      subtitle: "A selection of Petro Sazeh Mihan projects and technical work published on the company website.",
+      count: "technical works",
+      empty: "There are no projects to display."
+    },
+    ar: {
+      badge: "المشاريع المنشورة",
+      title: "الهندسة في التطبيق",
+      subtitle: "مجموعة مختارة من مشاريع وأعمال بترو سازه ميهان الفنية المنشورة على موقع الشركة.",
+      count: "أعمال فنية",
+      empty: "لا توجد مشاريع للعرض."
+    },
+    ru: {
+      badge: "Опубликованные проекты",
+      title: "Инженерия на практике",
+      subtitle: "Подборка проектов и технических работ Petro Sazeh Mihan, опубликованных на сайте компании.",
+      count: "технических работ",
+      empty: "Нет проектов для отображения."
+    }
+  }[locale] || {
+    badge: "Published projects",
+    title: "Projects",
+    subtitle: "Projects and technical work published on the company website.",
+    count: "projects",
+    empty: "There are no projects to display."
+  };
+  const title = pick(meta.title, locale) || labels.title;
+  const subtitle = pick(meta.subtitle, locale) || labels.subtitle;
 
   return (
     <section className="container-x py-10 sm:py-16">
@@ -33,6 +62,11 @@ export default async function ProjectsPage({ params }) {
           <p className="mt-4 text-sm leading-7" style={{ color: "var(--text-soft)" }}>
             {subtitle}
           </p>
+        )}
+        {projects.length > 0 && (
+          <div className="mt-5 text-xs font-bold" style={{ color: "var(--gold)" }}>
+            {new Intl.NumberFormat(locale).format(projects.length)} {labels.count}
+          </div>
         )}
       </div>
 

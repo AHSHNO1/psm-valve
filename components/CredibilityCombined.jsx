@@ -57,31 +57,31 @@ export default function CredibilityCombined({ certificates, partners, content, l
 
   const L = {
     fa: {
-      badge: "اعتبار بین‌المللی",
-      certsTitle: "گواهینامه‌ها و استانداردها",
+      badge: "اسناد و مجوزها",
+      certsTitle: "گواهینامه‌ها و مدارک منتشرشده",
       partnersTitle: "شرکای تجاری و همراهان",
-      sub: "تأیید شده توسط معتبرترین سازمان‌های بین‌المللی",
+      sub: "اعتبار و تاریخ هر سند را از توضیحات زیر آن بررسی کنید",
       empty: "به‌زودی گواهینامه‌ها اضافه می‌شود"
     },
     en: {
-      badge: "International Recognition",
-      certsTitle: "Certificates & Standards",
+      badge: "Certificates & Permits",
+      certsTitle: "Published Certificates & Documents",
       partnersTitle: "Business Partners",
-      sub: "Certified by the most reputable international organizations",
+      sub: "Check each document's description below for its stated validity",
       empty: "Certificates coming soon"
     },
     ar: {
-      badge: "الاعتراف الدولي",
-      certsTitle: "الشهادات والمعايير",
+      badge: "الشهادات والتصاريح",
+      certsTitle: "الشهادات والوثائق المنشورة",
       partnersTitle: "الشركاء التجاريون",
-      sub: "معتمد من أعرق المنظمات الدولية",
+      sub: "راجع وصف كل وثيقة أدناه لمعرفة مدة صلاحيتها المذكورة",
       empty: "الشهادات قريباً"
     },
     ru: {
-      badge: "Международное признание",
-      certsTitle: "Сертификаты и стандарты",
+      badge: "Сертификаты и разрешения",
+      certsTitle: "Опубликованные сертификаты и документы",
       partnersTitle: "Деловые партнеры",
-      sub: "Сертифицировано ведущими международными организациями",
+      sub: "Указанный срок действия каждого документа смотрите ниже",
       empty: "Сертификаты скоро"
     }
   }[locale] || {};
@@ -192,6 +192,16 @@ export default function CredibilityCombined({ certificates, partners, content, l
                     }}>
                       {pick(c.issuer, locale)}
                     </div>
+                    {pick(c.validity, locale) && (
+                      <div style={{
+                        fontSize: 9,
+                        color: "var(--text-muted)",
+                        lineHeight: 1.5,
+                        marginTop: 5
+                      }}>
+                        {pick(c.validity, locale)}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}

@@ -1,95 +1,277 @@
 [
   {
-    "id": "proj-1",
+    "id": "project-2020-ball-valve-repair",
     "title": {
-      "fa": "پروژه پالایشگاه نمونه",
-      "en": "Sample Refinery Project",
-      "ar": "مشروع مصفاة نموذجية",
-      "ru": "Проект НПЗ"
-    },
-    "client": {
-      "fa": "پالایشگاه نمونه",
-      "en": "Sample Refinery",
-      "ar": "مصفاة نموذجية",
-      "ru": "НПЗ"
+      "fa": "تعمیر بال ولو ۴۲ اینچ",
+      "en": "42-inch Ball Valve Repair",
+      "ar": "إصلاح صمام كروي مقاس 42 بوصة",
+      "ru": "Ремонт шарового клапана 42 дюйма"
     },
     "industry": {
-      "fa": "نفت و گاز",
-      "en": "Oil & Gas",
-      "ar": "النفط والغاز",
-      "ru": "Нефть и газ"
+      "fa": "تعمیر و بازسازی",
+      "en": "Repair & refurbishment",
+      "ar": "الإصلاح والتجديد",
+      "ru": "Ремонт и восстановление"
     },
     "description": {
-      "fa": "تأمین ۵۰ عدد شیر کنترلی توپی با پوشش HVOF برای خطوط انتقال محصولات.",
-      "en": "Supply of 50 ball control valves with HVOF coating for product transfer lines.",
-      "ar": "توريد 50 صمام تحكم كروي مع طلاء HVOF.",
-      "ru": "Поставка 50 шаровых регулирующих клапанов с покрытием HVOF."
+      "fa": "تعمیر بال ولو با قطر اسمی ۴۲ اینچ.",
+      "en": "Repair of a ball valve with a nominal size of 42 inches.",
+      "ar": "إصلاح صمام كروي بقطر اسمي يبلغ 42 بوصة.",
+      "ru": "Ремонт шарового клапана номинальным диаметром 42 дюйма."
     },
     "image": "",
-    "year": "1403",
+    "year": "2020",
     "order": 1,
     "active": true
   },
   {
-    "id": "proj-2",
+    "id": "project-2020-thermal-spray-ball",
     "title": {
-      "fa": "پروژه پتروشیمی نمونه",
-      "en": "Sample Petrochemical Project",
-      "ar": "مشروع بتروكيماوي نموذجي",
-      "ru": "Нефтехимический проект"
-    },
-    "client": {
-      "fa": "پتروشیمی نمونه",
-      "en": "Sample Petrochemical",
-      "ar": "بتروكيماويات",
-      "ru": "Нефтехимия"
+      "fa": "پاشش حرارتی روی توپی شیر",
+      "en": "Thermal Spraying on a Valve Ball",
+      "ar": "الرش الحراري على كرة الصمام",
+      "ru": "Термическое напыление на шар клапана"
     },
     "industry": {
-      "fa": "پتروشیمی",
-      "en": "Petrochemical",
-      "ar": "البتروكيماويات",
-      "ru": "Нефтехимия"
+      "fa": "پوشش‌دهی",
+      "en": "Coating",
+      "ar": "الطلاء",
+      "ru": "Покрытие"
     },
     "description": {
-      "fa": "تعمیر و بازسازی ۲۰ عدد شیر کنترلی فرسوده با تکنولوژی HVOF.",
-      "en": "Repair and refurbishment of 20 worn control valves with HVOF technology.",
-      "ar": "إصلاح وتجديد 20 صمام تحكم بتقنية HVOF.",
-      "ru": "Ремонт и восстановление 20 изношенных клапанов с технологией HVOF."
+      "fa": "اجرای پاشش حرارتی روی توپی شیر.",
+      "en": "Thermal spraying applied to a valve ball.",
+      "ar": "تنفيذ الرش الحراري على كرة الصمام.",
+      "ru": "Термическое напыление на шар клапана."
     },
     "image": "",
-    "year": "1402",
+    "year": "2020",
     "order": 2,
     "active": true
   },
   {
-    "id": "proj-3",
+    "id": "project-2020-globe-control-valve",
     "title": {
-      "fa": "پروژه خط انتقال گاز",
-      "en": "Gas Pipeline Project",
-      "ar": "مشروع خط نقل الغاز",
-      "ru": "Газопроводный проект"
-    },
-    "client": {
-      "fa": "شرکت گاز منطقه‌ای",
-      "en": "Regional Gas Company",
-      "ar": "شركة الغاز الإقليمية",
-      "ru": "Региональная газовая компания"
+      "fa": "طراحی و تولید گلاب کنترل ولو",
+      "en": "Globe Control Valve Design & Manufacture",
+      "ar": "تصميم وتصنيع صمام تحكم كروي",
+      "ru": "Проектирование и производство проходного регулирующего клапана"
     },
     "industry": {
-      "fa": "گاز",
-      "en": "Gas",
-      "ar": "الغاز",
-      "ru": "Газ"
+      "fa": "طراحی و ساخت",
+      "en": "Design & manufacturing",
+      "ar": "التصميم والتصنيع",
+      "ru": "Проектирование и производство"
     },
     "description": {
-      "fa": "طراحی و ساخت شیرهای کنترلی سگمنتی برای خطوط اصلی انتقال گاز.",
-      "en": "Design and manufacture of segmented control valves for main gas transmission lines.",
-      "ar": "تصميم وتصنيع صمامات تحكم مجزأة.",
-      "ru": "Проектирование и производство сегментных клапанов."
+      "fa": "طراحی و تولید شیر کنترلی گلاب.",
+      "en": "Design and manufacture of a globe control valve.",
+      "ar": "تصميم وتصنيع صمام تحكم من النوع الكروي.",
+      "ru": "Проектирование и производство проходного регулирующего клапана."
     },
     "image": "",
-    "year": "1402",
+    "year": "2020",
     "order": 3,
+    "active": true
+  },
+  {
+    "id": "project-2022-letdown-valves",
+    "title": {
+      "fa": "طراحی و تولید شیرهای لت‌داون",
+      "en": "Letdown Valve Design & Manufacture",
+      "ar": "تصميم وتصنيع صمامات خفض الضغط",
+      "ru": "Проектирование и производство редукционных клапанов"
+    },
+    "industry": {
+      "fa": "طراحی و ساخت",
+      "en": "Design & manufacturing",
+      "ar": "التصميم والتصنيع",
+      "ru": "Проектирование и производство"
+    },
+    "description": {
+      "fa": "طراحی و تولید شیرهای لت‌داون.",
+      "en": "Design and manufacture of letdown valves.",
+      "ar": "تصميم وتصنيع صمامات خفض الضغط.",
+      "ru": "Проектирование и производство редукционных клапанов."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 4,
+    "active": true
+  },
+  {
+    "id": "project-2022-control-valve-capacity-test",
+    "title": {
+      "fa": "تست میدانی ظرفیت شیرهای کنترلی از ½ تا ۲۴ اینچ",
+      "en": "Field Capacity Testing of ½- to 24-inch Control Valves",
+      "ar": "اختبار السعة الميداني لصمامات التحكم من ½ إلى 24 بوصة",
+      "ru": "Полевые испытания пропускной способности регулирующих клапанов ½–24 дюйма"
+    },
+    "industry": {
+      "fa": "تست و آزمون",
+      "en": "Testing",
+      "ar": "الاختبار",
+      "ru": "Испытания"
+    },
+    "description": {
+      "fa": "تست میدانی ظرفیت شیرهای کنترلی در بازهٔ سایزی ½ تا ۲۴ اینچ.",
+      "en": "Field capacity testing for control valves ranging from ½ to 24 inches.",
+      "ar": "اختبار السعة ميدانياً لصمامات التحكم بأحجام تتراوح من ½ إلى 24 بوصة.",
+      "ru": "Полевые испытания пропускной способности регулирующих клапанов размером от ½ до 24 дюймов."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 5,
+    "active": true
+  },
+  {
+    "id": "project-2022-micro-trim-control-valve",
+    "title": {
+      "fa": "طراحی و تولید کنترل ولو میکروتریم",
+      "en": "Micro-Trim Control Valve Design & Manufacture",
+      "ar": "تصميم وتصنيع صمام تحكم بتقليم دقيق",
+      "ru": "Проектирование и производство регулирующего клапана Micro-Trim"
+    },
+    "industry": {
+      "fa": "طراحی و ساخت",
+      "en": "Design & manufacturing",
+      "ar": "التصميم والتصنيع",
+      "ru": "Проектирование и производство"
+    },
+    "description": {
+      "fa": "طراحی و تولید کنترل ولو میکروتریم.",
+      "en": "Design and manufacture of a micro-trim control valve.",
+      "ar": "تصميم وتصنيع صمام تحكم بتقليم دقيق.",
+      "ru": "Проектирование и производство регулирующего клапана Micro-Trim."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 6,
+    "active": true
+  },
+  {
+    "id": "project-2022-ball-grinding",
+    "title": {
+      "fa": "سنگ‌زنی توپی از سایز ½ تا ۳۴ اینچ",
+      "en": "Ball Grinding for ½- to 34-inch Sizes",
+      "ar": "جلخ كرات الصمامات بمقاسات من ½ إلى 34 بوصة",
+      "ru": "Шлифовка шаров клапанов размером от ½ до 34 дюймов"
+    },
+    "industry": {
+      "fa": "ماشین‌کاری و پرداخت",
+      "en": "Machining & finishing",
+      "ar": "التشغيل والتشطيب",
+      "ru": "Механическая обработка и отделка"
+    },
+    "description": {
+      "fa": "سنگ‌زنی توپی شیر در بازهٔ سایزی ½ تا ۳۴ اینچ.",
+      "en": "Grinding of valve balls ranging from ½ to 34 inches.",
+      "ar": "جلخ كرات الصمامات بمقاسات تتراوح من ½ إلى 34 بوصة.",
+      "ru": "Шлифовка шаров клапанов размером от ½ до 34 дюймов."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 7,
+    "active": true
+  },
+  {
+    "id": "project-2022-48-inch-butterfly-control-valve",
+    "title": {
+      "fa": "ساخت کنترل باترفلای ولو ۴۸ اینچ",
+      "en": "48-inch Butterfly Control Valve Manufacturing",
+      "ar": "تصنيع صمام تحكم فراشي مقاس 48 بوصة",
+      "ru": "Производство регулирующего дискового клапана 48 дюймов"
+    },
+    "industry": {
+      "fa": "طراحی و ساخت",
+      "en": "Design & manufacturing",
+      "ar": "التصميم والتصنيع",
+      "ru": "Проектирование и производство"
+    },
+    "description": {
+      "fa": "ساخت کنترل باترفلای ولو با قطر اسمی ۴۸ اینچ.",
+      "en": "Manufacturing of a butterfly control valve with a nominal size of 48 inches.",
+      "ar": "تصنيع صمام تحكم فراشي بقطر اسمي يبلغ 48 بوصة.",
+      "ru": "Производство регулирующего дискового клапана номинальным диаметром 48 дюймов."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 8,
+    "active": true
+  },
+  {
+    "id": "project-2022-segmented-ball-control-valve",
+    "title": {
+      "fa": "طراحی و تولید سگمنت بال کنترلی",
+      "en": "Segmented Ball Control Valve Design & Manufacture",
+      "ar": "تصميم وتصنيع صمام تحكم كروي مقطعي",
+      "ru": "Проектирование и производство сегментного шарового клапана"
+    },
+    "industry": {
+      "fa": "طراحی و ساخت",
+      "en": "Design & manufacturing",
+      "ar": "التصميم والتصنيع",
+      "ru": "Проектирование и производство"
+    },
+    "description": {
+      "fa": "طراحی و تولید شیر کنترلی سگمنت بال.",
+      "en": "Design and manufacture of a segmented ball control valve.",
+      "ar": "تصميم وتصنيع صمام تحكم كروي مقطعي.",
+      "ru": "Проектирование и производство сегментного шарового клапана."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 9,
+    "active": true
+  },
+  {
+    "id": "project-2022-cryogenic-valve-test",
+    "title": {
+      "fa": "تست کرایوژنیک ولو",
+      "en": "Cryogenic Valve Testing",
+      "ar": "اختبار الصمامات المبردة",
+      "ru": "Испытания криогенных клапанов"
+    },
+    "industry": {
+      "fa": "تست و آزمون",
+      "en": "Testing",
+      "ar": "الاختبار",
+      "ru": "Испытания"
+    },
+    "description": {
+      "fa": "انجام تست کرایوژنیک شیر.",
+      "en": "Cryogenic testing of a valve.",
+      "ar": "إجراء اختبار مبرد للصمام.",
+      "ru": "Криогенные испытания клапана."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 10,
+    "active": true
+  },
+  {
+    "id": "project-2022-piston-control-valve",
+    "title": {
+      "fa": "طراحی و تولید شیر کنترلی پیستونی",
+      "en": "Piston Control Valve Design & Manufacture",
+      "ar": "تصميم وتصنيع صمام تحكم مكبسي",
+      "ru": "Проектирование и производство поршневого регулирующего клапана"
+    },
+    "industry": {
+      "fa": "طراحی و ساخت",
+      "en": "Design & manufacturing",
+      "ar": "التصميم والتصنيع",
+      "ru": "Проектирование и производство"
+    },
+    "description": {
+      "fa": "طراحی و تولید شیر کنترلی پیستونی.",
+      "en": "Design and manufacture of a piston control valve.",
+      "ar": "تصميم وتصنيع صمام تحكم مكبسي.",
+      "ru": "Проектирование и производство поршневого регулирующего клапана."
+    },
+    "image": "",
+    "year": "2022",
+    "order": 11,
     "active": true
   }
 ]
