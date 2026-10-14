@@ -63,7 +63,7 @@ function ValveModel({ explode, partNames }) {
       {parts.map((p, i) => (
         <ValvePart key={i} {...p} explode={explode} />
       ))}
-      <Environment preset="warehouse" />
+      <Environment files="/hdri/empty_warehouse_01_1k.hdr" />
     </>
   );
 }

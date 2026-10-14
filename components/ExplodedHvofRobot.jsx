@@ -72,7 +72,7 @@ function RobotModel({ explode, partNames }) {
       {parts.map(function(p, i) {
         return <RobotPart key={i} {...p} explode={explode} />;
       })}
-      <Environment preset="warehouse" />
+      <Environment files="/hdri/empty_warehouse_01_1k.hdr" />
     </>
   );
 }

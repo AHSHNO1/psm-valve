@@ -77,7 +77,7 @@ function BallModel({ explode, partNames }) {
       {parts.map(function(p, i) {
         return <BallPart key={i} {...p} explode={explode} />;
       })}
-      <Environment preset="warehouse" />
+      <Environment files="/hdri/empty_warehouse_01_1k.hdr" />
     </>
   );
 }
