@@ -7,12 +7,17 @@ import {
   ShieldAlert, Snowflake, Flame, ArrowLeft, Filter, Package
 } from "lucide-react";
 import { categories } from "@/lib/categories";
+import { products as catalog } from "@/lib/products";
 import { useDictionary } from "./Providers";
 
 const ICONS = {
   Gauge, Circle, Sun, Square, ArrowRight, Cylinder, Minus,
   ShieldAlert, Snowflake, Flame
 };
+
+function catalogImage(slug) {
+  return catalog.find((x) => x.slug === slug)?.image || null;
+}
 
 export default function ProductsMasonelian() {
   const { locale, t } = useDictionary();
@@ -113,7 +118,23 @@ export default function ProductsMasonelian() {
                       href={`/${locale}/products/${p.slug}`}
                       className="product-card-masonelian block p-4 sm:p-6 h-full"
                     >
-                      {/* Product visual placeholder */}
+                      {catalogImage(p.slug) ? (
+                        <div
+                          className="relative aspect-[4/3] rounded-xl mb-4 sm:mb-5 overflow-hidden bg-white"
+                          style={{ border: "1px solid var(--border)" }}
+                        >
+                          <img
+                            src={catalogImage(p.slug)}
+                            alt={p.name[locale] || p.name.fa}
+                            className="w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                          <div className="absolute top-2 sm:top-3 right-2 sm:right-3 px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-black"
+                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--gold)" }}>
+                            {p.series}
+                          </div>
+                        </div>
+                      ) : (
                       <div
                         className="relative aspect-[4/3] rounded-xl mb-4 sm:mb-5 grid place-items-center overflow-hidden"
                         style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}
@@ -129,6 +150,7 @@ export default function ProductsMasonelian() {
                           {p.series}
                         </div>
                       </div>
+                      )}
 
                       <h3 className="font-bold text-sm sm:text-base leading-6" style={{ color: "var(--text)" }}>
                         {p.name[locale] || p.name.fa}

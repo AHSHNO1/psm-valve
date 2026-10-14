@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { GUIDELINES } from "@/lib/upload-guidelines";
 import { categories } from "@/lib/categories";
+import { SPEC_FIELDS } from "@/lib/spec-fields";
 
 const LANGS = [
   { code: "fa", label: "فارسی", flag: "🇮🇷", dir: "rtl" },
@@ -52,6 +53,14 @@ function ensureArrML(val) {
   return emptyArrML();
 }
 
+function ensureSpec(val) {
+  const out = {};
+  SPEC_FIELDS.forEach(function(f) {
+    out[f.id] = ensureML(val && val[f.id]);
+  });
+  return out;
+}
+
 export default function ProductWizard({ initial, isNew = false }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -70,7 +79,7 @@ export default function ProductWizard({ initial, isNew = false }) {
         short: ensureML(initial.short),
         applications: ensureArrML(initial.applications),
         features: ensureArrML(initial.features),
-        specs: Array.isArray(initial.specs) ? initial.specs : []
+        spec: ensureSpec(initial.spec)
       };
     }
     return {
@@ -82,7 +91,7 @@ export default function ProductWizard({ initial, isNew = false }) {
       short: emptyML(),
       applications: emptyArrML(),
       features: emptyArrML(),
-      specs: []
+      spec: ensureSpec(null)
     };
   });
 
@@ -120,27 +129,11 @@ export default function ProductWizard({ initial, isNew = false }) {
     });
   }
 
-  function addSpec() {
+  function updateSpec(fieldId, lang, value) {
     setProduct(function(prev) {
       const clone = JSON.parse(JSON.stringify(prev));
-      clone.specs.push({ key: emptyML(), value: emptyML() });
-      return clone;
-    });
-  }
-
-  function updateSpec(idx, side, lang, value) {
-    setProduct(function(prev) {
-      const clone = JSON.parse(JSON.stringify(prev));
-      if (!clone.specs[idx][side]) clone.specs[idx][side] = emptyML();
-      clone.specs[idx][side][lang] = value;
-      return clone;
-    });
-  }
-
-  function removeSpec(idx) {
-    setProduct(function(prev) {
-      const clone = JSON.parse(JSON.stringify(prev));
-      clone.specs.splice(idx, 1);
+      if (!clone.spec[fieldId]) clone.spec[fieldId] = emptyML();
+      clone.spec[fieldId][lang] = value;
       return clone;
     });
   }
@@ -288,9 +281,7 @@ export default function ProductWizard({ initial, isNew = false }) {
           {step === 4 && (
             <Step4
               product={product}
-              addSpec={addSpec}
               updateSpec={updateSpec}
-              removeSpec={removeSpec}
               activeLang={activeLang}
               setActiveLang={setActiveLang}
             />
@@ -686,9 +677,9 @@ function Step3({ product, addArrItem, removeArrItem, activeLang, setActiveLang }
 }
 
 // ================================================================
-// STEP 4 - Specs
+// STEP 4 - Specs (fixed fields, shared with the public product page)
 // ================================================================
-function Step4({ product, addSpec, updateSpec, removeSpec, activeLang, setActiveLang }) {
+function Step4({ product, updateSpec, activeLang, setActiveLang }) {
   const currentLang = LANGS.find(function(l) { return l.code === activeLang; }) || LANGS[0];
 
   return (
@@ -713,73 +704,31 @@ function Step4({ product, addSpec, updateSpec, removeSpec, activeLang, setActive
         style={{ background: "rgba(135, 100, 184, 0.06)", border: "1px solid rgba(135, 100, 184, 0.25)" }}>
         <Info size={20} style={{ color: "#8764B8", flexShrink: 0, marginTop: "2px" }} />
         <div className="text-sm" style={{ color: "var(--m-text-soft)" }}>
-          جدول کلید-مقدار بسازید. مثل «سایز» → «1 تا 24 اینچ». در هر زبان می‌توانید جداگانه پر کنید.
+          هر فیلد را در زبان فعال پر کنید. فیلد خالی در سایت با «بهزودی» نمایش داده میشود.
         </div>
       </div>
 
-      {product.specs.length === 0 ? (
-        <div
-          className="text-center py-16 rounded-xl"
-          style={{ background: "#F8F9FB", border: "2px dashed var(--m-border-strong)" }}
-        >
-          <Target size={48} style={{ color: "var(--m-text-muted)", margin: "0 auto 12px" }} />
-          <div className="font-black text-lg mb-2">هنوز مشخصه‌ای اضافه نشده</div>
-          <div className="text-sm mb-6" style={{ color: "var(--m-text-muted)" }}>
-            اولین مشخصه فنی محصول را اضافه کنید
-          </div>
-          <button type="button" onClick={addSpec} className="big-btn big-btn-primary">
-            <Plus size={18} /> افزودن اولین مشخصه
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div className="grid grid-cols-2 gap-3 mb-3 px-3">
-            <div className="text-xs font-black" style={{ color: "var(--m-text-muted)" }}>عنوان</div>
-            <div className="text-xs font-black" style={{ color: "var(--m-text-muted)" }}>مقدار</div>
-          </div>
-          {product.specs.map(function(s, idx) {
-            return (
-              <div key={idx} className="spec-row">
-                <input
-                  type="text"
-                  dir={currentLang.dir}
-                  value={(s.key && s.key[activeLang]) || ""}
-                  onChange={function(e) { updateSpec(idx, "key", activeLang, e.target.value); }}
-                  placeholder="مثل: سایز"
-                  className="big-input"
-                  style={{ padding: "12px 14px", fontSize: "14px" }}
-                />
-                <input
-                  type="text"
-                  dir={currentLang.dir}
-                  value={(s.value && s.value[activeLang]) || ""}
-                  onChange={function(e) { updateSpec(idx, "value", activeLang, e.target.value); }}
-                  placeholder="مثل: 1 تا 24 اینچ"
-                  className="big-input"
-                  style={{ padding: "12px 14px", fontSize: "14px" }}
-                />
-                <button
-                  type="button"
-                  onClick={function() { removeSpec(idx); }}
-                  className="w-11 h-11 rounded-xl grid place-items-center transition"
-                  style={{ background: "rgba(232, 17, 35, 0.1)", color: "#E81123" }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={addSpec}
-            className="w-full py-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 mt-4"
-            style={{ background: "#F8F9FB", border: "2px dashed var(--m-border-strong)", color: "var(--m-text-soft)" }}
-          >
-            <Plus size={16} /> افزودن مشخصه جدید
-          </button>
-        </div>
-      )}
+      <div className="grid md:grid-cols-2 gap-x-6">
+        {SPEC_FIELDS.map(function(f) {
+          const value = (product.spec && product.spec[f.id] && product.spec[f.id][activeLang]) || "";
+          return (
+            <label key={f.id} className="block mb-4">
+              <span className="text-xs font-black mb-1.5 block" style={{ color: "var(--m-text-soft)" }}>
+                {f.label[activeLang] || f.label.fa}
+              </span>
+              <input
+                type="text"
+                dir={currentLang.dir}
+                value={value}
+                onChange={function(e) { updateSpec(f.id, activeLang, e.target.value); }}
+                placeholder={(f.hint && (f.hint[activeLang] || f.hint.fa)) || ""}
+                className="big-input"
+                style={{ padding: "12px 14px", fontSize: "14px" }}
+              />
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -792,9 +741,12 @@ function Step5({ product, activeLang, setActiveLang }) {
   const short = product.short[activeLang] || product.short.fa || "";
   const apps = product.applications[activeLang] || [];
   const feats = product.features[activeLang] || [];
-  const specs = product.specs.filter(function(s) {
-    return s.key && (s.key[activeLang] || s.key.fa);
-  });
+  const specs = SPEC_FIELDS
+    .map(function(f) {
+      const v = product.spec && product.spec[f.id] && (product.spec[f.id][activeLang] || product.spec[f.id].fa);
+      return { key: f.label[activeLang] || f.label.fa, value: v || "" };
+    })
+    .filter(function(s) { return s.value; });
 
   return (
     <div>
@@ -887,8 +839,8 @@ function Step5({ product, activeLang, setActiveLang }) {
                 </div>
                 <div className="text-xs rounded-lg overflow-hidden" style={{ border: "1px solid var(--m-border)" }}>
                   {specs.slice(0, 4).map(function(s, i) {
-                    const k = s.key[activeLang] || s.key.fa;
-                    const v = s.value[activeLang] || s.value.fa;
+                    const k = s.key;
+                    const v = s.value;
                     return (
                       <div key={i} className="flex justify-between px-3 py-2 gap-2"
                         style={{ background: i % 2 === 0 ? "transparent" : "#F8F9FB", borderBottom: i < Math.min(specs.length, 4) - 1 ? "1px solid var(--m-border)" : "none" }}>
