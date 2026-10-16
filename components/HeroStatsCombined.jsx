@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Package, Calculator, FileText, Phone, ArrowLeft } from "lucide-react";
 import { useDictionary } from "./Providers";
 
-export default function HeroStatsCombined({ sliders, locale, fallbackDict }) {
+export default function HeroStatsCombined({ sliders, locale, fallbackDict, logo }) {
   const { t } = useDictionary();
   const isFa = locale === "fa";
 
@@ -90,7 +90,7 @@ export default function HeroStatsCombined({ sliders, locale, fallbackDict }) {
 
   return (
     <div>
-      <HeroSlider sliders={sliders} locale={locale} fallbackDict={fallbackDict} />
+      <HeroSlider sliders={sliders} locale={locale} logo={logo} />
 
       {/* Smart Action Bar */}
       <div className="smart-bar-section">
@@ -181,19 +181,25 @@ export default function HeroStatsCombined({ sliders, locale, fallbackDict }) {
         }
 
         .smart-card-featured {
-          background: linear-gradient(
-            135deg,
-            rgba(224, 168, 26, 0.10),
-            rgba(184, 133, 10, 0.02)
-          );
-          border-color: rgba(224, 168, 26, 0.45);
+          background: linear-gradient(135deg, #FFF6D7 0%, #F5D982 54%, #EBC458 100%);
+          border-color: rgba(184, 134, 11, 0.62);
+          box-shadow: 0 8px 22px rgba(184, 134, 11, 0.14);
         }
-        .dark .smart-card-featured {
-          background: linear-gradient(
-            135deg,
-            rgba(255, 215, 0, 0.08),
-            rgba(184, 133, 10, 0.02)
-          );
+        .smart-card-featured .smart-title {
+          color: #332608;
+        }
+        .smart-card-featured .smart-sub {
+          color: #65501C;
+        }
+        .smart-card-featured .smart-icon {
+          color: #76580A;
+          background: rgba(118, 88, 10, 0.12);
+        }
+        .smart-card-featured .smart-arrow {
+          color: #76580A;
+        }
+        .smart-card-featured:hover {
+          box-shadow: 0 12px 28px rgba(184, 134, 11, 0.24);
         }
 
         .smart-icon {

@@ -20,6 +20,12 @@ function getVimeoId(url) {
   return m ? m[1] : null;
 }
 
+function getAparatId(url) {
+  if (!url) return null;
+  const m = url.match(/aparat\.com\/(?:video\/video\/embed\/videohash\/|v\/)([\w-]+)/);
+  return m ? m[1] : null;
+}
+
 export default function VideoEmbed({ url, title, poster, aspect = "16/9" }) {
   const [playing, setPlaying] = useState(false);
 
@@ -46,6 +52,7 @@ export default function VideoEmbed({ url, title, poster, aspect = "16/9" }) {
 
   const ytId = getYouTubeId(url);
   const vimeoId = getVimeoId(url);
+  const aparatId = getAparatId(url);
 
   if (!playing && poster) {
     return (
@@ -67,6 +74,24 @@ export default function VideoEmbed({ url, title, poster, aspect = "16/9" }) {
           </div>
         </div>
       </button>
+    );
+  }
+
+  if (aparatId) {
+    const src = url.includes("/video/video/embed/")
+      ? url
+      : `https://www.aparat.com/video/video/embed/videohash/${aparatId}/vt/frame?muted=true`;
+
+    return (
+      <div className="w-full rounded-2xl overflow-hidden" style={{ aspectRatio: aspect }}>
+        <iframe
+          src={src}
+          title={title || "Video"}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="w-full h-full"
+        />
+      </div>
     );
   }
 

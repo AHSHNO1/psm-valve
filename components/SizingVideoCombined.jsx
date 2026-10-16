@@ -64,30 +64,32 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
           style={{
             position: "relative",
             borderRadius: 24,
-            padding: 28,
-            background: "linear-gradient(135deg, #0F1114 0%, #1F2124 100%)",
-            border: "1px solid rgba(212, 160, 23, 0.3)",
+            padding: "clamp(18px, 4vw, 28px)",
+            background: "linear-gradient(145deg, var(--bg-card), var(--bg-soft))",
+            border: "1px solid var(--border)",
+            boxShadow: "var(--shadow-md)",
             overflow: "hidden"
           }}
         >
           {/* Decorative grid */}
           <div className="grid-pattern" style={{
-            position: "absolute", inset: 0, opacity: 0.15
+            position: "absolute", inset: 0, opacity: 0.22, pointerEvents: "none"
           }} />
           <div style={{
             position: "absolute",
             top: -60, right: -60,
             width: 200, height: 200,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(245, 197, 24, 0.2), transparent 70%)",
-            filter: "blur(40px)"
+            background: "radial-gradient(circle, var(--glow), transparent 70%)",
+            filter: "blur(36px)",
+            pointerEvents: "none"
           }} />
 
           <div style={{ position: "relative" }}>
             <span className="chip" style={{
-              background: "rgba(245, 197, 24, 0.15)",
-              borderColor: "rgba(245, 197, 24, 0.4)",
-              color: "#F5C518"
+              background: "var(--glow)",
+              borderColor: "var(--border-strong)",
+              color: "var(--gold)"
             }}>
               <Sparkles size={12} /> {L.sizingBadge}
             </span>
@@ -97,8 +99,8 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
               marginTop: 20, marginBottom: 20,
               display: "grid", placeItems: "center",
               background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-              color: "#FFFFFF",
-              boxShadow: "0 12px 28px rgba(201, 149, 13, 0.4)"
+              color: "#17191D",
+              boxShadow: "0 10px 24px var(--glow)"
             }}>
               <Calculator size={30} />
             </div>
@@ -106,7 +108,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
             <h3 style={{
               fontSize: 24,
               fontWeight: 900,
-              color: "#FFFFFF",
+              color: "var(--text)",
               lineHeight: 1.3,
               marginBottom: 12
             }}>
@@ -116,13 +118,13 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
             <p style={{
               fontSize: 14,
               lineHeight: 1.9,
-              color: "rgba(241, 243, 245, 0.7)",
+              color: "var(--text-soft)",
               marginBottom: 20
             }}>
               {L.sizingDesc}
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: 8, marginBottom: 24 }}>
               {L.sizingFeatures.map(function(f, i) {
                 return (
                   <div key={i} style={{
@@ -131,12 +133,12 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
                     gap: 6,
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "rgba(241, 243, 245, 0.75)"
+                    color: "var(--text-soft)"
                   }}>
                     <span style={{
                       width: 4, height: 4,
                       borderRadius: "50%",
-                      background: "#F5C518",
+                      background: "var(--gold)",
                       flexShrink: 0
                     }} />
                     {f}
@@ -160,7 +162,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
           style={{
             position: "relative",
             borderRadius: 24,
-            padding: 28,
+            padding: "clamp(18px, 4vw, 28px)",
             background: "var(--bg-card)",
             border: "1px solid var(--border)",
             overflow: "hidden"

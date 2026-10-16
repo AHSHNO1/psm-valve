@@ -1,38 +1,64 @@
 import { NextResponse } from "next/server";
 import { addMessage } from "@/lib/db";
+import { verifyContactChallenge } from "@/lib/contact-challenge";
+import { consumeRateLimit } from "@/lib/rate-limit";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { name, email, phone, message } = body || {};
-
-    if (!name || !email || !message) {
-      return NextResponse.json(
-        { ok: false, error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!emailOk) {
-      return NextResponse.json(
-        { ok: false, error: "Invalid email" },
-        { status: 400 }
-      );
-    }
-
-    const saved = addMessage({
-      name: String(name).slice(0, 200),
-      email: String(email).slice(0, 200),
-      phone: String(phone || "").slice(0, 50),
-      message: String(message).slice(0, 5000)
-    });
-
-    return NextResponse.json({ ok: true, id: saved.id });
-  } catch (e) {
+  const rate = consumeRateLimit(request, "contact-submit", 5, 10 * 60 * 1000);
+  if (!rate.allowed) {
     return NextResponse.json(
-      { ok: false, error: "Server error" },
-      { status: 500 }
+      { ok: false, code: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfter) } }
     );
+  }
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > 16000) {
+    return NextResponse.json({ ok: false, error: "درخواست بیش از حد بزرگ است." }, { status: 413 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "درخواست JSON معتبر نیست." }, { status: 400 });
+  }
+
+  if (typeof body?.website === "string" && body.website.trim()) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+  const message = typeof body?.message === "string" ? body.message.trim() : "";
+  if (!name || !email || !message) {
+    return NextResponse.json({ ok: false, error: "فیلدهای ضروری را تکمیل کنید." }, { status: 400 });
+  }
+  if (name.length > 120 || email.length > 254 || phone.length > 50 || message.length > 5000) {
+    return NextResponse.json({ ok: false, error: "یکی از فیلدها بیش از حد طولانی است." }, { status: 400 });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ ok: false, error: "نشانی ایمیل معتبر نیست." }, { status: 400 });
+  }
+
+  let challengeValid;
+  try {
+    challengeValid = verifyContactChallenge(body?.captchaToken, body?.captchaInput);
+  } catch (error) {
+    console.error("Unable to verify contact challenge:", error);
+    return NextResponse.json({ ok: false, error: "بررسی امنیتی موقتاً در دسترس نیست." }, { status: 503 });
+  }
+  if (!challengeValid) {
+    return NextResponse.json({ ok: false, code: "invalid_challenge" }, { status: 400 });
+  }
+
+  try {
+    const saved = addMessage({ name, email, phone, message });
+    return NextResponse.json({ ok: true, id: saved.id });
+  } catch (error) {
+    console.error("Unable to store contact message:", error);
+    return NextResponse.json({ ok: false, error: "ذخیرهٔ پیام با خطا مواجه شد." }, { status: 500 });
   }
 }

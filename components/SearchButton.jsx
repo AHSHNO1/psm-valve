@@ -17,6 +17,47 @@ export default function SearchButton() {
   const [query, setQuery] = useState("");
   const inputRef = useRef(null);
   const router = useRouter();
+  const labels = {
+    fa: {
+      search: "جستجوی محصولات",
+      close: "بستن جستجو",
+      input: "جستجو بر اساس نام یا کد محصول",
+      placeholder: "جستجوی محصول...",
+      instruction: "نام یا کد محصول را تایپ کنید",
+      noResults: "محصولی یافت نشد"
+    },
+    en: {
+      search: "Search products",
+      close: "Close search",
+      input: "Search by product name or series",
+      placeholder: "Search products...",
+      instruction: "Type a product name or series",
+      noResults: "No products found"
+    },
+    ar: {
+      search: "البحث عن المنتجات",
+      close: "إغلاق البحث",
+      input: "البحث باسم المنتج أو رقمه",
+      placeholder: "البحث عن المنتجات...",
+      instruction: "اكتب اسم المنتج أو رقمه",
+      noResults: "لم يتم العثور على منتجات"
+    },
+    ru: {
+      search: "Поиск продукции",
+      close: "Закрыть поиск",
+      input: "Поиск по названию или серии",
+      placeholder: "Поиск продукции...",
+      instruction: "Введите название продукции или серию",
+      noResults: "Продукция не найдена"
+    }
+  }[locale] || {
+    search: "Search products",
+    close: "Close search",
+    input: "Search by product name or series",
+    placeholder: "Search products...",
+    instruction: "Type a product name or series",
+    noResults: "No products found"
+  };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -57,8 +98,9 @@ export default function SearchButton() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        aria-label="Search"
+        aria-label={labels.search}
         className="w-10 h-10 rounded-lg border grid place-items-center transition hover:text-gold-500 hover:border-gold-500"
         style={{ borderColor: "var(--border-strong)", color: "var(--text-soft)" }}
       >
@@ -68,6 +110,9 @@ export default function SearchButton() {
       <AnimatePresence>
         {open && (
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={labels.search}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -90,11 +135,16 @@ export default function SearchButton() {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={locale === "fa" ? "جستجوی محصول..." : "Search products..."}
+                  aria-label={labels.input}
+                  placeholder={labels.placeholder}
                   className="flex-1 bg-transparent border-0 outline-none text-base"
                   style={{ color: "var(--text)" }}
                 />
-                <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-[var(--bg-soft)]">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label={labels.close}
+                  className="p-1 rounded hover:bg-[var(--bg-soft)]">
                   <X size={18} style={{ color: "var(--text-soft)" }} />
                 </button>
               </div>
@@ -102,19 +152,20 @@ export default function SearchButton() {
               <div className="max-h-[60vh] overflow-y-auto">
                 {!q && (
                   <div className="p-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-                    {locale === "fa" ? "نام یا کد محصول را تایپ کنید" : "Type product name or series"}
+                    {labels.instruction}
                   </div>
                 )}
                 {q && results.length === 0 && (
                   <div className="p-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-                    {locale === "fa" ? "محصولی یافت نشد" : "No results"}
+                    {labels.noResults}
                   </div>
                 )}
                 {results.map((p) => (
                   <button
+                    type="button"
                     key={p.slug}
                     onClick={() => go(p.slug)}
-                    className="w-full text-right flex items-center gap-4 p-4 transition hover:bg-[var(--bg-soft)] border-b"
+                    className="w-full text-start flex items-center gap-4 p-4 transition hover:bg-[var(--bg-soft)] border-b"
                     style={{ borderColor: "var(--border)" }}
                   >
                     <div

@@ -22,6 +22,7 @@ function Ico({ name, size }) {
     palette: <><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></>,
     settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
     lock: <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+    user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
     help: <><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
     logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
     external: <><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>,
@@ -49,6 +50,7 @@ const NAV_GROUPS = [
       { href: "/admin/products", label: "محصولات", icon: "package" },
       { href: "/admin/services", label: "خدمات", icon: "cog" },
       { href: "/admin/news", label: "اخبار", icon: "newspaper" },
+      { href: "/admin/articles", label: "مقاله‌ها", icon: "file" },
       { href: "/admin/slider", label: "اسلایدر", icon: "sparkles" },
       { href: "/admin/certificates", label: "گواهینامه‌ها", icon: "award" },
       { href: "/admin/faq", label: "سوالات متداول", icon: "help" },
@@ -76,16 +78,31 @@ const NAV_GROUPS = [
       { href: "/admin/branding", label: "هویت برند", icon: "palette" },
       { href: "/admin/settings", label: "تنظیمات", icon: "settings" },
       { href: "/admin/security", label: "امنیت", icon: "lock" },
+      { href: "/admin/users", label: "نویسندگان", icon: "user" },
       { href: "/admin/help", label: "راهنما", icon: "help" }
     ]
   }
 ];
 
-export default function AdminShell({ children, notifications = [], unreadCount = 0 }) {
+export default function AdminShell({ children, notifications = [], unreadCount = 0, userRole = "admin" }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [liveMessages, setLiveMessages] = useState(null);
+  const [liveMessageUnreadCount, setLiveMessageUnreadCount] = useState(null);
+  const [notificationError, setNotificationError] = useState("");
+  const navigationGroups = userRole === "author"
+    ? [{ label: "نویسنده", items: [{ href: "/admin/author", label: "پیش‌نویس‌های من", icon: "file" }] }]
+    : NAV_GROUPS;
+  const staticNotifications = notifications.filter((item) => item.type !== "message");
+  const visibleNotifications = liveMessages === null
+    ? notifications
+    : staticNotifications.concat(liveMessages);
+  const staticUnreadCount = staticNotifications.filter((item) => item.unread).length;
+  const visibleUnreadCount = liveMessageUnreadCount === null
+    ? unreadCount
+    : liveMessageUnreadCount + staticUnreadCount;
 
   useEffect(function() { setSidebarOpen(false); }, [pathname]);
 
@@ -104,6 +121,49 @@ export default function AdminShell({ children, notifications = [], unreadCount =
     return function() { window.removeEventListener("keydown", onKey); };
   }, []);
 
+  useEffect(function() {
+    if (userRole !== "admin") return;
+    let active = true;
+
+    async function refreshMessages() {
+      try {
+        const response = await fetch("/api/messages?summary=1", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || !data.ok || !Array.isArray(data.messages)) {
+          throw new Error(data.error || "Unable to refresh notifications");
+        }
+        if (!active) return;
+        setLiveMessages(data.messages.map((message) => {
+          const createdAt = message.createdAt || "";
+          return {
+            id: "msg-" + message.id,
+            type: "message",
+            title: message.name || "پیام جدید",
+            description: (message.message || "").substring(0, 100),
+            href: "/admin/messages",
+            unread: !message.read,
+            createdAt,
+            time: createdAt ? new Date(createdAt).toLocaleString("fa-IR") : "—"
+          };
+        }));
+        setLiveMessageUnreadCount(Number(data.unreadCount) || 0);
+        setNotificationError("");
+      } catch (error) {
+        if (active) {
+          setNotificationError("به‌روزرسانی اعلان پیام‌ها ناموفق بود.");
+          console.error("Unable to refresh admin message notifications:", error);
+        }
+      }
+    }
+
+    refreshMessages();
+    const timer = setInterval(refreshMessages, 30000);
+    return function() {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [userRole]);
+
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
     sessionStorage.removeItem("psm_splash_seen");
@@ -112,9 +172,9 @@ export default function AdminShell({ children, notifications = [], unreadCount =
   }
 
   let currentLabel = "داشبورد";
-  for (let g = 0; g < NAV_GROUPS.length; g++) {
-    for (let i = 0; i < NAV_GROUPS[g].items.length; i++) {
-      const item = NAV_GROUPS[g].items[i];
+  for (let g = 0; g < navigationGroups.length; g++) {
+    for (let i = 0; i < navigationGroups[g].items.length; i++) {
+      const item = navigationGroups[g].items[i];
       if (item.href === "/admin" && pathname === "/admin") {
         currentLabel = item.label;
       } else if (item.href !== "/admin" && pathname.startsWith(item.href)) {
@@ -150,7 +210,7 @@ export default function AdminShell({ children, notifications = [], unreadCount =
         </div>
 
         <nav className="admin-groups">
-          {NAV_GROUPS.map(function(group, gi) {
+          {navigationGroups.map(function(group, gi) {
             return (
               <div key={gi} className="admin-group">
                 <div className="admin-group-title">{group.label}</div>
@@ -210,19 +270,19 @@ export default function AdminShell({ children, notifications = [], unreadCount =
             </div>
           </div>
 
-          <button
+          {userRole === "admin" && <button
             onClick={function() { setNotifOpen(true); }}
             className="head-icon-btn"
             aria-label="اعلان‌ها"
             title="اعلان‌ها (Ctrl+K)"
           >
             <Ico name="bell" size={17} />
-            {unreadCount > 0 && (
+            {visibleUnreadCount > 0 && (
               <span className="head-badge">
-                {unreadCount > 9 ? "9+" : unreadCount}
+                {visibleUnreadCount > 9 ? "9+" : visibleUnreadCount}
               </span>
             )}
-          </button>
+          </button>}
         </header>
 
         <main className="admin-content">
@@ -230,12 +290,15 @@ export default function AdminShell({ children, notifications = [], unreadCount =
         </main>
       </div>
 
-      <NotificationsPanel
-        open={notifOpen}
-        onClose={function() { setNotifOpen(false); }}
-        items={notifications}
-        unreadCount={unreadCount}
-      />
+      {userRole === "admin" && (
+        <NotificationsPanel
+          open={notifOpen}
+          onClose={function() { setNotifOpen(false); }}
+          items={visibleNotifications}
+          unreadCount={visibleUnreadCount}
+          error={notificationError}
+        />
+      )}
     </div>
   );
 }

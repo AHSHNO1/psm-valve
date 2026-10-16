@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import { Icon } from "./AdminIcons";
-import { DeleteBtn, SaveBtn, CancelBtn } from "./Actions";
+import { DeleteBtn, EditBtn, SaveBtn, CancelBtn, ToggleBtn } from "./Actions";
 
 const TABS = [
   { id: "gallery", label: "تصاویر", icon: "image" },
@@ -24,24 +24,56 @@ export default function MediaClient({ initial }) {
   async function refresh() {
     const res = await fetch("/api/media");
     const data = await res.json();
-    if (data.ok) setMedia(data.media);
+    if (!res.ok || !data.ok) throw new Error(data.error || "بارگذاری اطلاعات مدیا ناموفق بود");
+    setMedia(data.media);
   }
 
   async function saveIntro() {
-    await fetch("/api/media", {
+    const res = await fetch("/api/media", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ introVideoUrl: introUrl })
     });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      notify(data.error || "ذخیره ویدئو ناموفق بود", true);
+      return;
+    }
     notify("ویدئو معرفی ذخیره شد");
-    refresh();
+    refresh().catch((error) => notify(error.message, true));
   }
 
   async function removeItem(id, type) {
     if (!confirm("این آیتم حذف شود؟")) return;
-    await fetch("/api/media?id=" + id + "&type=" + type, { method: "DELETE" });
-    refresh();
-    notify("حذف شد");
+    try {
+      const res = await fetch("/api/media?id=" + encodeURIComponent(id) + "&type=" + type, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "حذف ناموفق بود");
+      await refresh();
+      notify("حذف شد");
+    } catch (error) {
+      notify(error.message || "حذف ناموفق بود", true);
+    }
+  }
+
+  async function toggleItem(item, type) {
+    const title = typeof item.title === "string"
+      ? item.title
+      : (item.title && (item.title.fa || item.title.en)) || "ویدئو";
+    const updated = { ...item, title, active: item.active === false };
+    try {
+      const res = await fetch("/api/media", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, id: item.id, item: updated })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "تغییر وضعیت ناموفق بود");
+      await refresh();
+      notify(updated.active ? "آیتم در سایت نمایش داده می‌شود" : "آیتم از سایت پنهان شد");
+    } catch (error) {
+      notify(error.message || "تغییر وضعیت ناموفق بود", true);
+    }
   }
 
   const activeList = media[tab] || [];
@@ -114,8 +146,42 @@ export default function MediaClient({ initial }) {
           marginBottom: 16
         }}>
           <MediaForm type={tab}
-            onSave={function() { refresh(); setEditing(null); notify("ذخیره شد"); }}
+            onSave={async function() {
+              try {
+                await refresh();
+                setEditing(null);
+                notify("ذخیره شد");
+              } catch (error) {
+                notify(error.message, true);
+              }
+            }}
             onCancel={function() { setEditing(null); }} />
+        </div>
+      )}
+
+      {editing && editing !== "new" && activeList.some((item) => item.id === editing) && (
+        <div className="anim-in" style={{
+          background: "#FFFFFF",
+          border: "1px solid #D1D5DB",
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16
+        }}>
+          <MediaForm
+            key={editing}
+            type={tab}
+            initialItem={activeList.find((item) => item.id === editing)}
+            onSave={async function() {
+              try {
+                await refresh();
+                setEditing(null);
+                notify("تغییرات ذخیره شد");
+              } catch (error) {
+                notify(error.message, true);
+              }
+            }}
+            onCancel={function() { setEditing(null); }}
+          />
         </div>
       )}
 
@@ -159,13 +225,27 @@ export default function MediaClient({ initial }) {
                 }}>
                   {(typeof item.title === "string" ? item.title : (item.title && item.title.fa)) || "بدون عنوان"}
                 </div>
+                {item.source === "aparat" && (
+                  <div style={{ fontSize: 10, color: "#7A8290", marginTop: 4 }}>
+                    همگام‌شده از کانال آپارات
+                  </div>
+                )}
+                {item.active === false && (
+                  <div style={{ fontSize: 10, color: "#B42318", marginTop: 4 }}>در سایت پنهان است</div>
+                )}
 
                 <div className="card-item-foot">
                   <a href={item.url} target="_blank" rel="noopener noreferrer"
                     className="act-btn act-btn-view" title="باز کردن">
                     <Icon name="external" />
                   </a>
-                  <DeleteBtn onClick={function() { removeItem(item.id, tab); }} />
+                  <EditBtn onClick={function() { setEditing(item.id); }} title="ویرایش" />
+                  <ToggleBtn active={item.active !== false}
+                    onClick={function() { toggleItem(item, tab); }}
+                    title={item.active === false ? "نمایش در سایت" : "پنهان کردن از سایت"} />
+                  {item.source !== "aparat" && (
+                    <DeleteBtn onClick={function() { removeItem(item.id, tab); }} />
+                  )}
                 </div>
               </div>
             );
@@ -176,88 +256,141 @@ export default function MediaClient({ initial }) {
   );
 }
 
-function MediaForm({ type, onSave, onCancel }) {
-  const [url, setUrl] = useState("");
-  const [poster, setPoster] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+function MediaForm({ type, initialItem, onSave, onCancel }) {
+  const initialTitle = initialItem && typeof initialItem.title === "object"
+    ? initialItem.title.fa || initialItem.title.en || ""
+    : (initialItem && initialItem.title) || "";
+  const [url, setUrl] = useState((initialItem && initialItem.url) || "");
+  const [poster, setPoster] = useState((initialItem && initialItem.poster) || "");
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState((initialItem && initialItem.description) || "");
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
+  const posterInputRef = useRef(null);
+
+  const labels = {
+    gallery: { title: "تصویر", accept: "image/*", uploadType: "images" },
+    videos: { title: "ویدئو", accept: "video/*", uploadType: "videos" },
+    catalogs: { title: "کاتالوگ PDF", accept: "application/pdf", uploadType: "catalogs" }
+  };
+  const label = labels[type];
+  const isEditing = Boolean(initialItem);
 
   async function upload(file, target) {
     if (!file) return;
     setUploading(true);
+    setError("");
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("type", type === "catalogs" ? "catalogs" : (type === "videos" ? "videos" : "images"));
+      fd.append("type", target === "poster" ? "posters" : label.uploadType);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.ok) {
-        if (target === "poster") setPoster(data.url);
-        else setUrl(data.url);
+      if (!res.ok || !data.ok || !data.url) {
+        throw new Error(data.error || "آپلود فایل انجام نشد");
       }
-    } catch (e) {}
-    setUploading(false);
+      if (target === "poster") setPoster(data.url);
+      else setUrl(data.url);
+    } catch (uploadError) {
+      setError(uploadError.message || "آپلود فایل انجام نشد");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function save() {
-    if (!url && type !== "videos") { return; }
-    setBusy(true);
-    try {
-      const item = { url: url, title: title, description: description };
-      if (type === "videos") item.poster = poster;
-      await fetch("/api/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: type, item: item })
-      });
-      onSave();
-    } catch (e) {}
-    setBusy(false);
-  }
+    if (!title.trim()) {
+      setError("لطفاً عنوان را وارد کنید");
+      return;
+    }
+    if (!url.trim()) {
+      setError(type === "videos" ? "لطفاً لینک ویدئو یا فایل آن را انتخاب کنید" : "لطفاً فایل را انتخاب کنید");
+      return;
+    }
 
-  const labels = {
-    gallery: { title: "تصویر", accept: "image/*" },
-    videos: { title: "ویدئو", accept: "video/*" },
-    catalogs: { title: "کاتالوگ PDF", accept: "application/pdf" }
-  };
-  const L = labels[type];
+    setBusy(true);
+    setError("");
+    try {
+      const item = {
+        url: url.trim(),
+        title: title.trim(),
+        description: description.trim(),
+        ...(initialItem && initialItem.aparatId ? { aparatId: initialItem.aparatId, source: "aparat" } : {}),
+        ...(initialItem && initialItem.active === false ? { active: false } : {})
+      };
+      if (type === "videos") item.poster = poster;
+      const res = await fetch("/api/media", {
+        method: isEditing ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: type, id: initialItem && initialItem.id, item: item })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "ذخیره اطلاعات انجام نشد");
+      await onSave();
+    } catch (saveError) {
+      setError(saveError.message || "ذخیره اطلاعات انجام نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div>
-      <label className="form-label">عنوان {L.title}</label>
+      <label className="form-label">عنوان {label.title}</label>
       <input type="text" value={title} onChange={function(e) { setTitle(e.target.value); }}
-        className="form-input" />
+        className="form-input" required />
 
       {type === "videos" && (
         <>
-          <label className="form-label" style={{ marginTop: 10 }}>لینک ویدئو (یوتیوب/ویمئو)</label>
-          <input type="text" dir="ltr" value={url} onChange={function(e) { setUrl(e.target.value); }}
-            placeholder="https://youtube.com/watch?v=..." className="form-input" />
-          <div style={{ fontSize: 11, color: "#7A8290", marginTop: 6, textAlign: "center", fontWeight: 900 }}>— یا آپلود فایل —</div>
+          <label className="form-label" style={{ marginTop: 10 }}>لینک ویدئو (آپارات، یوتیوب یا ویمئو)</label>
+          <input type="url" dir="ltr" value={url.startsWith("/uploads/") ? "" : url}
+            onChange={function(e) { setUrl(e.target.value); }}
+            placeholder="https://www.aparat.com/v/..." className="form-input" />
+          <div style={{ fontSize: 11, color: "#7A8290", marginTop: 6, textAlign: "center", fontWeight: 900 }}>— یا آپلود فایل ویدئو —</div>
         </>
       )}
 
-      <label className="form-label" style={{ marginTop: 10 }}>فایل</label>
+      <label className="form-label" style={{ marginTop: 10 }}>
+        {type === "videos" ? "فایل ویدئو" : type === "catalogs" ? "فایل PDF کاتالوگ" : "فایل تصویر"}
+      </label>
       <div onClick={function() { inputRef.current && inputRef.current.click(); }}
         style={{
           border: "2px dashed #D1D5DB", background: "#F4F5F7", borderRadius: 10,
           padding: 18, textAlign: "center", cursor: "pointer"
         }}>
-        <input ref={inputRef} type="file" accept={L.accept} style={{ display: "none" }}
-          onChange={function(e) { upload(e.target.files[0]); }} />
+        <input ref={inputRef} type="file" accept={label.accept} style={{ display: "none" }}
+          onChange={function(e) {
+            upload(e.target.files[0]);
+            e.target.value = "";
+          }} />
         {uploading ? <Icon name="loader" size={20} /> : <Icon name="upload" size={22} />}
-        {url && <div style={{ fontSize: 10, marginTop: 6, color: "#8A6508", fontWeight: 800 }}>فایل انتخاب شد</div>}
+        {url && <div style={{ fontSize: 10, marginTop: 6, color: "#8A6508", fontWeight: 800 }}>فایل انتخاب شده است؛ برای جایگزینی انتخاب کنید</div>}
       </div>
+
+      {type === "videos" && (
+        <div style={{ marginTop: 10 }}>
+          <label className="form-label">تصویر کاور ویدئو (اختیاری)</label>
+          <button type="button" className="btn-cancel" onClick={function() { posterInputRef.current && posterInputRef.current.click(); }}>
+            <Icon name="upload" size={14} /> انتخاب تصویر کاور
+          </button>
+          <input ref={posterInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }}
+            onChange={function(e) {
+              upload(e.target.files[0], "poster");
+              e.target.value = "";
+            }} />
+          {poster && <div style={{ fontSize: 11, marginTop: 6, color: "#8A6508" }}>کاور انتخاب شده است</div>}
+        </div>
+      )}
 
       <label className="form-label" style={{ marginTop: 10 }}>توضیحات (اختیاری)</label>
       <textarea rows={2} value={description} onChange={function(e) { setDescription(e.target.value); }}
         className="form-input" />
 
+      {error && <div className="msg msg-error" role="alert">{error}</div>}
       <div className="save-bar">
-        <SaveBtn onClick={save} busy={busy} />
+        <SaveBtn onClick={save} busy={busy || uploading} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

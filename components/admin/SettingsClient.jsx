@@ -15,8 +15,8 @@ export default function SettingsClient({ initial }) {
     address: (initial && initial.address) || "",
     siteUrl: (initial && initial.siteUrl) || "",
     workingHours: (initial && initial.workingHours) || "",
-    mapLat: (initial && initial.mapLat) || "34.0917",
-    mapLng: (initial && initial.mapLng) || "49.6892"
+    mapLat: (initial && initial.mapLat) || "",
+    mapLng: (initial && initial.mapLng) || ""
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
@@ -90,8 +90,8 @@ export default function SettingsClient({ initial }) {
       <SectionCard icon="building" color="#107C10" title="آدرس">
         <Field label="آدرس کامل" value={form.address} onChange={function(v) { update("address", v); }} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="عرض جغرافیایی (Lat)" value={form.mapLat} onChange={function(v) { update("mapLat", v); }} dir="ltr" />
-          <Field label="طول جغرافیایی (Lng)" value={form.mapLng} onChange={function(v) { update("mapLng", v); }} dir="ltr" />
+          <Field label="عرض جغرافیایی (Lat، اختیاری)" value={form.mapLat} onChange={function(v) { update("mapLat", v); }} dir="ltr" placeholder="مثال: 34.0765143" />
+          <Field label="طول جغرافیایی (Lng، اختیاری)" value={form.mapLng} onChange={function(v) { update("mapLng", v); }} dir="ltr" placeholder="مثال: 49.8397136" />
         </div>
       </SectionCard>
 

@@ -121,13 +121,17 @@ function ArticlesGrid({ items, locale, dict }) {
         return (
           <Link key={a.slug} href={"/" + locale + "/articles/" + a.slug}
             className="card-glass p-6 hover:border-gold-500/40 transition-all group">
-            <div className="text-xs font-bold" style={{ color: "var(--gold)" }}>{a.category}</div>
+            <div className="text-xs font-bold" style={{ color: "var(--gold)" }}>{pick(a.category, locale)}</div>
             <h3 className="mt-3 font-bold text-base leading-7 transition group-hover:text-gold-500"
-              style={{ color: "var(--text)" }}>{a.title}</h3>
-            <p className="mt-3 text-sm leading-6" style={{ color: "var(--text-soft)" }}>{a.excerpt}</p>
+              style={{ color: "var(--text)" }}>{pick(a.title, locale)}</h3>
+            <p className="mt-3 text-sm leading-6" style={{ color: "var(--text-soft)" }}>{pick(a.excerpt, locale)}</p>
             <div className="mt-5 flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
-              <span>{a.date}</span>
-              <span>{a.readTime}</span>
+              <span>{pick(a.date, locale)}</span>
+              <span>
+                {a.readMinutes
+                  ? `${new Intl.NumberFormat(locale).format(a.readMinutes)} ${dict.articles.readTime}`
+                  : a.readTime}
+              </span>
             </div>
           </Link>
         );

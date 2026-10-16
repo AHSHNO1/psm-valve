@@ -95,6 +95,7 @@ export default async function WhyUsPage({ params }) {
           })}
         </div>
       )}
+
     </section>
   );
 }

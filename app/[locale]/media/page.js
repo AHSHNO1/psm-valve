@@ -1,14 +1,34 @@
-import { getMedia } from "@/lib/media";
+import { getAparatChannelVideos, getMedia, mergeAparatVideos } from "@/lib/media";
 import { getDictionary } from "@/lib/getDictionary";
 import { getNews } from "@/lib/content";
-import { articles } from "@/lib/articles";
+import { getArticles } from "@/lib/articles";
 import MediaTabsSimple from "@/components/MediaTabsSimple";
 
-export default async function MediaPage({ params }) {
+export const dynamic = "force-dynamic";
+
+export default async function MediaPage({ params, searchParams }) {
   const { locale } = params;
   const dict = await getDictionary(locale);
   const media = getMedia();
-  const news = getNews();
+  let aparatUnavailable = false;
+  let channelVideos = [];
+  try {
+    channelVideos = await getAparatChannelVideos();
+  } catch (error) {
+    console.error("Unable to load Aparat channel videos:", error);
+    aparatUnavailable = true;
+  }
+
+  const displayMedia = {
+    ...media,
+    videos: mergeAparatVideos(channelVideos, media.videos || []),
+    aparatUnavailable,
+    catalogs: (media.catalogs || []).filter((catalog) =>
+      typeof catalog.url === "string" && catalog.url.startsWith("/uploads/catalogs/")
+    )
+  };
+  const news = getNews().filter((item) => item.active !== false && item.status !== "pending");
+  const articles = getArticles().filter((article) => article.active !== false);
 
   return (
     <section className="container-x py-10 sm:py-16">
@@ -19,11 +39,12 @@ export default async function MediaPage({ params }) {
       </h1>
 
       <MediaTabsSimple
-        media={media}
+        media={displayMedia}
         news={news}
         articles={articles}
         locale={locale}
         dict={dict}
+        initialTab={searchParams?.tab}
       />
     </section>
   );

@@ -1,15 +1,18 @@
 import "./admin.css";
 import AdminShell from "@/components/admin/AdminShell";
+import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
 import { getMessages } from "@/lib/db";
 import { getMedia } from "@/lib/media";
-import { getBranding } from "@/lib/content";
+import { getBranding, getNews } from "@/lib/content";
+import { getArticles } from "@/lib/articles";
 
 export const metadata = {
   title: "پنل مدیریت | پترو سازه میهن",
   robots: { index: false, follow: false }
 };
 
-function buildNotifications(messages, media) {
+function buildNotifications(messages, media, articles, news) {
   const items = [];
   (messages || []).slice(0, 8).forEach((m) => {
     items.push({
@@ -42,6 +45,28 @@ function buildNotifications(messages, media) {
       createdAt: v.createdAt
     });
   });
+  (articles || []).filter((article) => article.status === "pending").slice(0, 8).forEach((article) => {
+    items.push({
+      id: "review-article-" + article.id,
+      type: "review",
+      title: "مقاله برای بررسی مدیر",
+      description: article.title?.fa || article.title?.en || article.slug,
+      href: "/admin/articles",
+      unread: true,
+      createdAt: article.updatedAt || article.createdAt
+    });
+  });
+  (news || []).filter((item) => item.status === "pending").slice(0, 8).forEach((item) => {
+    items.push({
+      id: "review-news-" + item.id,
+      type: "review",
+      title: "خبر برای بررسی مدیر",
+      description: item.title?.fa || item.title?.en || item.slug,
+      href: "/admin/news",
+      unread: true,
+      createdAt: item.updatedAt || item.createdAt
+    });
+  });
   items.sort((a, b) => {
     const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -64,12 +89,18 @@ function buildNotifications(messages, media) {
   });
 }
 
-export default function AdminLayout({ children }) {
-  const messages = getMessages();
-  const media = getMedia();
+export default async function AdminLayout({ children }) {
+  const session = await getSession({ cookies: cookies() }, { allowAuthor: true });
+  const isAdmin = session && session.role === "admin";
+  const messages = isAdmin ? getMessages() : [];
+  const media = isAdmin ? getMedia() : { gallery: [], videos: [] };
+  const articles = isAdmin ? getArticles() : [];
+  const news = isAdmin ? getNews() : [];
   const branding = getBranding();
-  const notifications = buildNotifications(messages, media);
-  const unreadCount = messages.filter((m) => !m.read).length;
+  const notifications = buildNotifications(messages, media, articles, news);
+  const unreadCount = messages.filter((m) => !m.read).length +
+    articles.filter((item) => item.status === "pending").length +
+    news.filter((item) => item.status === "pending").length;
 
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
@@ -83,9 +114,15 @@ export default function AdminLayout({ children }) {
         )}
       </head>
       <body className="admin-body">
-        <AdminShell notifications={notifications} unreadCount={unreadCount}>
-          {children}
-        </AdminShell>
+        {session ? (
+          <AdminShell
+            notifications={notifications}
+            unreadCount={unreadCount}
+            userRole={session.role}
+          >
+            {children}
+          </AdminShell>
+        ) : children}
       </body>
     </html>
   );

@@ -79,7 +79,7 @@ function DataTable({ headers, rows, accent }) {
           {rows.map(function(row, i) {
             return (
               <tr key={i} style={{
-                background: i % 2 === 0 ? "#FFFFFF" : "var(--bg-soft)"
+                background: i % 2 === 0 ? "var(--bg-card)" : "var(--bg-soft)"
               }}>
                 {row.map(function(cell, j) {
                   return (

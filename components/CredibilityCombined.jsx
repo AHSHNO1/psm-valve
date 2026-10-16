@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Award, Building2, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
 
 function pick(obj, locale) {
@@ -10,6 +10,10 @@ function pick(obj, locale) {
 }
 
 export default function CredibilityCombined({ certificates, partners, content, locale }) {
+  const reduceMotion = useReducedMotion();
+  const isRtl = locale === "fa" || locale === "ar";
+  const PreviousIcon = isRtl ? ChevronRight : ChevronLeft;
+  const NextIcon = isRtl ? ChevronLeft : ChevronRight;
   const activeCerts = (certificates || []).filter(function(c) { return c.active !== false; });
   const activePartners = (partners || []).filter(function(p) { return p.active !== false; });
 
@@ -17,6 +21,10 @@ export default function CredibilityCombined({ certificates, partners, content, l
   const [itemsPerPage, setItemsPerPage] = useState(4);
   const [autoPlay, setAutoPlay] = useState(true);
   const hoverRef = useRef(false);
+  const [partnerPage, setPartnerPage] = useState(0);
+  const [partnersPerPage, setPartnersPerPage] = useState(6);
+  const partnersAutoPlay = !reduceMotion;
+  const partnersHoverRef = useRef(false);
 
   // Responsive items per page
   useEffect(function() {
@@ -25,6 +33,9 @@ export default function CredibilityCombined({ certificates, partners, content, l
       if (w < 640) setItemsPerPage(2);
       else if (w < 1024) setItemsPerPage(3);
       else setItemsPerPage(4);
+      if (w < 640) setPartnersPerPage(2);
+      else if (w < 1024) setPartnersPerPage(4);
+      else setPartnersPerPage(6);
     }
     update();
     window.addEventListener("resize", update);
@@ -32,21 +43,35 @@ export default function CredibilityCombined({ certificates, partners, content, l
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(activeCerts.length / itemsPerPage));
+  const partnerTotalPages = Math.max(1, Math.ceil(activePartners.length / partnersPerPage));
 
   // Auto-play
   useEffect(function() {
-    if (!autoPlay || totalPages <= 1) return;
+    if (!autoPlay || reduceMotion || totalPages <= 1) return;
     const t = setInterval(function() {
       if (hoverRef.current) return;
       setPage(function(p) { return (p + 1) % totalPages; });
     }, 4500);
     return function() { clearInterval(t); };
-  }, [autoPlay, totalPages]);
+  }, [autoPlay, reduceMotion, totalPages]);
+
+  useEffect(function() {
+    if (!partnersAutoPlay || partnerTotalPages <= 1) return;
+    const timer = setInterval(function() {
+      if (partnersHoverRef.current) return;
+      setPartnerPage(function(current) { return (current + 1) % partnerTotalPages; });
+    }, 4000);
+    return function() { clearInterval(timer); };
+  }, [partnersAutoPlay, partnerTotalPages]);
 
   // Reset page when itemsPerPage changes
   useEffect(function() {
     if (page >= totalPages) setPage(0);
   }, [itemsPerPage, totalPages, page]);
+
+  useEffect(function() {
+    if (partnerPage >= partnerTotalPages) setPartnerPage(0);
+  }, [partnerPage, partnerTotalPages]);
 
   function goNext() {
     setPage(function(p) { return (p + 1) % totalPages; });
@@ -57,37 +82,65 @@ export default function CredibilityCombined({ certificates, partners, content, l
 
   const L = {
     fa: {
-      badge: "اعتبار بین‌المللی",
-      certsTitle: "گواهینامه‌ها و استانداردها",
+      badge: "اسناد و مجوزها",
+      certsTitle: "گواهینامه‌ها و مدارک منتشرشده",
       partnersTitle: "شرکای تجاری و همراهان",
-      sub: "تأیید شده توسط معتبرترین سازمان‌های بین‌المللی",
-      empty: "به‌زودی گواهینامه‌ها اضافه می‌شود"
+      sub: "اعتبار و تاریخ هر سند را از توضیحات زیر آن بررسی کنید",
+      empty: "به‌زودی گواهینامه‌ها اضافه می‌شود",
+      previous: "شرکای قبلی",
+      next: "شرکای بعدی",
+      slide: "نمایش گروه شرکا",
+      previousCertificate: "گواهی‌های قبلی",
+      nextCertificate: "گواهی‌های بعدی",
+      certificateSlide: "نمایش گروه گواهی‌ها"
     },
     en: {
-      badge: "International Recognition",
-      certsTitle: "Certificates & Standards",
+      badge: "Certificates & Permits",
+      certsTitle: "Published Certificates & Documents",
       partnersTitle: "Business Partners",
-      sub: "Certified by the most reputable international organizations",
-      empty: "Certificates coming soon"
+      sub: "Check each document's description below for its stated validity",
+      empty: "Certificates coming soon",
+      previous: "Previous partners",
+      next: "Next partners",
+      slide: "Show partner group",
+      previousCertificate: "Previous certificates",
+      nextCertificate: "Next certificates",
+      certificateSlide: "Show certificate group"
     },
     ar: {
-      badge: "الاعتراف الدولي",
-      certsTitle: "الشهادات والمعايير",
+      badge: "الشهادات والتصاريح",
+      certsTitle: "الشهادات والوثائق المنشورة",
       partnersTitle: "الشركاء التجاريون",
-      sub: "معتمد من أعرق المنظمات الدولية",
-      empty: "الشهادات قريباً"
+      sub: "راجع وصف كل وثيقة أدناه لمعرفة مدة صلاحيتها المذكورة",
+      empty: "الشهادات قريباً",
+      previous: "الشركاء السابقون",
+      next: "الشركاء التاليون",
+      slide: "عرض مجموعة الشركاء",
+      previousCertificate: "الشهادات السابقة",
+      nextCertificate: "الشهادات التالية",
+      certificateSlide: "عرض مجموعة الشهادات"
     },
     ru: {
-      badge: "Международное признание",
-      certsTitle: "Сертификаты и стандарты",
+      badge: "Сертификаты и разрешения",
+      certsTitle: "Опубликованные сертификаты и документы",
       partnersTitle: "Деловые партнеры",
-      sub: "Сертифицировано ведущими международными организациями",
-      empty: "Сертификаты скоро"
+      sub: "Указанный срок действия каждого документа смотрите ниже",
+      empty: "Сертификаты скоро",
+      previous: "Предыдущие партнеры",
+      next: "Следующие партнеры",
+      slide: "Показать группу партнеров",
+      previousCertificate: "Предыдущие сертификаты",
+      nextCertificate: "Следующие сертификаты",
+      certificateSlide: "Показать группу сертификатов"
     }
   }[locale] || {};
 
   const startIdx = page * itemsPerPage;
   const visibleCerts = activeCerts.slice(startIdx, startIdx + itemsPerPage);
+  const visiblePartners = activePartners.slice(
+    partnerPage * partnersPerPage,
+    (partnerPage + 1) * partnersPerPage
+  );
 
   return (
     <section className="container-x py-12 sm:py-16">
@@ -106,9 +159,15 @@ export default function CredibilityCombined({ certificates, partners, content, l
       {/* Certificate slider */}
       {activeCerts.length > 0 ? (
         <div
+          role="region"
+          aria-label={L.certsTitle}
           style={{ position: "relative" }}
           onMouseEnter={function() { hoverRef.current = true; }}
           onMouseLeave={function() { hoverRef.current = false; }}
+          onFocusCapture={function() { hoverRef.current = true; }}
+          onBlurCapture={function(event) {
+            if (!event.currentTarget.contains(event.relatedTarget)) hoverRef.current = false;
+          }}
         >
           {/* Slider track */}
           <div style={{ overflow: "hidden", padding: "10px 4px" }}>
@@ -192,6 +251,16 @@ export default function CredibilityCombined({ certificates, partners, content, l
                     }}>
                       {pick(c.issuer, locale)}
                     </div>
+                    {pick(c.validity, locale) && (
+                      <div style={{
+                        fontSize: 9,
+                        color: "var(--text-muted)",
+                        lineHeight: 1.5,
+                        marginTop: 5
+                      }}>
+                        {pick(c.validity, locale)}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -202,37 +271,9 @@ export default function CredibilityCombined({ certificates, partners, content, l
           {totalPages > 1 && (
             <>
               <button
+                type="button"
                 onClick={goPrev}
-                aria-label="Previous"
-                style={{
-                  position: "absolute",
-                  top: "40%",
-                  insetInlineEnd: -8,
-                  width: 44, height: 44,
-                  borderRadius: "50%",
-                  display: "grid", placeItems: "center",
-                  background: "#FFFFFF",
-                  border: "1px solid var(--border)",
-                  boxShadow: "0 8px 20px rgba(20, 22, 27, 0.12)",
-                  cursor: "pointer",
-                  color: "var(--gold)",
-                  transition: "all 0.15s",
-                  zIndex: 2
-                }}
-                onMouseEnter={function(e) {
-                  e.currentTarget.style.background = "linear-gradient(135deg, #E0A81A, #B8850A)";
-                  e.currentTarget.style.color = "#FFFFFF";
-                }}
-                onMouseLeave={function(e) {
-                  e.currentTarget.style.background = "#FFFFFF";
-                  e.currentTarget.style.color = "var(--gold)";
-                }}
-              >
-                <ChevronRight size={22} />
-              </button>
-              <button
-                onClick={goNext}
-                aria-label="Next"
+                aria-label={L.previousCertificate}
                 style={{
                   position: "absolute",
                   top: "40%",
@@ -257,7 +298,37 @@ export default function CredibilityCombined({ certificates, partners, content, l
                   e.currentTarget.style.color = "var(--gold)";
                 }}
               >
-                <ChevronLeft size={22} />
+                <PreviousIcon size={22} />
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                aria-label={L.nextCertificate}
+                style={{
+                  position: "absolute",
+                  top: "40%",
+                  insetInlineEnd: -8,
+                  width: 44, height: 44,
+                  borderRadius: "50%",
+                  display: "grid", placeItems: "center",
+                  background: "#FFFFFF",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 20px rgba(20, 22, 27, 0.12)",
+                  cursor: "pointer",
+                  color: "var(--gold)",
+                  transition: "all 0.15s",
+                  zIndex: 2
+                }}
+                onMouseEnter={function(e) {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #E0A81A, #B8850A)";
+                  e.currentTarget.style.color = "#FFFFFF";
+                }}
+                onMouseLeave={function(e) {
+                  e.currentTarget.style.background = "#FFFFFF";
+                  e.currentTarget.style.color = "var(--gold)";
+                }}
+              >
+                <NextIcon size={22} />
               </button>
             </>
           )}
@@ -273,9 +344,11 @@ export default function CredibilityCombined({ certificates, partners, content, l
               {Array.from({ length: totalPages }).map(function(_, i) {
                 return (
                   <button
+                    type="button"
                     key={i}
                     onClick={function() { setPage(i); }}
-                    aria-label={"Page " + (i + 1)}
+                    aria-label={L.certificateSlide + " " + (i + 1)}
+                    aria-current={page === i ? "true" : undefined}
                     style={{
                       width: i === page ? 24 : 8,
                       height: 8,
@@ -362,45 +435,161 @@ export default function CredibilityCombined({ certificates, partners, content, l
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {activePartners.slice(0, 12).map(function(p, i) {
-              const card = (
-                <div style={{
-                  aspectRatio: "2/1",
-                  borderRadius: 12,
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={function() { partnersHoverRef.current = true; }}
+            onMouseLeave={function() { partnersHoverRef.current = false; }}
+            onFocusCapture={function() { partnersHoverRef.current = true; }}
+            onBlurCapture={function(event) {
+              if (!event.currentTarget.contains(event.relatedTarget)) partnersHoverRef.current = false;
+            }}
+          >
+            <div style={{ overflow: "hidden", padding: "8px 4px" }}>
+              <motion.div
+                key={partnerPage}
+                initial={{ opacity: 0, x: locale === "fa" || locale === "ar" ? -18 : 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                style={{
                   display: "grid",
-                  placeItems: "center",
-                  padding: 12,
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border)"
-                }}>
-                  {p.logo ? (
-                    <img src={p.logo} alt={pick(p.name, locale)}
-                      style={{ maxWidth: "100%", maxHeight: 42, objectFit: "contain" }} />
-                  ) : (
-                    <div style={{ textAlign: "center" }}>
-                      <Building2 size={22} style={{ color: "var(--text-muted)", margin: "0 auto 4px" }} />
-                      <div style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: "var(--text-muted)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap"
-                      }}>
-                        {pick(p.name, locale)}
-                      </div>
+                  gridTemplateColumns: "repeat(" + partnersPerPage + ", minmax(0, 1fr))",
+                  gap: 14
+                }}
+              >
+                {visiblePartners.map(function(p) {
+                  const card = (
+                    <div
+                      className="card-glass"
+                      style={{
+                        minHeight: 112,
+                        borderRadius: 16,
+                        display: "grid",
+                        placeItems: "center",
+                        padding: "18px 14px",
+                        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
+                      }}
+                    >
+                      {p.logo ? (
+                        <img
+                          src={p.logo}
+                          alt={pick(p.name, locale)}
+                          style={{ width: "100%", maxWidth: 150, height: 76, objectFit: "contain" }}
+                        />
+                      ) : (
+                        <div style={{ textAlign: "center" }}>
+                          <Building2 size={28} style={{ color: "var(--text-muted)", margin: "0 auto 8px" }} />
+                          <div style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: "var(--text-soft)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                          }}>
+                            {pick(p.name, locale)}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  );
+                  return p.url && p.url !== "#" ? (
+                    <a
+                      key={p.id}
+                      href={p.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: "none" }}
+                    >
+                      {card}
+                    </a>
+                  ) : <div key={p.id}>{card}</div>;
+                })}
+              </motion.div>
+            </div>
+
+            {partnerTotalPages > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={function() {
+                    setPartnerPage(function(current) {
+                      return (current - 1 + partnerTotalPages) % partnerTotalPages;
+                    });
+                  }}
+                  aria-label={L.previous}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    insetInlineStart: -10,
+                    transform: "translateY(-50%)",
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    boxShadow: "var(--shadow-md)",
+                    cursor: "pointer",
+                    color: "var(--gold)",
+                    zIndex: 2
+                  }}
+                >
+                  <PreviousIcon size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={function() {
+                    setPartnerPage(function(current) {
+                      return (current + 1) % partnerTotalPages;
+                    });
+                  }}
+                  aria-label={L.next}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    insetInlineEnd: -10,
+                    transform: "translateY(-50%)",
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    boxShadow: "var(--shadow-md)",
+                    cursor: "pointer",
+                    color: "var(--gold)",
+                    zIndex: 2
+                  }}
+                >
+                  <NextIcon size={20} />
+                </button>
+                <div style={{ display: "flex", justifyContent: "center", gap: 7, marginTop: 18 }}>
+                  {Array.from({ length: partnerTotalPages }).map(function(_, index) {
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={function() { setPartnerPage(index); }}
+                        aria-label={L.slide + " " + (index + 1)}
+                        aria-current={partnerPage === index ? "true" : undefined}
+                        style={{
+                          width: partnerPage === index ? 24 : 8,
+                          height: 8,
+                          padding: 0,
+                          border: 0,
+                          borderRadius: 5,
+                          background: partnerPage === index ? "var(--gold)" : "var(--border-strong)",
+                          cursor: "pointer",
+                          transition: "all 0.25s ease"
+                        }}
+                      />
+                    );
+                  })}
                 </div>
-              );
-              return p.url && p.url !== "#" ? (
-                <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
-                  style={{ textDecoration: "none" }}>
-                  {card}
-                </a>
-              ) : <div key={p.id}>{card}</div>;
-            })}
+              </>
+            )}
           </div>
         </>
       )}

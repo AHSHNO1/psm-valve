@@ -6,12 +6,6 @@ import { COMPANY } from "@/lib/company-info";
 export default function ContactClient({ dict, settings, locale }) {
   const isFa = locale === "fa";
 
-  // ===== Map coordinates =====
-  const lat = (settings && settings.mapLat) || "34.0917";
-  const lng = (settings && settings.mapLng) || "49.6892";
-  const mapEmbedUrl = "https://maps.google.com/maps?q=" + lat + "," + lng + "&z=14&output=embed&hl=" + (locale === "fa" ? "fa" : locale);
-  const mapLinkUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
-
   // ===== Data (fallback to COMPANY) =====
   const phoneOffice = COMPANY.phone.office;
   const phoneFactory = COMPANY.phone.factory;
@@ -21,6 +15,31 @@ export default function ContactClient({ dict, settings, locale }) {
   const emailSecondary = COMPANY.email.secondary;
   const addressOffice = COMPANY.address.office[locale] || COMPANY.address.office.en;
   const addressFactory = COMPANY.address.factory[locale] || COMPANY.address.factory.en;
+  const configuredLat = settings && settings.mapLat;
+  const configuredLng = settings && settings.mapLng;
+  const mapLat = typeof configuredLat === "string" ? configuredLat.trim() : configuredLat;
+  const mapLng = typeof configuredLng === "string" ? configuredLng.trim() : configuredLng;
+  const hasMapCoordinates =
+    mapLat !== undefined &&
+    mapLat !== null &&
+    mapLng !== undefined &&
+    mapLng !== null &&
+    mapLat !== "" &&
+    mapLng !== "" &&
+    Number.isFinite(Number(mapLat)) &&
+    Number.isFinite(Number(mapLng)) &&
+    Number(mapLat) >= -90 &&
+    Number(mapLat) <= 90 &&
+    Number(mapLng) >= -180 &&
+    Number(mapLng) <= 180;
+  const factoryCoordinates = COMPANY.address.factoryCoordinates;
+  const mapQuery = hasMapCoordinates
+    ? mapLat + "," + mapLng
+    : factoryCoordinates.latitude + "," + factoryCoordinates.longitude;
+  const mapEmbedUrl = "https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery) +
+    "&z=17&output=embed&hl=" + encodeURIComponent(locale);
+  const mapLinkUrl = "https://www.google.com/maps?q=" + encodeURIComponent(mapQuery);
+  const officeMapLinkUrl = "https://www.google.com/maps?q=" + encodeURIComponent(addressOffice);
   const postalCode = COMPANY.address.postalCode;
   const messengers = COMPANY.messengers;
 
@@ -33,7 +52,7 @@ export default function ContactClient({ dict, settings, locale }) {
       subtitle: "تیم فنی و مهندسی ما آماده پاسخگویی به سوالات تخصصی و ارائه مشاوره است",
       formTitle: "ارسال پیام",
       formSubtitle: "پیام خود را بفرستید و در اسرع وقت پاسخ می‌دهیم",
-      mapTitle: "موقعیت شرکت",
+      mapTitle: "موقعیت کارخانه",
       mapSubtitle: "مسیریابی",
       infoTitle: "اطلاعات تماس",
       office: "دفتر مرکزی",
@@ -55,7 +74,7 @@ export default function ContactClient({ dict, settings, locale }) {
       subtitle: "Our engineering team is ready to answer technical questions and provide consultation",
       formTitle: "Send Message",
       formSubtitle: "Send us a message and we'll respond as soon as possible",
-      mapTitle: "Company Location",
+      mapTitle: "Factory Location",
       mapSubtitle: "Get Directions",
       infoTitle: "Contact Information",
       office: "Head Office",
@@ -77,7 +96,7 @@ export default function ContactClient({ dict, settings, locale }) {
       subtitle: "فريقنا الهندسي جاهز للإجابة على أسئلتك",
       formTitle: "إرسال رسالة",
       formSubtitle: "أرسل رسالة وسنرد في أقرب وقت",
-      mapTitle: "موقع الشركة",
+      mapTitle: "موقع المصنع",
       mapSubtitle: "الاتجاهات",
       infoTitle: "معلومات الاتصال",
       office: "المكتب الرئيسي",
@@ -99,7 +118,7 @@ export default function ContactClient({ dict, settings, locale }) {
       subtitle: "Наша инженерная команда готова ответить на технические вопросы",
       formTitle: "Отправить сообщение",
       formSubtitle: "Отправьте сообщение, и мы скоро ответим",
-      mapTitle: "Расположение компании",
+      mapTitle: "Расположение завода",
       mapSubtitle: "Маршрут",
       infoTitle: "Контактная информация",
       office: "Офис",
@@ -125,7 +144,7 @@ export default function ContactClient({ dict, settings, locale }) {
     label: L.office,
     value: addressOffice,
     subvalue: L.postalLabel + ": " + postalCode,
-    link: mapLinkUrl,
+    link: officeMapLinkUrl,
     color: "#107C10"
   });
 
@@ -546,7 +565,7 @@ export default function ContactClient({ dict, settings, locale }) {
                   {L.mapTitle}
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>
-                  {addressOffice}
+                  {addressFactory}
                 </div>
               </div>
             </div>

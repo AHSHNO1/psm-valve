@@ -1,211 +1,221 @@
 "use client";
+
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, Html } from "@react-three/drei";
-import { useRef, useState, useEffect } from "react";
-import { motion, useScroll } from "framer-motion";
+import { OrbitControls, Html } from "@react-three/drei";
+import { useRef, useState } from "react";
+import { Play, RotateCcw } from "lucide-react";
 import { useDictionary } from "./Providers";
 
-function BallPart({ position, offset, explode, name, geometry, color }) {
-  const ref = useRef();
-  const [hovered, setHovered] = useState(false);
+const LABELS = {
+  fa: ["بدنه", "توپ", "نشیمن‌گاه", "ساقه", "فلنج"],
+  en: ["Body", "Ball", "Seat", "Stem", "End flange"],
+  ar: ["الجسم", "الكرة", "المقعد", "الساق", "شفة التوصيل"],
+  ru: ["Корпус", "Шар", "Седло", "Шток", "Фланец"]
+};
 
-  useFrame(function() {
+const PARTS = [
+  { id: "body", position: [0, 0, 0], offset: [0, 0, 0] },
+  { id: "ball", position: [0, 0, 0], offset: [0, 1.1, 0] },
+  { id: "seat", position: [0, 0, 0], offset: [0, -0.9, 0] },
+  { id: "stem", position: [0, 0.6, 0], offset: [0, 1.2, 0] },
+  { id: "flangeLeft", labelIndex: 4, position: [-1.7, 0, 0], offset: [-0.8, 0, 0] },
+  { id: "flangeRight", labelIndex: 4, position: [1.7, 0, 0], offset: [0.8, 0, 0] }
+];
+
+function BallValvePart({ item, index, explode, labels }) {
+  const ref = useRef(null);
+  const [hovered, setHovered] = useState(false);
+  const [selected, setSelected] = useState(false);
+  const emphasized = hovered || selected;
+
+  useFrame((_, delta) => {
     if (!ref.current) return;
-    const tX = position[0] + offset[0] * explode;
-    const tY = position[1] + offset[1] * explode;
-    const tZ = position[2] + offset[2] * explode;
-    ref.current.position.x += (tX - ref.current.position.x) * 0.08;
-    ref.current.position.y += (tY - ref.current.position.y) * 0.08;
-    ref.current.position.z += (tZ - ref.current.position.z) * 0.08;
-    ref.current.rotation.y += 0.002;
+    const smoothing = 1 - Math.exp(-8 * delta);
+    const stage = Math.max(0, Math.min(1, (explode - index * 0.055) / (1 - index * 0.055)));
+    const easedStage = stage * stage * (3 - 2 * stage);
+    const amount = easedStage * item.offset[1];
+    const x = item.position[0] + easedStage * item.offset[0];
+    const y = item.position[1] + amount;
+    ref.current.position.x += (x - ref.current.position.x) * smoothing;
+    ref.current.position.y += (y - ref.current.position.y) * smoothing;
+    const targetScale = emphasized ? 1.06 : 1;
+    ref.current.scale.x += (targetScale - ref.current.scale.x) * smoothing;
+    ref.current.scale.y += (targetScale - ref.current.scale.y) * smoothing;
+    ref.current.scale.z += (targetScale - ref.current.scale.z) * smoothing;
   });
 
-  const geo = (function() {
-    if (geometry === "sphere") return <sphereGeometry args={[0.7, 48, 48]} />;
-    if (geometry === "cylinder") return <cylinderGeometry args={[0.28, 0.28, 0.9, 32]} />;
-    if (geometry === "torus") return <torusGeometry args={[0.75, 0.14, 24, 48]} />;
-    if (geometry === "cone") return <coneGeometry args={[0.35, 0.6, 32]} />;
-    if (geometry === "box") return <boxGeometry args={[1.6, 1.6, 0.7]} />;
-    return <boxGeometry args={[0.6, 0.6, 0.6]} />;
-  })();
+  const baseColor = index === 1 ? "#C4CDD5" : index === 2 ? "#D7B24B" : "#84919D";
+  const material = {
+    color: emphasized ? "#FFD34E" : baseColor,
+    metalness: 0.78,
+    roughness: 0.28,
+    transparent: item.id === "body",
+    opacity: item.id === "body" ? 0.38 : 1,
+    depthWrite: item.id !== "body"
+  };
 
   return (
-    <group ref={ref} position={position}
-      onPointerOver={function() { setHovered(true); }}
-      onPointerOut={function() { setHovered(false); }}>
-      <mesh castShadow>
-        {geo}
-        <meshStandardMaterial
-          color={hovered ? "#FFD700" : color}
-          metalness={0.9}
-          roughness={0.22}
-        />
-      </mesh>
-      {hovered && (
+    <group
+      ref={ref}
+      position={item.position}
+      onPointerOver={(event) => { event.stopPropagation(); setHovered(true); }}
+      onPointerOut={() => setHovered(false)}
+      onClick={(event) => { event.stopPropagation(); setSelected((value) => !value); }}
+    >
+      {item.id === "body" && (
+        <>
+          <mesh castShadow scale={[1.05, 0.88, 0.78]}>
+            <sphereGeometry args={[0.86, 32, 24]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          {[-1, 1].map((side) => (
+            <group key={side} position={[side * 0.95, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <mesh castShadow>
+                <cylinderGeometry args={[0.43, 0.43, 1.15, 32]} />
+                <meshStandardMaterial {...material} />
+              </mesh>
+            </group>
+          ))}
+          <mesh position={[0, 0.48, 0]} castShadow>
+            <cylinderGeometry args={[0.32, 0.4, 0.34, 32]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+        </>
+      )}
+      {item.id === "ball" && (
+        <>
+          <mesh castShadow>
+            <sphereGeometry args={[0.61, 40, 32]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh position={[0.59, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <torusGeometry args={[0.255, 0.035, 12, 32]} />
+            <meshStandardMaterial color="#D5DCE2" metalness={0.82} roughness={0.22} />
+          </mesh>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.25, 0.25, 1.45, 32]} />
+            <meshStandardMaterial color="#27313A" metalness={0.25} roughness={0.55} />
+          </mesh>
+        </>
+      )}
+      {item.id === "seat" && (
+        <>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <torusGeometry args={[0.56, 0.1, 16, 40]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <torusGeometry args={[0.41, 0.045, 12, 40]} />
+            <meshStandardMaterial color="#E6D9AC" metalness={0.25} roughness={0.45} />
+          </mesh>
+        </>
+      )}
+      {item.id === "stem" && (
+        <>
+          <mesh position={[0, 0.04, 0]} castShadow>
+            <cylinderGeometry args={[0.1, 0.13, 0.85, 24]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh position={[0, -0.32, 0]}>
+            <cylinderGeometry args={[0.24, 0.24, 0.12, 24]} />
+            <meshStandardMaterial color="#596673" metalness={0.7} roughness={0.3} />
+          </mesh>
+        </>
+      )}
+      {item.id.indexOf("flange") === 0 && (
+        <>
+          <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
+            <cylinderGeometry args={[0.62, 0.62, 0.22, 40]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh rotation={[0, 0, Math.PI / 2]} position={[item.id === "flangeLeft" ? -0.14 : 0.14, 0, 0]}>
+            <torusGeometry args={[0.45, 0.055, 12, 40]} />
+            <meshStandardMaterial color="#C4CDD5" metalness={0.82} roughness={0.26} />
+          </mesh>
+          {Array.from({ length: 8 }).map((_, bolt) => {
+            const angle = (bolt / 8) * Math.PI * 2;
+            return (
+              <mesh key={bolt} position={[0, Math.cos(angle) * 0.49, Math.sin(angle) * 0.49]}>
+                <cylinderGeometry args={[0.045, 0.045, 0.12, 8]} />
+                <meshStandardMaterial color="#E2E7EB" metalness={0.86} roughness={0.22} />
+              </mesh>
+            );
+          })}
+        </>
+      )}
+      {emphasized && (
         <Html center distanceFactor={8}>
-          <div style={{
-            padding: "5px 10px",
-            borderRadius: 8,
-            background: "#F5C518",
-            color: "#1A1D21",
-            fontSize: 11,
-            fontWeight: 900,
-            whiteSpace: "nowrap",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-          }}>
-            {name}
-          </div>
+          <span className="whitespace-nowrap rounded-lg bg-[#F5C518] px-3 py-1.5 text-xs font-bold text-[#15181C] shadow-lg">
+            {labels[item.labelIndex === undefined ? index : item.labelIndex]}
+          </span>
         </Html>
       )}
     </group>
   );
 }
 
-function BallModel({ explode, partNames }) {
-  const parts = [
-    { name: partNames[0], color: "#C0C0C0", position: [0, 0, 0], offset: [0, 0, 0], geometry: "box" },
-    { name: partNames[1], color: "#E5E7EB", position: [0, 0, 0], offset: [1.6, 0, 0], geometry: "sphere" },
-    { name: partNames[2], color: "#9CA3AF", position: [0, 0, 0], offset: [-1.6, 0, 0], geometry: "torus" },
-    { name: partNames[3], color: "#F5C518", position: [0, 0.8, 0], offset: [0, 1.5, 0], geometry: "cylinder" },
-    { name: partNames[4], color: "#D4A017", position: [0, -0.8, 0], offset: [0, -1.5, 0], geometry: "cylinder" }
-  ];
+function BallValveModel({ explode, locale }) {
+  const labels = LABELS[locale] || LABELS.en;
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
-      <directionalLight position={[-5, -3, -5]} intensity={0.5} color="#FFD700" />
-      {parts.map(function(p, i) {
-        return <BallPart key={i} {...p} explode={explode} />;
-      })}
-      <Environment files="/hdri/empty_warehouse_01_1k.hdr" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[4, 7, 5]} intensity={2} />
+      <pointLight position={[-4, 2, -3]} intensity={35} color="#F5C518" />
+      {PARTS.map((part, index) => (
+        <BallValvePart key={part.id} item={part} index={index} explode={explode} labels={labels} />
+      ))}
     </>
   );
 }
 
-export default function ExplodedBallValve({ standalone }) {
+export default function ExplodedBallValve() {
   const { locale } = useDictionary();
-  const ref = useRef(null);
-  const [explode, setExplode] = useState(0);
-
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  });
-
-  useEffect(function() {
-    const unsub = scrollYProgress.on("change", function(v) {
-      const t = Math.max(0, Math.min(1, (v - 0.15) / 0.7));
-      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      setExplode(eased * 1.6);
-    });
-    return function() { unsub(); };
-  }, [scrollYProgress]);
-
-  const partNames = ["Body", "Ball", "Seat", "Stem Top", "Stem Bot"];
-
-  const labels = {
-    fa: {
-      badge: "نمای انفجاری تعاملی",
-      title1: "شیر توپی",
-      title2: "کنترلی",
-      desc: "با اسکرول، قطعات شیر از هم باز می‌شوند. روی هر قطعه نشانگر ببرید تا نام آن نمایش داده شود.",
-      hint: "کشیدن برای چرخش · اسکرول برای انفجار",
-      f1: "بدنه فولاد آلیاژی با پوشش HVOF",
-      f2: "توپی سنگ‌زنی شده با دقت بالا",
-      f3: "نشیمن‌گاه PEEK / Metal Seat",
-      f4: "شفت ضد بیرون‌زدگی"
-    },
-    en: {
-      badge: "Interactive Exploded View",
-      title1: "Ball Control",
-      title2: "Valve",
-      desc: "Scroll to see the valve parts separate. Hover over each part to see its name.",
-      hint: "Drag to rotate · Scroll to explode",
-      f1: "Alloy steel body with HVOF coating",
-      f2: "High-precision ground ball",
-      f3: "PEEK / Metal Seat",
-      f4: "Anti-blowout stem"
-    },
-    ar: {
-      badge: "عرض انفجاري تفاعلي",
-      title1: "صمام كروي",
-      title2: "تحكم",
-      desc: "قم بالتمرير لرؤية الأجزاء تنفصل.",
-      hint: "اسحب للتدوير · مرر للتفجير",
-      f1: "جسم من الفولاذ السبائكي مع طلاء HVOF",
-      f2: "كرة مطحونة عالية الدقة",
-      f3: "مقعد PEEK / معدني",
-      f4: "عمود مضاد للانفجار"
-    },
-    ru: {
-      badge: "Интерактивный разнесенный вид",
-      title1: "Шаровой",
-      title2: "регулирующий клапан",
-      desc: "Прокрутите, чтобы увидеть разъединение частей.",
-      hint: "Перетащите для вращения · Прокрутите",
-      f1: "Корпус из легированной стали с покрытием HVOF",
-      f2: "Высокоточный шлифованный шар",
-      f3: "Седло PEEK / металлическое",
-      f4: "Шток с защитой от выброса"
-    }
-  };
-  const L = labels[locale] || labels.en;
-
-  const inner = (
-    <div className="grid lg:grid-cols-2 gap-10 items-center min-h-[75vh]">
-      <motion.div
-        initial={{ opacity: 0, x: 40 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        className="order-2 lg:order-1"
-      >
-        <span className="chip">{L.badge}</span>
-        <h2 className="section-title mt-5">
-          <span className="heading-grad">{L.title1}</span>{" "}
-          <span className="heading-gold">{L.title2}</span>
-        </h2>
-        <p className="mt-5 leading-8" style={{ color: "var(--text-soft)" }}>
-          {L.desc}
-        </p>
-        <div className="mt-8 space-y-3">
-          {[L.f1, L.f2, L.f3, L.f4].map(function(item, i) {
-            return (
-              <div key={i} className="flex items-center gap-3" style={{ color: "var(--text)" }}>
-                <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
-                <span className="text-sm">{item}</span>
-              </div>
-            );
-          })}
-        </div>
-      </motion.div>
-
-      <div className="order-1 lg:order-2 h-[500px] rounded-3xl overflow-hidden relative"
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-        <Canvas camera={{ position: [4, 3, 6], fov: 45 }} shadows>
-          <BallModel explode={explode} partNames={partNames} />
-          <OrbitControls enableZoom={false} enablePan={false} autoRotate={false} />
-        </Canvas>
-        <div className="absolute bottom-4 right-4 text-xs px-3 py-1.5 rounded-lg"
-          style={{ color: "var(--text-soft)", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          {L.hint}
-        </div>
-      </div>
-    </div>
-  );
-
-  if (standalone) {
-    return (
-      <section ref={ref} className="relative py-8">
-        <div className="container-x">{inner}</div>
-      </section>
-    );
-  }
+  const [explode, setExplode] = useState(0.75);
+  const labels = LABELS[locale] || LABELS.en;
+  const expanded = explode > 0.5;
+  const actionLabel = expanded
+    ? ({ fa: "مونتاژ", en: "Assemble", ar: "تجميع", ru: "Собрать" }[locale] || "Assemble")
+    : ({ fa: "بازکردن کامل", en: "Explode view", ar: "تفكيك كامل", ru: "Разнести детали" }[locale] || "Explode view");
 
   return (
-    <section ref={ref} className="relative min-h-[160vh] py-20">
-      <div className="sticky top-24 container-x">
-        {inner}
+    <div className="relative h-[390px] sm:h-[450px]">
+      <Canvas camera={{ position: [4.5, 3.2, 7], fov: 42 }} dpr={[1, 1.5]}>
+        <group position={[0, -0.25, 0]} scale={0.9}>
+          <BallValveModel explode={explode} locale={locale} />
+        </group>
+        <OrbitControls
+          enableZoom={false}
+          enablePan={false}
+          enableDamping
+          dampingFactor={0.08}
+          autoRotate={false}
+          minPolarAngle={0.65}
+          maxPolarAngle={2.35}
+        />
+      </Canvas>
+      <div className="absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-xl border px-3 py-2 backdrop-blur-md"
+        style={{ background: "rgba(15,17,20,.72)", borderColor: "rgba(255,255,255,.16)" }}>
+        <button
+          type="button"
+          onClick={() => setExplode(expanded ? 0 : 1)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/20 px-2.5 py-1.5 text-[10px] font-bold text-white transition hover:border-[#F5C518] hover:text-[#F5C518]"
+          aria-label={actionLabel}
+        >
+          {expanded ? <RotateCcw size={13} /> : <Play size={13} />}
+          {actionLabel}
+        </button>
+        <span className="text-[10px] font-bold text-white/75">{labels[0]}</span>
+        <input
+          aria-label={locale === "fa" ? "میزان بازشدن قطعات" : locale === "ar" ? "مقدار تفكيك الأجزاء" : locale === "ru" ? "Степень разнесения деталей" : "Exploded view amount"}
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={explode}
+          onChange={(event) => setExplode(Number(event.target.value))}
+          className="w-full accent-[#E0A81A]"
+        />
       </div>
-    </section>
+    </div>
   );
 }

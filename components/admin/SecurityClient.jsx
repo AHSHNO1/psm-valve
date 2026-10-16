@@ -9,7 +9,7 @@ const SECURITY_CHECKS = [
   { label: "انقضای توکن ۷ روز", active: true },
   { label: "محافظت از مسیر /admin", active: true },
   { label: "آپلود امن با محدودیت", active: true },
-  { label: "نقش‌های کاربری چندگانه", active: false }
+  { label: "نقش نویسنده با دسترسی محدود", active: true }
 ];
 
 export default function SecurityClient() {
@@ -28,8 +28,8 @@ export default function SecurityClient() {
       notify("رمز جدید و تأیید آن یکسان نیستند", true);
       return;
     }
-    if (form.newPassword.length < 6) {
-      notify("رمز جدید باید حداقل ۶ کاراکتر باشد", true);
+    if (form.newPassword.length < 12) {
+      notify("رمز جدید باید حداقل ۱۲ کاراکتر باشد", true);
       return;
     }
 
@@ -112,10 +112,10 @@ export default function SecurityClient() {
                   className="form-input" required />
               </div>
               <div>
-                <label className="form-label">رمز عبور جدید (حداقل ۶ کاراکتر)</label>
+                <label className="form-label">رمز عبور جدید (حداقل ۱۲ کاراکتر)</label>
                 <input type="password" value={form.newPassword}
                   onChange={function(e) { setForm(Object.assign({}, form, { newPassword: e.target.value })); }}
-                  className="form-input" required minLength={6} />
+                  className="form-input" required minLength={12} />
               </div>
               <div>
                 <label className="form-label">تکرار رمز جدید</label>
@@ -190,7 +190,7 @@ export default function SecurityClient() {
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
               <Icon name="info" size={16} />
               <div style={{ fontSize: 11.5, fontWeight: 700, color: "#8A6508", lineHeight: 1.7 }}>
-                <strong>نکات امنیتی:</strong> از رمزهای پیچیده استفاده کنید، رمز را با کسی به اشتراک نگذارید، و پس از کار از پنل خارج شوید. در صورت فراموشی رمز، فایل <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 5px", borderRadius: 4 }}>data/admin.json</code> را ویرایش کنید.
+                <strong>نکات امنیتی:</strong> از رمز منحصربه‌فرد و طولانی استفاده کنید، آن را با کسی به اشتراک نگذارید و پس از کار از پنل خارج شوید. برای راه‌اندازی اولیه، متغیرهای امن محیطی را تنظیم کنید.
               </div>
             </div>
           </div>

@@ -5,7 +5,15 @@ import { getMessages, writeJSON } from "@/lib/db";
 export async function GET(request) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
-  return NextResponse.json({ ok: true, messages: getMessages() });
+  const messages = getMessages();
+  if (new URL(request.url).searchParams.get("summary") === "1") {
+    return NextResponse.json({
+      ok: true,
+      messages: messages.slice(0, 8),
+      unreadCount: messages.filter((message) => !message.read).length
+    });
+  }
+  return NextResponse.json({ ok: true, messages });
 }
 
 export async function PATCH(request) {

@@ -10,8 +10,9 @@ function pick(obj, locale) {
   return obj[locale] || obj.en || obj.fa || "";
 }
 
-export default function MediaTabsSimple({ media, news, articles, locale, dict }) {
-  const [tab, setTab] = useState("news");
+export default function MediaTabsSimple({ media, news, articles, locale, dict, initialTab }) {
+  const validTabs = ["news", "articles", "videos", "catalogs", "gallery"];
+  const [tab, setTab] = useState(validTabs.includes(initialTab) ? initialTab : "news");
 
   const tabs = [
     { id: "news", label: (dict.media && dict.media.news) || "اخبار", Icon: Newspaper, count: (news || []).length, color: "#00C2CE" },
@@ -32,6 +33,7 @@ export default function MediaTabsSimple({ media, news, articles, locale, dict })
             <button
               key={tb.id}
               onClick={function() { setTab(tb.id); }}
+              aria-pressed={active}
               className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-black transition-all"
               style={{
                 background: active ? tb.color : "var(--bg-card)",
@@ -66,10 +68,19 @@ export default function MediaTabsSimple({ media, news, articles, locale, dict })
           <ArticlesGrid items={articles || []} locale={locale} dict={dict} />
         )}
         {tab === "videos" && (
-          <VideosGrid videos={media.videos || []} locale={locale} dict={dict} />
+          <VideosGrid
+            videos={media.videos || []}
+            locale={locale}
+            dict={dict}
+            aparatUnavailable={media.aparatUnavailable}
+          />
         )}
         {tab === "catalogs" && (
-          <CatalogsGrid catalogs={media.catalogs || []} dict={dict} />
+          <CatalogsGrid
+            catalogs={media.catalogs || []}
+            dict={dict}
+            locale={locale}
+          />
         )}
         {tab === "gallery" && (
           <GalleryGrid items={media.gallery || []} dict={dict} />
@@ -140,6 +151,9 @@ function ArticlesGrid({ items, locale, dict }) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {items.map(function(a) {
+        const readTime = a.readMinutes
+          ? `${new Intl.NumberFormat(locale).format(a.readMinutes)} ${dict.articles.readTime}`
+          : a.readTime;
         return (
           <Link
             key={a.slug}
@@ -147,18 +161,18 @@ function ArticlesGrid({ items, locale, dict }) {
             className="card-glass p-6 hover:border-gold-500/40 transition-all group"
           >
             <div className="text-xs font-bold" style={{ color: "var(--gold)" }}>
-              {a.category}
+              {pick(a.category, locale)}
             </div>
             <h3 className="mt-3 font-bold text-base leading-7 transition group-hover:text-gold-500"
               style={{ color: "var(--text)" }}>
-              {a.title}
+              {pick(a.title, locale)}
             </h3>
             <p className="mt-3 text-sm leading-6" style={{ color: "var(--text-soft)" }}>
-              {a.excerpt}
+              {pick(a.excerpt, locale)}
             </p>
             <div className="mt-5 flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
-              <span>{a.date}</span>
-              <span>{a.readTime}</span>
+              <span>{pick(a.date, locale)}</span>
+              <span>{readTime}</span>
             </div>
           </Link>
         );
@@ -167,55 +181,78 @@ function ArticlesGrid({ items, locale, dict }) {
   );
 }
 
-function VideosGrid({ videos, locale, dict }) {
-  if (!videos.length) return <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Film} />;
+function VideosGrid({ videos, locale, dict, aparatUnavailable }) {
+  const unavailableText = {
+    fa: "اتصال به کانال آپارات برقرار نشد؛ ویدئوهای ذخیره‌شده در سایت نمایش داده می‌شوند.",
+    en: "Could not reach the Aparat channel. Videos saved on this site are shown instead.",
+    ar: "تعذر الاتصال بقناة آپارات؛ يتم عرض الفيديوهات المحفوظة على هذا الموقع.",
+    ru: "Не удалось подключиться к каналу Aparat. Показаны видео, сохраненные на этом сайте."
+  }[locale] || "Could not reach the Aparat channel.";
+
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {videos.map(function(v) {
-        const title = (v.title && (v.title[locale] || v.title.fa || v.title.en)) || "Video";
-        return (
-          <div key={v.id} className="card-glass overflow-hidden">
-            <VideoEmbed url={v.url} title={title} poster={v.poster} />
-            <div className="p-4">
-              <h3 className="font-bold text-sm" style={{ color: "var(--text)" }}>{title}</h3>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <>
+      {aparatUnavailable && (
+        <p className="mb-5 rounded-xl px-4 py-3 text-sm"
+          role="status"
+          style={{ color: "var(--text-soft)", background: "var(--bg-soft)", border: "1px solid var(--border)" }}>
+          {unavailableText}
+        </p>
+      )}
+      {!videos.length ? (
+        <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Film} />
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {videos.map(function(v) {
+            const title = (v.title && (v.title[locale] || v.title.fa || v.title.en)) || "Video";
+            return (
+              <div key={v.id} className="card-glass overflow-hidden">
+                <VideoEmbed url={v.url} title={title} poster={v.poster} />
+                <div className="p-4">
+                  <h3 className="font-bold text-sm" style={{ color: "var(--text)" }}>{title}</h3>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 
-function CatalogsGrid({ catalogs, dict }) {
+function CatalogsGrid({ catalogs, dict, locale }) {
   if (!catalogs.length) return <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Library} />;
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {catalogs.map(function(c) {
         return (
-          <a
-            key={c.id}
-            href={c.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            className="card-glass p-6 group hover:border-gold-500/50 transition flex flex-col"
-          >
+          <div key={c.id} className="card-glass p-6 group hover:border-gold-500/50 transition flex flex-col">
             <div className="w-14 h-14 rounded-xl grid place-items-center mb-4"
               style={{ background: "var(--glow)", color: "var(--gold)" }}>
               <FileText size={26} />
             </div>
             <h3 className="font-bold text-sm mb-2" style={{ color: "var(--text)" }}>
-              {c.title || "Catalog"}
+              {pick(c.title, locale) || "Catalog"}
             </h3>
             {c.description && (
               <p className="text-xs leading-5 flex-1" style={{ color: "var(--text-soft)" }}>
                 {c.description}
               </p>
             )}
-            <div className="mt-4 flex items-center gap-2 text-sm font-bold" style={{ color: "var(--gold)" }}>
-              <Download size={14} /> {(dict.media && dict.media.downloadCatalog) || "دانلود"}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <a href={c.url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-bold"
+                style={{ color: "var(--text-soft)" }}>
+                <FileText size={14} />
+                {locale === "fa" ? "مشاهده" : locale === "ar" ? "عرض" : locale === "ru" ? "Просмотр" : "View"}
+              </a>
+              <a href={c.url} download
+                className="inline-flex items-center gap-2 text-sm font-bold"
+                style={{ color: "var(--gold)" }}>
+                <Download size={14} />
+                {(dict.media && dict.media.downloadCatalog) || "دانلود"}
+              </a>
             </div>
-          </a>
+          </div>
         );
       })}
     </div>

@@ -24,13 +24,14 @@ function Ico({ name, size }) {
 
 const TYPE_META = {
   message: { color: "#F59E0B", icon: "mail", label: "پیام" },
+  review: { color: "#4F6BED", icon: "clock", label: "بررسی محتوا" },
   media: { color: "#107C10", icon: "image", label: "تصویر" },
   video: { color: "#8764B8", icon: "package", label: "ویدئو" },
   catalog: { color: "#4F6BED", icon: "file", label: "کاتالوگ" },
   product: { color: "#C9950D", icon: "package", label: "محصول" }
 };
 
-export default function NotificationsPanel({ open, onClose, items, unreadCount }) {
+export default function NotificationsPanel({ open, onClose, items, unreadCount, error = "" }) {
   const [filter, setFilter] = useState("all");
 
   useEffect(function() {
@@ -108,6 +109,12 @@ export default function NotificationsPanel({ open, onClose, items, unreadCount }
             <Ico name="close" size={16} />
           </button>
         </div>
+
+        {error && (
+          <div role="status" style={{ padding: "10px 18px", color: "#991B1B", background: "#FEF2F2", fontSize: 12, fontWeight: 700 }}>
+            {error}
+          </div>
+        )}
 
         {/* Filter tabs */}
         <div style={{ padding: "12px 18px", borderBottom: "1px solid #F4F5F7", flexShrink: 0 }}>

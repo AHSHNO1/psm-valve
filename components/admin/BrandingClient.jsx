@@ -72,7 +72,7 @@ export default function BrandingClient({ initial }) {
       }}>
         <UploadTile
           label="لوگوی اصلی"
-          hint="300×80 پیکسل · PNG یا SVG"
+          hint="PNG، JPG، WebP یا SVG · قابل استفاده در هدر، فوتر و اسلایدر"
           value={form.logo}
           onChange={function(url) { update({ logo: url }); }}
           onClear={function() { update({ logo: "" }); }}
@@ -141,10 +141,21 @@ export default function BrandingClient({ initial }) {
 function UploadTile({ label, hint, value, onChange, onClear }) {
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
 
   async function upload(file) {
     if (!file) return;
+    setError("");
+    if (file.size > 10 * 1024 * 1024) {
+      setError("حجم فایل لوگو نباید بیشتر از ۱۰ مگابایت باشد");
+      return;
+    }
+    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type)) {
+      setError("فرمت لوگو باید PNG، JPG، WebP یا SVG باشد");
+      return;
+    }
+
     setUploading(true);
     try {
       const fd = new FormData();
@@ -152,9 +163,14 @@ function UploadTile({ label, hint, value, onChange, onClear }) {
       fd.append("type", "images");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.ok) onChange(data.url);
-    } catch (e) {}
-    setUploading(false);
+      if (!res.ok || !data.ok) throw new Error(data.error || "آپلود لوگو انجام نشد");
+      onChange(data.url);
+    } catch (e) {
+      setError(e.message || "خطا در آپلود لوگو");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
   }
 
   return (
@@ -173,6 +189,13 @@ function UploadTile({ label, hint, value, onChange, onClear }) {
         )}
       </div>
       <div style={{ fontSize: 11, fontWeight: 600, color: "#7A8290", marginBottom: 10 }}>{hint}</div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        style={{ display: "none" }}
+        onChange={function(e) { upload(e.target.files[0]); }}
+      />
 
       {value ? (
         <div style={{
@@ -183,6 +206,15 @@ function UploadTile({ label, hint, value, onChange, onClear }) {
           textAlign: "center"
         }}>
           <img src={value} alt="" style={{ maxWidth: "100%", maxHeight: 80, objectFit: "contain" }} />
+          <button
+            type="button"
+            onClick={function() { inputRef.current && inputRef.current.click(); }}
+            disabled={uploading}
+            className="btn-outline text-xs"
+            style={{ marginTop: 10 }}
+          >
+            {uploading ? "در حال آپلود..." : "جایگزینی فایل"}
+          </button>
         </div>
       ) : (
         <div
@@ -204,8 +236,6 @@ function UploadTile({ label, hint, value, onChange, onClear }) {
             transition: "all 0.15s"
           }}
         >
-          <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-            onChange={function(e) { upload(e.target.files[0]); }} />
           {uploading ? (
             <Icon name="loader" size={24} />
           ) : (
@@ -222,6 +252,11 @@ function UploadTile({ label, hint, value, onChange, onClear }) {
               <div style={{ fontSize: 12, fontWeight: 900, color: "#1A1D21" }}>کلیک کنید یا فایل را رها کنید</div>
             </>
           )}
+        </div>
+      )}
+      {error && (
+        <div role="alert" style={{ color: "#B91C1C", fontSize: 11, fontWeight: 700, marginTop: 8 }}>
+          {error}
         </div>
       )}
     </div>

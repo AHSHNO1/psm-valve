@@ -1,27 +1,77 @@
 [
   {
-    "id": "slide-1",
+    "id": "slide-project",
     "title": {
-      "fa": "مهندسی دقیق شیرهای کنترلی",
-      "en": "Precision Control Valve Engineering",
-      "ar": "هندسة دقيقة لصمامات التحكم",
-      "ru": "Точная инженерия регулирующих клапанов"
+      "fa": "شیرهای کنترلی برای پروژه‌های حیاتی",
+      "en": "Control valves for critical projects",
+      "ar": "صمامات تحكم للمشاريع الحيوية",
+      "ru": "Регулирующие клапаны для ответственных проектов"
     },
     "subtitle": {
-      "fa": "طراحی و ساخت با استانداردهای جهانی",
-      "en": "Design & manufacturing to global standards",
-      "ar": "تصميم وتصنيع وفق المعايير العالمية",
-      "ru": "Проектирование по мировым стандартам"
+      "fa": "طراحی و ساخت شیرآلات صنعتی با تکیه بر مهندسی دقیق و تجربه پروژه‌ای",
+      "en": "Industrial valve design and manufacturing backed by precise engineering and project experience",
+      "ar": "تصميم وتصنيع الصمامات الصناعية بالاعتماد على الهندسة الدقيقة وخبرة المشاريع",
+      "ru": "Проектирование и производство промышленной арматуры на основе точных инженерных решений и опыта реализации проектов"
     },
-    "image": "",
+    "image": "https://psmvalve.com/wp-content/uploads/2025/12/imgi_28_project_65e43b11cdfdfb5f8bfa068e_1716017132788.jpg",
     "ctaText": {
       "fa": "مشاهده محصولات",
-      "en": "View Products",
-      "ar": "عرض المنتجات",
-      "ru": "Смотреть продукты"
+      "en": "Explore products",
+      "ar": "استكشف المنتجات",
+      "ru": "Смотреть продукцию"
     },
     "ctaHref": "/products",
     "order": 1,
+    "active": true
+  },
+  {
+    "id": "slide-coating",
+    "title": {
+      "fa": "پوشش‌دهی صنعتی برای شرایط سخت کاری",
+      "en": "Industrial coatings for demanding conditions",
+      "ar": "طلاءات صناعية لظروف التشغيل القاسية",
+      "ru": "Промышленные покрытия для тяжелых условий эксплуатации"
+    },
+    "subtitle": {
+      "fa": "راهکارهای پوشش‌دهی برای افزایش مقاومت سطوح در کاربردهای صنعتی",
+      "en": "Surface coating solutions to improve durability in industrial applications",
+      "ar": "حلول طلاء الأسطح لتعزيز المتانة في التطبيقات الصناعية",
+      "ru": "Решения по нанесению покрытий для повышения стойкости поверхностей в промышленности"
+    },
+    "image": "/uploads/images/mv9boiqi-f4gb76.jpg",
+    "ctaText": {
+      "fa": "آشنایی با خدمات",
+      "en": "Explore our services",
+      "ar": "اكتشف خدماتنا",
+      "ru": "Наши услуги"
+    },
+    "ctaHref": "/services",
+    "order": 2,
+    "active": true
+  },
+  {
+    "id": "slide-engineering",
+    "title": {
+      "fa": "از مهندسی معکوس تا بازسازی تخصصی",
+      "en": "From reverse engineering to expert refurbishment",
+      "ar": "من الهندسة العكسية إلى إعادة التأهيل المتخصصة",
+      "ru": "От реверс-инжиниринга до профессионального восстановления"
+    },
+    "subtitle": {
+      "fa": "توانمندی‌های مهندسی و تعمیراتی برای بازگرداندن تجهیزات صنعتی به چرخه کار",
+      "en": "Engineering and repair capabilities that help return industrial equipment to service",
+      "ar": "قدرات هندسية وخدمات إصلاح تساعد على إعادة المعدات الصناعية إلى الخدمة",
+      "ru": "Инженерные и ремонтные решения для возвращения промышленного оборудования в эксплуатацию"
+    },
+    "image": "/uploads/images/mv9bnre6-ff9ohy.jpg",
+    "ctaText": {
+      "fa": "مشاهده خدمات",
+      "en": "View services",
+      "ar": "عرض الخدمات",
+      "ru": "Посмотреть услуги"
+    },
+    "ctaHref": "/services",
+    "order": 3,
     "active": true
   }
 ]

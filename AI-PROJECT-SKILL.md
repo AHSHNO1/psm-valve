@@ -66,7 +66,39 @@ git status -sb  # فقط فایلهای مدنظر تغییر کرده باشن�
 - فایلهای `.env*`
 
 ## ملاحظات فعلی
+- `middleware.js` مسیرهای بدون زبان را به نسخهٔ زباندار ریدایرکت میکند (`/products` → `/fa/products`) و پنل `/admin` را بر اساس نقش محافظت میکند؛ مسیرهای `api`, `_next`, فایلهای استاتیک و هر مسیری که «نقطه» دارد از middleware مستثنا هستند.
+- ⚠️ `app/[locale]/not-found.js` باید **سرور کامپوننت** بماند (بدون `"use client"`). اگر کلاینت باشد، Next آن را نادیده میگیرد و ۴۰۴ پیشفرض را نشان میدهد؛ برای نمایش شرطی بر اساس مسیر، از `components/NotFoundView.jsx` استفاده کن.
+- ⚠️ `loading.js` را در سطح `app/[locale]` نگذار: باعث soft 404 (پاسخ ۲۰۰ بهجای ۴۰۴ در همهٔ `notFound()`ها) میشود. اسکلتون فقط در سگمنتهایی که `notFound()` ندارند (نمونه: `app/[locale]/sizing/loading.js`).
 - `public/hdri/empty_warehouse_01_1k.hdr` محلی است تا Environment سهبعدی به CDN خارجی وابسته نباشد. از `preset="..."` در drei استفاده نکن، چون CDN خارجی دارد.
 - فایلهای ریشهٔ `fix-sizing.js`، `v10-pro-features.js`، `verify-all-components.js` قدیمیاند و بدون تأیید حذف نشوند.
 - زبان پاسخ به کاربر: **فارسی برای توضیح، انگلیسی برای کد.**
 - یک کار در هر پیام؛ قبل از کار بزرگ، سؤال کوتاه بپرس.
+
+---
+
+## عملیات، انتشار و امنیت (افزودهشده ۲۰۲۶-۱۰-۱۶)
+
+### راهنما و ابزارها
+- **راهنمای کامل انتشار: `DEPLOY.md`** (مشخصات سرور، نصب گامبهگام، Nginx، SSL، بکاپ، عیبیابی، چکلیست امنیتی). `README.md` نقطهٔ ورود سریع است.
+- `ecosystem.config.js` — اجرای PM2 (`instances: 1`).
+- `deploy/nginx-psmvalve.conf` — کانفیگ Nginx (پروکسی، SSL، کش داراییها، ریدایرکت www→بدونwww).
+- `deploy/bootstrap-server.sh` — آمادهسازی سرور تازه Ubuntu.
+- `deploy/deploy.sh` — انتشار نسخهٔ جدید (بکاپ داده → `git reset --hard` → برگرداندن داده → بیلد → `pm2 reload`).
+- `deploy/backup.sh` — بکاپ روزانهٔ `data/`، `public/uploads/`، `lib/products.js` (cron).
+- `deploy/push-assets.ps1` — انتقال `data/` و `public/uploads/` از ویندوز به سرور.
+
+### قواعد معماری که نباید تغییر کنند
+- معماری **فایلمحور** است → سرور باید **دیسک پایدار** داشته باشد. Vercel/Netlify/serverless برای این پروژه کار نمیکند.
+- PM2 باید **تکنسخه** بماند (`instances: 1`): محدودسازی نرخ در حافظهٔ پروسه انجام میشود و داده روی فایلسیستم نوشته میشود.
+- فایلهایی که در زمان اجرا تغییر میکنند و در هر انتشار باید حفظ شوند: `data/`، `public/uploads/`، `lib/products.js` (پنل محصولات آن را بازنویسی میکند). تغییرات پنل در `lib/products.js` تا `npm run build` بعدی در سایت دیده نمیشود.
+- `/api/auth/login` محدود به ۱۰ تلاش در ۱۵ دقیقه برای هر IP است؛ کار درست آن به هدر `X-Real-IP` از Nginx وابسته است.
+
+### قواعد امنیتی کامیت
+- **هرگز کامیت نکن:** `.env`, `.env.local`, `.env.production`، `data/admin.json`، `data/users.json`، `data/messages.json`، `public/uploads/*`، `data/*.backup-*.json`، `*.backup-*.js`، `*.orig`، `logs/`.
+- کامیت **باید** بشود: محتوای سایت در `data/*.json` (بهجز سه فایل خصوصی بالا) و `.env.example`.
+- `JWT_SECRET` ≥ ۳۲ بایت، `ADMIN_PASSWORD` ≥ ۱۲ کاراکتر یا `ADMIN_PASSWORD_HASH` (bcrypt cost 12)، `ADMIN_ALLOW_INSECURE_DEV_CREDENTIALS` فقط در dev.
+- رمز مدیر قبلاً در مخزن بوده (`data/admin.json`) → هش قدیمی در تاریخ گیت میماند؛ رمز جدید بده.
+
+### دامنه و داراییهای گمشده
+- دامنهٔ canonical هاردکد: `https://psmvalve.com` در `lib/seo.js`، `app/sitemap.js`، `app/robots.js`، `app/[locale]/layout.js`. اما `data/settings.json` → `https://www.psm-valve.com` است؛ قبل از انتشار یکی را انتخاب و یکسان کن.
+- فایلهای ارجاعشده که هنوز وجود ندارند: `public/og/og-default.jpg` (تصویر OG، در layout ارجاع شده) و `public/logo/logo-main.png` (برندینگ). پوشهها با `README.txt` راهنما ساخته شدهاند.

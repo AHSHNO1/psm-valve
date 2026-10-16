@@ -59,7 +59,8 @@ export async function POST(request) {
       size: file.size,
       originalName
     });
-  } catch (e) {
+  } catch (error) {
+    console.error("Upload failed:", error);
     return NextResponse.json({ ok: false, error: "خطا در آپلود" }, { status: 500 });
   }
 }

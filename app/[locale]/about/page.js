@@ -1,5 +1,5 @@
 import { getDictionary } from "@/lib/getDictionary";
-import { getContent, getCertificates, getPartners } from "@/lib/content";
+import { getContent, getCertificates } from "@/lib/content";
 import CeoSection from "@/components/CeoSection";
 
 export default async function AboutPage({ params }) {
@@ -7,45 +7,49 @@ export default async function AboutPage({ params }) {
   const dict = await getDictionary(locale);
   const content = getContent();
   const ceo = content.ceo || {};
+  const companyHistory = content.companyHistory || {};
   const certificates = getCertificates();
-  const partners = getPartners();
 
   const L = {
     fa: {
       badge: "درباره ما",
-      subtitle: "شرکت دانش‌بنیان تولیدی نوع یک، پیشرو در صنعت شیرهای کنترلی ایران",
+      subtitle: "راهکارهای مهندسی، طراحی و ساخت شیرآلات صنعتی با تکیه بر دانش فنی و نیروی متخصص",
+      knowledgeType: "دانش‌بنیان تولیدی نوع یک",
       valuesTitle: "ارزش‌های ما",
-      statsProjects: "پروژه موفق",
-      statsYears: "سال تجربه",
-      statsClients: "مشتری فعال",
-      statsQuality: "تعهد به کیفیت"
+      statsFounded: "سال آغاز فعالیت",
+      statsDepartments: "دپارتمان تخصصی",
+      statsCoating: "توانمندی پوشش‌دهی",
+      statsType: "رده دانش‌بنیان"
     },
     en: {
       badge: "About Us",
-      subtitle: "Knowledge-based company, leader in Iran's control valve industry",
+      subtitle: "Engineering solutions, design and manufacturing of industrial valves, backed by technical expertise and specialist teams",
+      knowledgeType: "Knowledge-Based Production Type I",
       valuesTitle: "Our Values",
-      statsProjects: "Successful Projects",
-      statsYears: "Years Experience",
-      statsClients: "Active Clients",
-      statsQuality: "Quality Commitment"
+      statsFounded: "Established",
+      statsDepartments: "Specialist departments",
+      statsCoating: "Coating capability",
+      statsType: "Knowledge-based classification"
     },
     ar: {
       badge: "من نحن",
-      subtitle: "شركة قائمة على المعرفة، رائدة في صناعة صمامات التحكم في إيران",
+      subtitle: "حلول هندسية وتصميم وتصنيع الصمامات الصناعية بالاعتماد على الخبرة الفنية والكوادر المتخصصة",
+      knowledgeType: "شركة إنتاجية قائمة على المعرفة - النوع الأول",
       valuesTitle: "قيمنا",
-      statsProjects: "مشروع ناجح",
-      statsYears: "سنة خبرة",
-      statsClients: "عميل نشط",
-      statsQuality: "التزام بالجودة"
+      statsFounded: "سنة التأسيس",
+      statsDepartments: "أقسام متخصصة",
+      statsCoating: "قدرة الطلاء",
+      statsType: "تصنيف الشركة"
     },
     ru: {
       badge: "О нас",
-      subtitle: "Наукоемкая компания, лидер в индустрии регулирующих клапанов Ирана",
+      subtitle: "Инженерные решения, проектирование и производство промышленной арматуры на основе технических знаний и опыта специалистов",
+      knowledgeType: "Наукоемкое производство, тип I",
       valuesTitle: "Наши ценности",
-      statsProjects: "Успешных проектов",
-      statsYears: "Лет опыта",
-      statsClients: "Активных клиентов",
-      statsQuality: "Приверженность качеству"
+      statsFounded: "Год основания",
+      statsDepartments: "Специализированных отделов",
+      statsCoating: "Возможности нанесения покрытий",
+      statsType: "Наукоемкая классификация"
     }
   }[locale] || {};
 
@@ -131,7 +135,7 @@ export default async function AboutPage({ params }) {
             }}>
               <span style={{ fontSize: 14 }}>🧪</span>
               <span style={{ fontSize: 12, fontWeight: 900, color: "#F5C518" }}>
-                {locale === "fa" ? "دانش‌بنیان تولیدی نوع یک" : "Knowledge-Based Type I"}
+                {L.knowledgeType}
               </span>
             </div>
           </div>
@@ -141,10 +145,10 @@ export default async function AboutPage({ params }) {
       {/* Stats row */}
       <section className="container-x" style={{ marginTop: -50, position: "relative", zIndex: 2 }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard value="+500" label={L.statsProjects} color="#C9950D" />
-          <StatCard value="+15" label={L.statsYears} color="#0078D4" />
-          <StatCard value="+200" label={L.statsClients} color="#107C10" />
-          <StatCard value="98%" label={L.statsQuality} color="#8764B8" />
+          <StatCard value={locale === "fa" ? "۱۳۹۰" : "1390"} label={L.statsFounded} color="#C9950D" />
+          <StatCard value="6" label={L.statsDepartments} color="#0078D4" />
+          <StatCard value="HVOF" label={L.statsCoating} color="#107C10" />
+          <StatCard value={locale === "fa" ? "نوع یک" : "Type I"} label={L.statsType} color="#8764B8" />
         </div>
       </section>
 
@@ -215,6 +219,74 @@ export default async function AboutPage({ params }) {
           })}
         </div>
       </section>
+
+      {/* Company history */}
+      {companyHistory.steps && companyHistory.steps.length > 0 && (
+        <section className="container-x pb-16">
+          <div className="text-center max-w-3xl mx-auto mb-10">
+            <span className="chip">
+              {locale === "fa" ? "مسیر رشد" : locale === "ar" ? "مسيرة التطور" : locale === "ru" ? "Путь развития" : "Our Journey"}
+            </span>
+            <h2 className="section-title mt-3">
+              <span className="heading-grad">{companyHistory.title[locale] || companyHistory.title.en}</span>
+            </h2>
+            <p className="mt-4 text-sm leading-7" style={{ color: "var(--text-soft)" }}>
+              {companyHistory.subtitle[locale] || companyHistory.subtitle.en}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 max-w-6xl mx-auto">
+            {companyHistory.steps.map(function(step, index) {
+              return (
+                <article key={index} className="card-glass p-6 sm:p-7">
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 16
+                  }}>
+                    <span style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      display: "grid",
+                      placeItems: "center",
+                      background: "var(--glow)",
+                      color: "var(--gold)",
+                      fontSize: 11,
+                      fontWeight: 900
+                    }}>
+                      {step.year[locale] || step.year.en}
+                    </span>
+                    <span style={{
+                      height: 1,
+                      flex: 1,
+                      background: "linear-gradient(90deg, var(--gold), transparent)"
+                    }} />
+                  </div>
+                  <h3 style={{
+                    margin: "0 0 10px",
+                    color: "var(--text)",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.6
+                  }}>
+                    {step.title[locale] || step.title.en}
+                  </h3>
+                  <p style={{
+                    margin: 0,
+                    color: "var(--text-soft)",
+                    fontSize: 13,
+                    lineHeight: 1.9
+                  }}>
+                    {step.desc[locale] || step.desc.en}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* CEO Section */}
       <CeoSection ceo={ceo} locale={locale} certificates={certificates} content={content} />

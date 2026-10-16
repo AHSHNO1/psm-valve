@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
@@ -27,7 +27,7 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-export default function Navbar() {
+export default function Navbar({ logo }) {
   const { locale, t } = useDictionary();
   const pathname = usePathname();
   const isDesktop = useIsDesktop();
@@ -74,7 +74,8 @@ export default function Navbar() {
       aboutPage: "معرفی شرکت", aboutUnits: "واحدها", aboutProcess: "فرآیند کار",
       aboutWhy: "چرا ما", aboutProjects: "پروژه‌های موفق", aboutFaq: "سوالات متداول",
       aboutCertificates: "گواهینامه‌ها", aboutContact: "تماس با ما",
-      allProducts: "همه محصولات", consult: "دریافت مشاوره"
+      allProducts: "همه محصولات", consult: "دریافت مشاوره",
+      menu: "باز کردن منو", closeMenu: "بستن منو"
     },
     en: {
       home: "Home", about: "About", sizing: "Sizing", products: "Products",
@@ -84,7 +85,8 @@ export default function Navbar() {
       aboutPage: "About Us", aboutUnits: "Units", aboutProcess: "Process",
       aboutWhy: "Why Us", aboutProjects: "Projects", aboutFaq: "FAQ",
       aboutCertificates: "Certificates", aboutContact: "Contact",
-      allProducts: "All Products", consult: "Get Consultation"
+      allProducts: "All Products", consult: "Get Consultation",
+      menu: "Open menu", closeMenu: "Close menu"
     },
     ar: {
       home: "الرئيسية", about: "من نحن", sizing: "تحديد الحجم", products: "المنتجات",
@@ -94,7 +96,8 @@ export default function Navbar() {
       aboutPage: "عن الشركة", aboutUnits: "الوحدات", aboutProcess: "عملية العمل",
       aboutWhy: "لماذا نحن", aboutProjects: "المشاريع", aboutFaq: "الأسئلة الشائعة",
       aboutCertificates: "الشهادات", aboutContact: "اتصل بنا",
-      allProducts: "جميع المنتجات", consult: "احصل على استشارة"
+      allProducts: "جميع المنتجات", consult: "احصل على استشارة",
+      menu: "فتح القائمة", closeMenu: "إغلاق القائمة"
     },
     ru: {
       home: "Главная", about: "О нас", sizing: "Подбор", products: "Продукты",
@@ -104,7 +107,8 @@ export default function Navbar() {
       aboutPage: "О компании", aboutUnits: "Отделы", aboutProcess: "Процесс",
       aboutWhy: "Почему мы", aboutProjects: "Проекты", aboutFaq: "FAQ",
       aboutCertificates: "Сертификаты", aboutContact: "Контакты",
-      allProducts: "Все продукты", consult: "Получить консультацию"
+      allProducts: "Все продукты", consult: "Получить консультацию",
+      menu: "Открыть меню", closeMenu: "Закрыть меню"
     }
   }[locale] || {};
 
@@ -115,7 +119,6 @@ export default function Navbar() {
     { href: "/" + locale + "/why-us", label: L.aboutWhy },
     { href: "/" + locale + "/projects", label: L.aboutProjects },
     { href: "/" + locale + "/faq", label: L.aboutFaq },
-    { href: "/" + locale + "/standards", label: (locale === "fa" ? "استانداردها" : "Standards") },
     { href: "/" + locale + "/partners", label: L.partners }
   ];
 
@@ -148,8 +151,27 @@ export default function Navbar() {
     >
       <nav className="container-x flex items-center justify-between h-16 lg:h-20 gap-2">
         <Link href={"/" + locale} className="flex items-center gap-2 shrink-0">
-          <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-gold-gradient grid place-items-center shadow-md shrink-0">
-            <span className="text-[#1A1D21] font-black text-sm lg:text-base">PSM</span>
+          <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl grid place-items-center shadow-md shrink-0 overflow-hidden"
+            style={{ background: "#FFFFFF", border: "1px solid var(--border)" }}>
+            {logo && (
+              <img
+                src={logo}
+                alt=""
+                className="w-full h-full object-contain p-0.5"
+                onError={function(e) {
+                  e.currentTarget.style.display = "none";
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = "grid";
+                  }
+                }}
+              />
+            )}
+            <span
+              className="text-[#1A1D21] font-black text-sm lg:text-base"
+              style={{ display: logo ? "none" : "grid" }}
+            >
+              PSM
+            </span>
           </div>
           <div className="hidden md:block leading-tight">
             <div className="font-black text-xs lg:text-sm whitespace-nowrap" style={{ color: "var(--text)" }}>
@@ -320,7 +342,12 @@ export default function Navbar() {
             <SearchButton />
             <ThemeToggle />
             <LocaleSwitcher />
-            <button onClick={function() { setMobileOpen(!mobileOpen); }} aria-label="Menu"
+            <button
+              type="button"
+              onClick={function() { setMobileOpen(!mobileOpen); }}
+              aria-label={mobileOpen ? L.closeMenu : L.menu}
+              aria-expanded={mobileOpen}
+              aria-controls={mobileOpen ? "mobile-navigation" : undefined}
               className="w-10 h-10 rounded-lg border grid place-items-center"
               style={{ borderColor: "var(--border-strong)", color: "var(--text)" }}>
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -391,6 +418,9 @@ export default function Navbar() {
       <AnimatePresence>
         {!isDesktop && mobileOpen && (
           <motion.div
+            id="mobile-navigation"
+            aria-label={L.menu}
+            role="region"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -469,6 +499,7 @@ function MobileLink(props) {
   return (
     <Link href={props.href} onClick={props.onClick}
       className={"block rounded-lg font-semibold " + (props.small ? "px-3 py-2 text-xs" : "px-4 py-3 text-sm")}
+      aria-current={props.active ? "page" : undefined}
       style={{
         color: props.active ? "var(--gold)" : "var(--text)",
         background: props.active ? "var(--glow)" : "transparent"
@@ -480,9 +511,14 @@ function MobileLink(props) {
 
 function MobileAccordion(props) {
   const [open, setOpen] = useState(false);
+  const panelId = useId();
   return (
     <div>
-      <button onClick={function() { setOpen(!open); }}
+      <button
+        type="button"
+        onClick={function() { setOpen(!open); }}
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         className="w-full flex items-center justify-between px-4 py-3 rounded-lg font-semibold text-sm"
         style={{ color: "var(--text)" }}>
         <span>{props.label}</span>
@@ -492,6 +528,9 @@ function MobileAccordion(props) {
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
+            id={panelId}
+            role="region"
+            aria-label={props.label}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}

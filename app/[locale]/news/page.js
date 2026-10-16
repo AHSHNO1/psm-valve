@@ -1,11 +1,14 @@
 import { getDictionary } from "@/lib/getDictionary";
-import { news } from "@/lib/news";
+import { getNews } from "@/lib/news";
 import Link from "next/link";
 import { ArrowLeft, Calendar } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default async function NewsPage({ params }) {
   const { locale } = params;
   const dict = await getDictionary(locale);
+  const news = getNews();
 
   const t = {
     fa: { badge: "اخبار شرکت", title1: "آخرین", title2: "اخبار و رویدادها", empty: "به‌زودی اخبار منتشر می‌شود", readMore: "ادامه مطلب" },

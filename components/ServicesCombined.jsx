@@ -203,12 +203,6 @@ export default function ServicesCombined({ services, locale }) {
         .svc-title {
           margin-top: 12px;
         }
-        @media (max-width: 640px) {
-          .svc-all-btn {
-            display: none;
-          }
-        }
-
         /* ============ FEATURED GRID ============ */
         .svc-featured-grid {
           display: grid;
@@ -436,6 +430,13 @@ export default function ServicesCombined({ services, locale }) {
           transition: all 0.25s;
           box-shadow: 0 6px 18px color-mix(in srgb, var(--svc-color) 40%, transparent);
           align-self: flex-start;
+        }
+        @media (max-width: 640px) {
+          .svc-all-btn {
+            min-height: 44px;
+            padding: 0.55rem 0.85rem;
+            font-size: 0.8rem;
+          }
         }
         .svc-fcta:hover {
           transform: translateY(-2px);

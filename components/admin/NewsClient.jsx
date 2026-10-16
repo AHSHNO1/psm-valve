@@ -51,7 +51,15 @@ export default function NewsClient({ initial }) {
         body: JSON.stringify({ news: list })
       });
       const data = await res.json();
-      if (data.ok) { setItems(list); notify("ذخیره شد", false); }
+      if (data.ok) {
+        setItems(list.map((item) => ({
+          ...item,
+          status: item.active === false
+            ? (item.status === "pending" ? "pending" : "draft")
+            : "published"
+        })));
+        notify("ذخیره شد", false);
+      }
       else notify("خطا", true);
     } catch (e) { notify("خطای شبکه", true); }
     setBusy(false);
@@ -129,6 +137,7 @@ export default function NewsClient({ initial }) {
                       ) : (
                         <span className="chip chip-gray">غیرفعال</span>
                       )}
+                      {n.status === "pending" && <span className="chip chip-teal">در انتظار تأیید مدیر</span>}
                     </div>
                     <div className="row-title">{pick(n.title)}</div>
                     <div className="row-meta">

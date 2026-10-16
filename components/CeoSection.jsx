@@ -23,9 +23,9 @@ export default function CeoSection({ ceo, locale, certificates }) {
       msgTitle: "سخن مدیرعامل",
       knowledge: "شرکت دانش‌بنیان",
       knowledgeType: "تولیدی نوع یک",
-      knowledgeDesc: "تأیید شده توسط معاونت علمی و فناوری ریاست جمهوری",
-      standards: "گواهینامه‌ها و استانداردهای بین‌المللی",
-      standardsSub: "اعتبار جهانی محصولات ما"
+      knowledgeDesc: "بر اساس معرفی شرکت؛ این نشان، تصویر یا جایگزین گواهی رسمی نیست.",
+      standards: "گواهینامه‌ها و مجوزهای منتشرشده",
+      standardsSub: "تصاویر اسناد منتشرشده در سایت شرکت؛ اعتبار فعلی هر سند را از متن زیر آن بررسی کنید."
     },
     en: {
       badge: "Leadership",
@@ -33,9 +33,9 @@ export default function CeoSection({ ceo, locale, certificates }) {
       msgTitle: "CEO Message",
       knowledge: "Knowledge-Based Company",
       knowledgeType: "Production Type I",
-      knowledgeDesc: "Approved by Vice Presidency for Science & Technology",
-      standards: "International Certificates & Standards",
-      standardsSub: "Global recognition of our products"
+      knowledgeDesc: "Based on the company's published description; this badge is not an official certificate.",
+      standards: "Published Certificates & Permits",
+      standardsSub: "Scans published on the company website; check each document's current validity below."
     },
     ar: {
       badge: "القيادة",
@@ -43,9 +43,9 @@ export default function CeoSection({ ceo, locale, certificates }) {
       msgTitle: "رسالة الرئيس",
       knowledge: "شركة قائمة على المعرفة",
       knowledgeType: "إنتاجية النوع الأول",
-      knowledgeDesc: "معتمدة من نائب رئيس العلوم والتكنولوجيا",
-      standards: "الشهادات والمعايير الدولية",
-      standardsSub: "الاعتراف العالمي بمنتجاتنا"
+      knowledgeDesc: "استناداً إلى تعريف الشركة؛ هذه العلامة ليست شهادة رسمية ولا بديلاً عنها.",
+      standards: "الشهادات والتصاريح المنشورة",
+      standardsSub: "صور الوثائق المنشورة على موقع الشركة؛ يرجى مراجعة صلاحية كل وثيقة أدناه."
     },
     ru: {
       badge: "Руководство",
@@ -53,9 +53,9 @@ export default function CeoSection({ ceo, locale, certificates }) {
       msgTitle: "Слово директора",
       knowledge: "Наукоемкая компания",
       knowledgeType: "Производство тип I",
-      knowledgeDesc: "Одобрено Вице-президентом по науке и технологиям",
-      standards: "Международные сертификаты и стандарты",
-      standardsSub: "Мировое признание нашей продукции"
+      knowledgeDesc: "По опубликованному описанию компании; этот знак не является официальным сертификатом.",
+      standards: "Опубликованные сертификаты и разрешения",
+      standardsSub: "Сканы документов с сайта компании; актуальность каждого документа указана ниже."
     }
   };
   const L = labels[locale] || labels.en;
@@ -263,16 +263,26 @@ export default function CeoSection({ ceo, locale, certificates }) {
                       boxShadow: "inset 0 0 0 1px rgba(0, 0, 0, 0.05)"
                     }}>
                       {c.image ? (
-                        <img
-                          src={c.image}
-                          alt={pick(c.title, locale)}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
-                          }}
-                        />
+                        <a
+                          href={c.image}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={pick(c.title, locale)}
+                          title={pick(c.title, locale)}
+                          style={{ display: "block", width: "100%", height: "100%" }}
+                        >
+                          <img
+                            src={c.image}
+                            alt={pick(c.title, locale)}
+                            loading="lazy"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                              filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))"
+                            }}
+                          />
+                        </a>
                       ) : (
                         <div style={{ textAlign: "center", padding: "0 8px" }}>
                           <div style={{
@@ -337,6 +347,16 @@ export default function CeoSection({ ceo, locale, certificates }) {
                     }}>
                       {pick(c.issuer, locale)}
                     </div>
+                    {pick(c.validity, locale) && (
+                      <div style={{
+                        fontSize: 9,
+                        color: "var(--text-muted)",
+                        lineHeight: 1.5,
+                        marginTop: 5
+                      }}>
+                        {pick(c.validity, locale)}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );

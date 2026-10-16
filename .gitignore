@@ -12,6 +12,9 @@ dist/
 # Environment
 .env
 .env.local
+.env*.local
+.env.development
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
@@ -34,9 +37,23 @@ Thumbs.db
 # Data backups
 data/*.bak
 data/*.backup
+data/*.backup-*.json
+data/admin.json
+data/users.json
+data/messages.json
 
 # Archives
 archive/
+
+# Logs & process manager
+*.log
+logs/
+.pm2/
+
+# Local backups / scratch files
+*.backup.js
+*.backup-*.js
+*.orig
 
 # Uploads (keep folder, ignore files)
 public/uploads/*

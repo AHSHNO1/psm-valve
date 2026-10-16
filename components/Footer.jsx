@@ -55,19 +55,21 @@ function IconEitaa({ size = 14 }) {
 // ============================================================
 // BRAND LOGO
 // ============================================================
-function BrandLogo() {
+function BrandLogo({ src }) {
   return (
     <div className="footer-brand-logo">
-      <img
-        src="/logo/logo-icon.png"
-        alt="PSM Valve"
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-          const fb = e.currentTarget.nextSibling;
-          if (fb) fb.style.display = "grid";
-        }}
-      />
-      <span className="footer-brand-logo-fallback">PSM</span>
+      {src && (
+        <img
+          src={src}
+          alt=""
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            const fb = e.currentTarget.nextElementSibling;
+            if (fb) fb.style.display = "grid";
+          }}
+        />
+      )}
+      <span className="footer-brand-logo-fallback" style={{ display: src ? "none" : "grid" }}>PSM</span>
     </div>
   );
 }
@@ -75,7 +77,7 @@ function BrandLogo() {
 // ============================================================
 // MAIN FOOTER
 // ============================================================
-export default function Footer() {
+export default function Footer({ logo }) {
   const { locale, t } = useDictionary();
   const isFa = locale === "fa";
 
@@ -132,7 +134,7 @@ export default function Footer() {
       socialIntl: "International",
       socialIran: "Iranian Messengers",
       socialTitle: "Follow Us",
-      slogan: "We build nationally to last",
+      slogan: "We build for our nation and build to last",
       knowledge: "Knowledge-Based",
       knowledgeType: "Production Type I",
       copyright: "All rights reserved"
@@ -148,11 +150,11 @@ export default function Footer() {
       hoursClosed: "الجمعة: مغلق",
       postal: "الرمز البريدي",
       socialIntl: "دولي",
-      socialIran: "رسائل إيرانية",
+      socialIran: "تطبيقات المراسلة الإيرانية",
       socialTitle: "تابعنا",
-      slogan: "نبني وطنياً لنبقى",
+      slogan: "نبني من أجل وطننا ونبني لنبقى",
       knowledge: "قائمة على المعرفة",
-      knowledgeType: "إنتاجية النوع الأول",
+      knowledgeType: "إنتاج من النوع الأول",
       copyright: "جميع الحقوق محفوظة"
     },
     ru: {
@@ -168,9 +170,9 @@ export default function Footer() {
       socialIntl: "Международные",
       socialIran: "Иранские мессенджеры",
       socialTitle: "Подписаться",
-      slogan: "Строим для страны, чтобы остаться",
-      knowledge: "Наукоемкая",
-      knowledgeType: "Производство тип I",
+      slogan: "Строим для страны, чтобы оставить наследие",
+      knowledge: "Наукоёмкое производство",
+      knowledgeType: "Тип I",
       copyright: "Все права защищены"
     }
   }[locale] || {};
@@ -184,14 +186,19 @@ export default function Footer() {
           {/* ========== Column 1: Brand ========== */}
           <div className="footer-brand-col">
             <div className="footer-brand-head">
-              <BrandLogo />
+              <BrandLogo src={logo} />
               <div className="footer-brand-text">
                 <div className="footer-brand-name">{t.common.company}</div>
                 <div className="footer-brand-tag">{t.common.tagline}</div>
               </div>
             </div>
 
-            <div className="footer-slogan">«{L.slogan}»</div>
+            <div className="footer-slogans">
+              <p className="footer-slogan footer-slogan-primary">{L.slogan}</p>
+              <p className="footer-slogan footer-slogan-secondary">
+                {COMPANY.slogan[locale] || COMPANY.slogan.en}
+              </p>
+            </div>
 
             <div className="footer-knowledge-badge">
               <div className="footer-knowledge-icon">
@@ -359,11 +366,11 @@ export default function Footer() {
       <div className="footer-bottom">
         <div className="container-x footer-bottom-inner">
           <div className="footer-bottom-text">
-            Designed by <span className="footer-bottom-it">IT Department</span>
-            <span className="footer-bottom-sep">·</span>
-            © {new Date().getFullYear()} {t.common.company}
-            <span className="footer-bottom-sep">·</span>
-            {L.copyright}
+            <span dir="ltr" lang="en">
+              Designed by <span className="footer-bottom-it">IT Department ahshno</span>
+            </span>
+            <span className="footer-bottom-sep">|</span>
+            {L.copyright} ©{new Date().getFullYear()}
           </div>
           <a href="mailto:it@psmvalve.com" className="footer-bottom-email">
             <Mail size={12} />
@@ -384,9 +391,16 @@ export default function Footer() {
 
         .footer-grid {
           display: grid;
-          grid-template-columns: 1.2fr 1fr 2fr 1fr;
-          gap: 36px;
+          grid-template-columns: 1.15fr 0.9fr 1.8fr 1fr;
+          align-items: start;
+          gap: clamp(20px, 3vw, 36px);
           padding: 40px 0 32px;
+        }
+        .footer-grid > div { min-width: 0; }
+        .footer-grid > div:not(.footer-brand-col):not(.footer-contact-col) {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
         }
         @media (max-width: 1100px) {
           .footer-grid {
@@ -419,9 +433,9 @@ export default function Footer() {
           display: grid;
           place-items: center;
           overflow: hidden;
-          background: linear-gradient(135deg, #C9950D, #F5C518);
+          background: #FFFFFF;
           flex-shrink: 0;
-          box-shadow: 0 4px 12px rgba(201, 149, 13, 0.25);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
         .footer-brand-logo img {
           width: 100%;
@@ -452,12 +466,25 @@ export default function Footer() {
           color: var(--gold);
           margin-top: 2px;
         }
+        .footer-slogans {
+          display: grid;
+          gap: 7px;
+          padding-inline-start: 2px;
+        }
         .footer-slogan {
-          font-size: 11.5px;
-          font-weight: 800;
-          font-style: italic;
+          margin: 0;
+          line-height: 1.65;
+          text-wrap: pretty;
+        }
+        .footer-slogan-primary {
           color: var(--gold);
-          line-height: 1.5;
+          font-size: 13px;
+          font-weight: 900;
+        }
+        .footer-slogan-secondary {
+          color: var(--text-soft);
+          font-size: 12px;
+          font-weight: 700;
         }
         .footer-knowledge-badge {
           display: inline-flex;
@@ -626,6 +653,12 @@ export default function Footer() {
           color: #FFFFFF;
           transform: translateY(-2px);
         }
+        .footer-social-btn:focus-visible,
+        .footer-messenger-pill:focus-visible {
+          outline: 2px solid var(--gold);
+          outline-offset: 3px;
+          box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 20%, transparent);
+        }
 
         .footer-social-pills {
           display: flex;
@@ -710,6 +743,16 @@ export default function Footer() {
             flex-direction: column;
             align-items: flex-start;
             gap: 2px;
+          }
+          .footer-contact-col {
+            gap: 8px;
+          }
+          .footer-contact-col .fc-row {
+            padding: 9px 10px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-soft);
+            gap: 10px;
           }
           .fc-sep { display: none; }
         }

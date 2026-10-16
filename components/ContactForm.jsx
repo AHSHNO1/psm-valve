@@ -1,38 +1,39 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Send, CheckCircle2, AlertTriangle, Loader2, ShieldCheck, RefreshCw } from "lucide-react";
 import { useDictionary } from "./Providers";
 
-function generateCaptcha() {
-  const a = Math.floor(Math.random() * 20) + 1;
-  const b = Math.floor(Math.random() * 20) + 1;
-  const ops = ["+", "-", "×"];
-  const op = ops[Math.floor(Math.random() * ops.length)];
-  let answer;
-  if (op === "+") answer = a + b;
-  else if (op === "-") answer = a - b;
-  else answer = a * b;
-  return { a: a, b: b, op: op, answer: answer };
-}
-
 export default function ContactForm() {
   const { t, locale } = useDictionary();
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", website: "" });
   const [captcha, setCaptcha] = useState(null);
+  const [captchaToken, setCaptchaToken] = useState("");
   const [captchaInput, setCaptchaInput] = useState("");
   const [captchaError, setCaptchaError] = useState(false);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
 
-  // Initialize captcha on mount
   useEffect(function() {
-    setCaptcha(generateCaptcha());
+    refreshCaptcha();
   }, []);
 
-  const refreshCaptcha = function() {
-    setCaptcha(generateCaptcha());
+  const refreshCaptcha = async function(preserveError) {
+    setCaptcha(null);
+    setCaptchaToken("");
     setCaptchaInput("");
-    setCaptchaError(false);
+    if (!preserveError) setCaptchaError(false);
+    try {
+      const response = await fetch("/api/contact/challenge", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Security check unavailable");
+      setCaptcha(data.challenge);
+      setCaptchaToken(data.challenge.token);
+      setError("");
+      if (status === "error") setStatus("idle");
+    } catch (reason) {
+      setStatus("error");
+      setError(reason.message);
+    }
   };
 
   const update = function(k) {
@@ -45,9 +46,8 @@ export default function ContactForm() {
     setCaptchaError(false);
 
     // Validate captcha
-    if (!captcha || parseInt(captchaInput) !== captcha.answer) {
+    if (!captcha || !captchaToken || !captchaInput.trim()) {
       setCaptchaError(true);
-      refreshCaptcha();
       return;
     }
 
@@ -57,19 +57,25 @@ export default function ContactForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.assign({}, form, {
-          captchaAnswer: captcha.answer,
+          captchaToken: captchaToken,
           captchaInput: captchaInput
         }))
       });
       const data = await res.json();
       if (data.ok) {
         setStatus("success");
-        setForm({ name: "", email: "", phone: "", message: "" });
+        setForm({ name: "", email: "", phone: "", message: "", website: "" });
         setCaptchaInput("");
         refreshCaptcha();
       } else {
+        if (data.code === "invalid_challenge") {
+          setStatus("idle");
+          setCaptchaError(true);
+          refreshCaptcha(true);
+          return;
+        }
         setStatus("error");
-        setError(data.error || "Error");
+        setError(data.code === "rate_limited" ? LL.rateLimited : (data.error || "Error"));
       }
     } catch (err) {
       setStatus("error");
@@ -82,24 +88,28 @@ export default function ContactForm() {
       captchaLabel: "تأیید امنیتی — حاصل عبارت زیر را وارد کنید",
       captchaPlaceholder: "پاسخ را وارد کنید",
       captchaWrong: "پاسخ نادرست است. لطفاً دوباره تلاش کنید.",
+      rateLimited: "تعداد ارسال‌ها زیاد است؛ کمی بعد دوباره تلاش کنید.",
       refresh: "تغییر تصویر"
     },
     en: {
       captchaLabel: "Security check — solve the equation below",
       captchaPlaceholder: "Enter answer",
       captchaWrong: "Wrong answer. Please try again.",
+      rateLimited: "Too many messages. Please try again later.",
       refresh: "Refresh"
     },
     ar: {
       captchaLabel: "التحقق الأمني — حل المعادلة أدناه",
       captchaPlaceholder: "أدخل الإجابة",
       captchaWrong: "إجابة خاطئة. حاول مرة أخرى.",
+      rateLimited: "طلبات كثيرة. حاول مرة أخرى لاحقاً.",
       refresh: "تحديث"
     },
     ru: {
       captchaLabel: "Проверка безопасности — решите уравнение ниже",
       captchaPlaceholder: "Введите ответ",
       captchaWrong: "Неверный ответ. Попробуйте снова.",
+      rateLimited: "Слишком много сообщений. Попробуйте позже.",
       refresh: "Обновить"
     }
   };
@@ -130,6 +140,14 @@ export default function ContactForm() {
       <h3 className="font-black text-lg mb-2" style={{ color: "var(--gold)" }}>
         {t.common.sendMessage}
       </h3>
+
+      <div aria-hidden="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)" }}>
+        <label>
+          Website
+          <input type="text" name="website" tabIndex={-1} autoComplete="off"
+            value={form.website} onChange={update("website")} />
+        </label>
+      </div>
 
       <label className="block">
         <span className="text-xs font-bold mb-2 block" style={{ color: "var(--text-soft)" }}>
@@ -218,10 +236,12 @@ export default function ContactForm() {
           {/* Answer input */}
           <input
             type="number"
+            required
             value={captchaInput}
             onChange={function(e) { setCaptchaInput(e.target.value); setCaptchaError(false); }}
             placeholder={LL.captchaPlaceholder}
             className="input-field flex-1"
+            disabled={!captchaToken}
             style={{ padding: "12px 14px" }}
           />
 
@@ -254,7 +274,7 @@ export default function ContactForm() {
 
       <button
         type="submit"
-        disabled={status === "loading"}
+        disabled={status === "loading" || !captchaToken}
         className="btn-gold w-full justify-center disabled:opacity-60"
       >
         {status === "loading" ? (

@@ -38,9 +38,17 @@ export default function PartnersClient({ initial }) {
         body: JSON.stringify({ partners: list })
       });
       const data = await res.json();
-      if (data.ok) { setItems(list); notify("ذخیره شد"); }
-      else notify("خطا", true);
-    } catch (e) { notify("خطای شبکه", true); }
+      if (!res.ok || !data.ok) {
+        notify(data.error || "ذخیرهٔ همراهان ناموفق بود", true);
+        return false;
+      }
+      setItems(list);
+      notify("ذخیره شد");
+      return true;
+    } catch {
+      notify("ارتباط با سرور برقرار نشد؛ تغییرات ذخیره نشد", true);
+      return false;
+    }
   }
 
   function add() {
@@ -141,7 +149,9 @@ export default function PartnersClient({ initial }) {
                     marginTop: 8
                   }}>
                     <PartnerForm partner={p} update={update}
-                      onSave={function() { save(items); setEditing(null); }}
+                      onSave={async function() {
+                        if (await save(items)) setEditing(null);
+                      }}
                       onCancel={function() { setEditing(null); }} />
                   </div>
                 )}
@@ -156,6 +166,7 @@ export default function PartnersClient({ initial }) {
 
 function PartnerForm({ partner, update, onSave, onCancel }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const inputRef = useRef(null);
 
   function updName(lang, val) {
@@ -166,6 +177,7 @@ function PartnerForm({ partner, update, onSave, onCancel }) {
 
   async function upload(file) {
     if (!file) return;
+    setUploadError("");
     setUploading(true);
     try {
       const fd = new FormData();
@@ -173,9 +185,17 @@ function PartnerForm({ partner, update, onSave, onCancel }) {
       fd.append("type", "images");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.ok) update(partner.id, { logo: data.url });
-    } catch (e) {}
-    setUploading(false);
+      if (!res.ok || !data.ok) {
+        setUploadError(data.error || "آپلود لوگو ناموفق بود");
+        return;
+      }
+      update(partner.id, { logo: data.url });
+    } catch {
+      setUploadError("ارتباط با سرور برقرار نشد؛ لوگو آپلود نشد");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
   }
 
   return (
@@ -213,9 +233,10 @@ function PartnerForm({ partner, update, onSave, onCancel }) {
           {uploading ? <Icon name="loader" size={20} /> : <Icon name="upload" size={22} />}
         </div>
       )}
+      {uploadError && <div className="msg msg-error" style={{ marginTop: 8 }}>{uploadError}</div>}
 
       <div className="save-bar">
-        <SaveBtn onClick={onSave} />
+        <SaveBtn onClick={onSave} busy={uploading} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

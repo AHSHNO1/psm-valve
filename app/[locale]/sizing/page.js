@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Target, Calculator, Sparkles } from "lucide-react";
+import { Target, Calculator, Sparkles, BookOpen } from "lucide-react";
 import SizingTool from "@/components/SizingTool";
 import EngineeringCalculator from "@/components/EngineeringCalculator";
+import StandardsTable from "@/components/StandardsTable";
 import "./sizing-hub.css";
 
 const SITE_URL = "https://www.psm-valve.com";
@@ -114,6 +115,22 @@ const TABS = [
       ar: ["محول", "أنابيب", "علمية", "السجل"],
       ru: ["Конвертер", "Трубы", "Научный", "История"]
     }
+  },
+  {
+    id: "standards", icon: BookOpen, accent: "#10B981", badge: "DN / ANSI",
+    title: { fa: "مرجع استانداردهای مهندسی", en: "Engineering Standards", ar: "المعايير الهندسية", ru: "Инженерные стандарты" },
+    desc: {
+      fa: "مرجع سریع تبدیل DN/NPS، ANSI/PN، Cv/Kv و واحدهای دما",
+      en: "Quick reference for DN/NPS, ANSI/PN, Cv/Kv and temperature conversions",
+      ar: "مرجع سريع لتحويل DN/NPS وANSI/PN وCv/Kv ودرجات الحرارة",
+      ru: "Справочник по DN/NPS, ANSI/PN, Cv/Kv и температуре"
+    },
+    chips: {
+      fa: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "دما"],
+      en: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "Temperature"],
+      ar: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "الحرارة"],
+      ru: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "Температура"]
+    }
   }
 ];
 
@@ -122,31 +139,34 @@ const HUB = {
     badge: "ابزارهای تخصصی مهندسی",
     title1: "مرکز ابزارهای مهندسی",
     title2: " PSM",
-    sub: "دو ابزار حرفه‌ای برای انتخاب و محاسبه شیرهای کنترلی صنعتی — طبق استانداردهای IEC و ANSI"
+    sub: "سه ابزار کاربردی برای سایزینگ، محاسبات مهندسی و دسترسی سریع به استانداردهای شیرهای صنعتی"
   },
   en: {
     badge: "Professional Engineering Tools",
     title1: "PSM Engineering",
     title2: " Tools Hub",
-    sub: "Two professional tools for industrial control valve selection & calculation"
+    sub: "Three practical tools for valve sizing, engineering calculations and quick access to industrial standards"
   },
   ar: {
     badge: "أدوات هندسية احترافية",
     title1: "مركز أدوات",
     title2: " PSM",
-    sub: "أداتان احترافيتان لاختيار وحساب صمامات التحكم الصناعية"
+    sub: "ثلاث أدوات عملية لتحديد حجم الصمام والحسابات الهندسية والرجوع السريع إلى المعايير الصناعية"
   },
   ru: {
     badge: "Профессиональные инструменты",
     title1: "PSM",
     title2: " Инженерный центр",
-    sub: "Два профессиональных инструмента для подбора и расчета клапанов"
+    sub: "Три инструмента для подбора клапанов, инженерных расчётов и быстрого доступа к промышленным стандартам"
   }
 };
 
 export default function SizingPage({ params, searchParams }) {
   const locale = params?.locale || "fa";
-  const tool = searchParams?.tool === "calculator" ? "calculator" : "sizing";
+  const requestedTool = searchParams?.tool;
+  const tool = ["sizing", "calculator", "standards"].includes(requestedTool)
+    ? requestedTool
+    : "sizing";
   const isRTL = locale === "fa" || locale === "ar";
   const H = HUB[locale] || HUB.en;
 
@@ -190,7 +210,7 @@ export default function SizingPage({ params, searchParams }) {
         </div>
 
         {/* ===== Tool Tabs ===== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-[900px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-[1100px] mx-auto">
           {TABS.map(t => {
             const Icon = t.icon;
             const active = tool === t.id;
@@ -248,6 +268,8 @@ export default function SizingPage({ params, searchParams }) {
             <EngineeringCalculator locale={locale} />
           </section>
         )}
+
+        {tool === "standards" && <StandardsTable locale={locale} />}
       </div>
     </div>
   );

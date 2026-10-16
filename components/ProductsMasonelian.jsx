@@ -15,6 +15,33 @@ const ICONS = {
   ShieldAlert, Snowflake, Flame
 };
 
+const PRODUCTS_LABELS = {
+  fa: {
+    categories: "دسته",
+    products: "محصول",
+    filter: "فیلتر بر اساس دسته",
+    all: "همه"
+  },
+  en: {
+    categories: "categories",
+    products: "products",
+    filter: "Filter by category",
+    all: "All"
+  },
+  ar: {
+    categories: "فئات",
+    products: "منتج",
+    filter: "تصفية حسب الفئة",
+    all: "الكل"
+  },
+  ru: {
+    categories: "категории",
+    products: "продуктов",
+    filter: "Фильтр по категории",
+    all: "Все"
+  }
+};
+
 function catalogImage(slug) {
   return catalog.find((x) => x.slug === slug)?.image || null;
 }
@@ -22,6 +49,7 @@ function catalogImage(slug) {
 export default function ProductsMasonelian() {
   const { locale, t } = useDictionary();
   const [activeCategory, setActiveCategory] = useState("all");
+  const labels = PRODUCTS_LABELS[locale] || PRODUCTS_LABELS.en;
 
   const filtered = activeCategory === "all"
     ? categories
@@ -30,23 +58,23 @@ export default function ProductsMasonelian() {
   const totalProducts = categories.reduce((s, c) => s + c.products.length, 0);
 
   return (
-    <section className="container-x py-10 sm:py-16">
+    <section className="container-x py-10 sm:py-16" aria-labelledby="products-page-title">
       {/* Hero */}
       <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
         <span className="chip">
           <Package size={12} /> {t.products.catalog}
         </span>
-        <h1 className="section-title mt-4">
+        <h1 id="products-page-title" className="section-title mt-4">
           <span className="heading-grad">{t.products.pageTitle1}</span>{" "}
           <span className="heading-gold">{t.products.pageTitle2}</span>
         </h1>
         <p className="mt-4 text-sm sm:text-base text-soft">
-          {categories.length} {locale === "fa" ? "دسته" : "categories"} · {totalProducts} {locale === "fa" ? "محصول" : "products"}
+          {categories.length} {labels.categories} · {totalProducts} {labels.products}
         </p>
       </div>
 
       {/* Filter bar */}
-      <div className="mb-8 sm:mb-12">
+      <div className="mb-8 sm:mb-12" role="group" aria-label={labels.filter}>
         <div className="flex items-center gap-2 mb-4">
           <Filter size={16} style={{ color: "var(--gold)" }} />
           <span className="text-sm font-bold" style={{ color: "var(--text-soft)" }}>
@@ -55,20 +83,24 @@ export default function ProductsMasonelian() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={() => setActiveCategory("all")}
+            aria-pressed={activeCategory === "all"}
             className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
               activeCategory === "all" ? "btn-gold" : "btn-outline"
             }`}
             style={{ padding: activeCategory === "all" ? undefined : "0.5rem 1rem" }}
           >
-            {locale === "fa" ? "همه" : "All"}
+            {labels.all}
           </button>
           {categories.map((cat) => {
             const Icon = ICONS[cat.icon] || Package;
             return (
               <button
+                type="button"
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
+                aria-pressed={activeCategory === cat.id}
                 className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
                   activeCategory === cat.id ? "btn-gold" : "btn-outline"
                 }`}
@@ -116,7 +148,7 @@ export default function ProductsMasonelian() {
                   >
                     <Link
                       href={`/${locale}/products/${p.slug}`}
-                      className="product-card-masonelian block p-4 sm:p-6 h-full"
+                      className="product-card-masonelian group block p-4 sm:p-6 h-full"
                     >
                       {catalogImage(p.slug) ? (
                         <div

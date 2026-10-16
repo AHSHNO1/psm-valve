@@ -1,195 +1,236 @@
 "use client";
+
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, Html } from "@react-three/drei";
-import { useRef, useState, useEffect } from "react";
-import { motion, useScroll } from "framer-motion";
+import { OrbitControls, Html } from "@react-three/drei";
+import { useRef, useState } from "react";
+import { Play, RotateCcw } from "lucide-react";
 import { useDictionary } from "./Providers";
 
-function RobotPart({ position, color, offset, explode, name, geometry }) {
-  const ref = useRef();
-  const [hovered, setHovered] = useState(false);
+const LABELS = {
+  fa: ["پایه", "محور اول", "شانه", "بازوی اصلی", "آرنج", "مچ", "تورچ HVOF"],
+  en: ["Base", "Axis 1", "Shoulder", "Upper arm", "Elbow", "Wrist", "HVOF torch"],
+  ar: ["القاعدة", "المحور الأول", "الكتف", "الذراع العلوي", "المرفق", "المعصم", "شعلة HVOF"],
+  ru: ["Основание", "Ось 1", "Плечо", "Верхняя рука", "Локоть", "Запястье", "Горелка HVOF"]
+};
 
-  useFrame(function() {
+const PARTS = [
+  { id: "base", position: [0, -0.58, 0], offset: [0, 0, 0] },
+  { id: "axis", position: [0, -0.2, 0], offset: [0, -0.28, 0] },
+  { id: "shoulder", position: [0.12, 0.25, 0], offset: [-0.28, 0, 0] },
+  { id: "upperArm", position: [0.55, 0.48, 0], offset: [0, 0.35, 0] },
+  { id: "elbow", position: [1.04, 0.68, 0], offset: [0.28, 0, 0] },
+  { id: "wrist", position: [1.48, 0.52, 0], offset: [0, -0.35, 0] },
+  { id: "torch", position: [1.82, 0.12, 0], offset: [0.32, -0.1, 0] }
+];
+
+function RobotPart({ item, index, explode, labels }) {
+  const ref = useRef(null);
+  const [hovered, setHovered] = useState(false);
+  const [selected, setSelected] = useState(false);
+  const emphasized = hovered || selected;
+
+  useFrame((_, delta) => {
     if (!ref.current) return;
-    const targetY = position[1] + offset[1] * explode;
-    const targetX = position[0] + offset[0] * explode;
-    const targetZ = position[2] + offset[2] * explode;
-    ref.current.position.x += (targetX - ref.current.position.x) * 0.08;
-    ref.current.position.y += (targetY - ref.current.position.y) * 0.08;
-    ref.current.position.z += (targetZ - ref.current.position.z) * 0.08;
-    ref.current.rotation.y += 0.0015;
+    const smoothing = 1 - Math.exp(-8 * delta);
+    const stage = Math.max(0, Math.min(1, (explode - index * 0.05) / (1 - index * 0.05)));
+    const easedStage = stage * stage * (3 - 2 * stage);
+    ref.current.position.x += (item.position[0] + item.offset[0] * easedStage - ref.current.position.x) * smoothing;
+    ref.current.position.y += (item.position[1] + item.offset[1] * easedStage - ref.current.position.y) * smoothing;
+    const targetScale = emphasized ? 1.07 : 1;
+    ref.current.scale.x += (targetScale - ref.current.scale.x) * smoothing;
+    ref.current.scale.y += (targetScale - ref.current.scale.y) * smoothing;
+    ref.current.scale.z += (targetScale - ref.current.scale.z) * smoothing;
   });
 
-  const geo = (function() {
-    if (geometry === "box") return <boxGeometry args={[0.9, 0.5, 0.9]} />;
-    if (geometry === "sphere") return <sphereGeometry args={[0.55, 32, 32]} />;
-    if (geometry === "cone") return <coneGeometry args={[0.4, 0.8, 32]} />;
-    if (geometry === "cylinder") return <cylinderGeometry args={[0.35, 0.35, 0.9, 32]} />;
-    return <boxGeometry args={[0.8, 0.8, 0.8]} />;
-  })();
+  const color = emphasized ? "#FFE071" : index === 0 || index === 1 || index === 4 || index === 5 ? "#343A40" : "#E4A900";
+  const material = { color, metalness: 0.58, roughness: 0.34 };
 
   return (
     <group
       ref={ref}
-      position={position}
-      onPointerOver={function() { setHovered(true); }}
-      onPointerOut={function() { setHovered(false); }}
+      position={item.position}
+      onPointerOver={(event) => { event.stopPropagation(); setHovered(true); }}
+      onPointerOut={() => setHovered(false)}
+      onClick={(event) => { event.stopPropagation(); setSelected((value) => !value); }}
     >
-      <mesh castShadow>
-        {geo}
-        <meshStandardMaterial
-          color={hovered ? "#FFD700" : color}
-          metalness={0.9}
-          roughness={0.25}
-        />
-      </mesh>
-      {hovered && (
+      {item.id === "base" && (
+        <>
+          <mesh position={[0, 0.14, 0]} castShadow>
+            <cylinderGeometry args={[0.62, 0.7, 0.34, 32]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh position={[0, 0.34, 0]} castShadow>
+            <cylinderGeometry args={[0.42, 0.48, 0.12, 32]} />
+            <meshStandardMaterial color="#737B83" metalness={0.7} roughness={0.3} />
+          </mesh>
+          {Array.from({ length: 8 }).map((_, bolt) => {
+            const angle = (bolt / 8) * Math.PI * 2;
+            return (
+              <mesh key={bolt} position={[Math.cos(angle) * 0.54, 0.32, Math.sin(angle) * 0.54]}>
+                <cylinderGeometry args={[0.035, 0.035, 0.08, 6]} />
+                <meshStandardMaterial color="#D8DEE3" metalness={0.84} roughness={0.22} />
+              </mesh>
+            );
+          })}
+        </>
+      )}
+      {item.id === "axis" && (
+        <>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.34, 0.34, 0.5, 32]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh position={[0, 0.28, 0]}>
+            <torusGeometry args={[0.31, 0.065, 12, 32]} />
+            <meshStandardMaterial color="#949CA3" metalness={0.72} roughness={0.3} />
+          </mesh>
+        </>
+      )}
+      {item.id === "shoulder" && (
+        <>
+          <mesh castShadow scale={[0.55, 0.58, 0.48]}>
+            <sphereGeometry args={[0.58, 28, 20]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.28, 0.28, 0.68, 24]} />
+            <meshStandardMaterial color="#626A72" metalness={0.68} roughness={0.32} />
+          </mesh>
+          <mesh position={[0, 0, 0.36]} rotation={[0, 0, Math.PI / 2]}>
+            <torusGeometry args={[0.25, 0.045, 12, 28]} />
+            <meshStandardMaterial color="#D1A52D" metalness={0.76} roughness={0.28} />
+          </mesh>
+        </>
+      )}
+      {item.id === "upperArm" && (
+        <>
+          <mesh rotation={[0, 0, -0.22]} castShadow>
+            <boxGeometry args={[1.12, 0.34, 0.42]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh position={[0, 0.18, 0]} rotation={[0, 0, -0.22]}>
+            <boxGeometry args={[0.82, 0.08, 0.44]} />
+            <meshStandardMaterial color="#F3BF28" metalness={0.45} roughness={0.4} />
+          </mesh>
+        </>
+      )}
+      {item.id === "elbow" && (
+        <>
+          <mesh castShadow>
+            <sphereGeometry args={[0.31, 28, 20]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.2, 0.2, 0.57, 24]} />
+            <meshStandardMaterial color="#69727A" metalness={0.72} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 0, 0.29]} rotation={[0, 0, Math.PI / 2]}>
+            <torusGeometry args={[0.18, 0.04, 10, 24]} />
+            <meshStandardMaterial color="#D1A52D" metalness={0.76} roughness={0.28} />
+          </mesh>
+        </>
+      )}
+      {item.id === "wrist" && (
+        <>
+          <mesh rotation={[0, 0, 0.3]} castShadow>
+            <boxGeometry args={[0.76, 0.27, 0.31]} />
+            <meshStandardMaterial {...material} />
+          </mesh>
+          <mesh position={[0.31, -0.08, 0]}>
+            <cylinderGeometry args={[0.17, 0.17, 0.28, 24]} />
+            <meshStandardMaterial color="#737B83" metalness={0.72} roughness={0.3} />
+          </mesh>
+        </>
+      )}
+      {item.id === "torch" && (
+        <>
+          <mesh rotation={[0, 0, -0.18]} castShadow>
+            <cylinderGeometry args={[0.15, 0.2, 0.72, 24]} />
+            <meshStandardMaterial color="#515A62" metalness={0.75} roughness={0.28} />
+          </mesh>
+          <mesh position={[0.04, -0.39, 0]} rotation={[0, 0, -0.18]}>
+            <coneGeometry args={[0.12, 0.34, 20]} />
+            <meshStandardMaterial color="#D3D8DD" metalness={0.84} roughness={0.22} />
+          </mesh>
+          <mesh position={[0.2, 0.14, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.055, 0.055, 0.38, 12]} />
+            <meshStandardMaterial color="#22282D" metalness={0.4} roughness={0.45} />
+          </mesh>
+        </>
+      )}
+      {emphasized && (
         <Html center distanceFactor={8}>
-          <div className="px-3 py-1 rounded-lg text-silver-950 text-xs font-bold whitespace-nowrap"
-            style={{ background: "#F5C518", color: "#1A1D21" }}>
-            {name}
-          </div>
+          <span className="whitespace-nowrap rounded-lg bg-[#F5C518] px-3 py-1.5 text-xs font-bold text-[#15181C] shadow-lg">
+            {labels[index]}
+          </span>
         </Html>
       )}
     </group>
   );
 }
 
-function RobotModel({ explode, partNames }) {
-  const parts = [
-    { name: partNames[0], color: "#C0C0C0", position: [0, 0, 0], offset: [0, 0, 0], geometry: "box" },
-    { name: partNames[1], color: "#E5E7EB", position: [0, 0.7, 0], offset: [0, 1.3, 0], geometry: "sphere" },
-    { name: partNames[2], color: "#9CA3AF", position: [0.9, 0.5, 0], offset: [1.2, 0.4, 0], geometry: "cylinder" },
-    { name: partNames[3], color: "#F5C518", position: [-0.9, 0.5, 0], offset: [-1.2, 0.4, 0], geometry: "cylinder" },
-    { name: partNames[4], color: "#D4A017", position: [0, 1.4, 0], offset: [0, 1.2, 0], geometry: "cone" }
-  ];
-
+function KukaRobot({ explode, locale }) {
+  const labels = LABELS[locale] || LABELS.en;
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
-      <directionalLight position={[-5, -3, -5]} intensity={0.5} color="#FFD700" />
-      {parts.map(function(p, i) {
-        return <RobotPart key={i} {...p} explode={explode} />;
-      })}
-      <Environment files="/hdri/empty_warehouse_01_1k.hdr" />
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[4, 7, 5]} intensity={2} />
+      <pointLight position={[-4, 2, -3]} intensity={35} color="#F5C518" />
+      {PARTS.map((item, index) => (
+        <RobotPart key={item.id} item={item} index={index} explode={explode} labels={labels} />
+      ))}
     </>
   );
 }
 
 export default function ExplodedHvofRobot() {
-  const { t, locale } = useDictionary();
-  const containerRef = useRef(null);
-  const [explode, setExplode] = useState(0);
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"]
-  });
-
-  useEffect(function() {
-    const unsub = scrollYProgress.on("change", function(v) {
-      const tt = Math.max(0, Math.min(1, (v - 0.15) / 0.7));
-      const eased = tt < 0.5 ? 2 * tt * tt : 1 - Math.pow(-2 * tt + 2, 2) / 2;
-      setExplode(eased * 1.6);
-    });
-    return function() { unsub(); };
-  }, [scrollYProgress]);
-
-  const partNames = ["Base", "Head", "Arm L", "Arm R", "Torch"];
-
-  const labels = {
-    fa: {
-      badge: "تکنولوژی HVOF",
-      title1: "ربات",
-      title2: "پوشش‌دهی HVOF",
-      desc: "با اسکرول، اجزای ربات از هم باز می‌شوند. این ربات برای اعمال پوشش کاربید تنگستن با کیفیت بالا روی سطوح صنعتی استفاده می‌شود.",
-      hint: "کشیدن برای چرخش · اسکرول برای انفجار",
-      f1: "دقت پاشش ±۰.۰۱ میلی‌متر",
-      f2: "سرعت پاشش ذرات تا 800 m/s",
-      f3: "کنترل دمای زیر 150°C",
-      f4: "ضخامت پوشش 150 تا 500 میکرون"
-    },
-    en: {
-      badge: "HVOF Technology",
-      title1: "HVOF",
-      title2: "Coating Robot",
-      desc: "Scroll to see the robot parts separate. This robot applies high-quality tungsten carbide coating on industrial surfaces.",
-      hint: "Drag to rotate · Scroll to explode",
-      f1: "Spray precision ±0.01 mm",
-      f2: "Particle velocity up to 800 m/s",
-      f3: "Temperature control below 150°C",
-      f4: "Coating thickness 150 to 500 microns"
-    },
-    ar: {
-      badge: "تقنية HVOF",
-      title1: "روبوت",
-      title2: "طلاء HVOF",
-      desc: "قم بالتمرير لرؤية أجزاء الروبوت تنفصل. يستخدم هذا الروبوت لتطبيق طلاء كربيد التنغستن.",
-      hint: "اسحب للتدوير · مرر للتفجير",
-      f1: "دقة الرش ±0.01 مم",
-      f2: "سرعة الجسيمات حتى 800 م/ث",
-      f3: "التحكم في درجة الحرارة أقل من 150 درجة",
-      f4: "سمك الطلاء 150 إلى 500 ميكرون"
-    },
-    ru: {
-      badge: "Технология HVOF",
-      title1: "Робот",
-      title2: "покрытия HVOF",
-      desc: "Прокрутите, чтобы увидеть, как части робота разъединяются. Робот наносит карбид вольфрама на промышленные поверхности.",
-      hint: "Перетащите для вращения · Прокрутите для разнесения",
-      f1: "Точность распыления ±0,01 мм",
-      f2: "Скорость частиц до 800 м/с",
-      f3: "Контроль температуры ниже 150°C",
-      f4: "Толщина покрытия 150-500 микрон"
-    }
-  };
-  const L = labels[locale] || labels.en;
+  const { locale } = useDictionary();
+  const labels = LABELS[locale] || LABELS.en;
+  const [explode, setExplode] = useState(0.3);
+  const expanded = explode > 0.5;
+  const actionLabel = expanded
+    ? ({ fa: "مونتاژ", en: "Assemble", ar: "تجميع", ru: "Собрать" }[locale] || "Assemble")
+    : ({ fa: "بازکردن کامل", en: "Explode view", ar: "تفكيك كامل", ru: "Разнести детали" }[locale] || "Explode view");
 
   return (
-    <section ref={containerRef} className="relative min-h-[160vh] py-20">
-      <div className="sticky top-24 container-x">
-        <div className="grid lg:grid-cols-2 gap-10 items-center min-h-[75vh]">
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="order-2 lg:order-1"
-          >
-            <span className="chip">{L.badge}</span>
-            <h2 className="section-title mt-5">
-              <span className="heading-grad">{L.title1}</span>{" "}
-              <span className="heading-gold">{L.title2}</span>
-            </h2>
-            <p className="mt-5 leading-8" style={{ color: "var(--text-soft)" }}>
-              {L.desc}
-            </p>
-
-            <div className="mt-8 space-y-3">
-              {[L.f1, L.f2, L.f3, L.f4].map(function(item, i) {
-                return (
-                  <div key={i} className="flex items-center gap-3" style={{ color: "var(--text)" }}>
-                    <span className="w-2 h-2 rounded-full bg-gold-500 shrink-0" />
-                    <span className="text-sm">{item}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-
-          <div className="order-1 lg:order-2 h-[500px] rounded-3xl overflow-hidden relative"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-            <Canvas camera={{ position: [4, 3, 6], fov: 45 }} shadows>
-              <RobotModel explode={explode} partNames={partNames} />
-              <OrbitControls enableZoom={false} enablePan={false} autoRotate={false} />
-            </Canvas>
-            <div className="absolute bottom-4 right-4 text-xs px-3 py-1.5 rounded-lg backdrop-blur"
-              style={{ color: "var(--text-soft)", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-              {L.hint}
-            </div>
-          </div>
-        </div>
+    <div className="relative h-[390px] sm:h-[450px]">
+      <Canvas camera={{ position: [3.5, 2.8, 6.8], fov: 42 }} dpr={[1, 1.5]}>
+        <group position={[-0.25, -0.12, 0]} scale={0.9}>
+          <KukaRobot explode={explode} locale={locale} />
+        </group>
+        <OrbitControls
+          enableZoom={false}
+          enablePan={false}
+          enableDamping
+          dampingFactor={0.08}
+          autoRotate={false}
+          minPolarAngle={0.65}
+          maxPolarAngle={2.35}
+        />
+      </Canvas>
+      <div className="absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-xl border px-3 py-2 backdrop-blur-md"
+        style={{ background: "rgba(15,17,20,.72)", borderColor: "rgba(255,255,255,.16)" }}>
+        <button
+          type="button"
+          onClick={() => setExplode(expanded ? 0 : 1)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/20 px-2.5 py-1.5 text-[10px] font-bold text-white transition hover:border-[#F5C518] hover:text-[#F5C518]"
+          aria-label={actionLabel}
+        >
+          {expanded ? <RotateCcw size={13} /> : <Play size={13} />}
+          {actionLabel}
+        </button>
+        <span className="text-[10px] font-bold text-white/75">{labels[0]}</span>
+        <input
+          aria-label={locale === "fa" ? "میزان بازشدن قطعات" : locale === "ar" ? "مقدار تفكيك الأجزاء" : locale === "ru" ? "Степень разнесения деталей" : "Exploded view amount"}
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={explode}
+          onChange={(event) => setExplode(Number(event.target.value))}
+          className="w-full accent-[#E0A81A]"
+        />
       </div>
-    </section>
+    </div>
   );
 }

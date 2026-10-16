@@ -11,6 +11,12 @@ export default function LocaleSwitcher() {
   const ref = useRef(null);
 
   const currentLocale = pathname.split("/")[1] || "fa";
+  const changeLanguageLabel = {
+    fa: "تغییر زبان",
+    en: "Change language",
+    ar: "تغيير اللغة",
+    ru: "Сменить язык"
+  }[currentLocale] || "Change language";
 
   useEffect(() => {
     const onClick = (e) => {
@@ -30,8 +36,13 @@ export default function LocaleSwitcher() {
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 h-10 px-3 rounded-lg border border-silver-500/30 text-silver-300 hover:text-gold-500 hover:border-gold-500 transition text-sm font-bold"
+        aria-label={changeLanguageLabel}
+        aria-expanded={open}
+        aria-controls={open ? "locale-switcher-menu" : undefined}
+        className="header-control flex items-center gap-2 h-10 px-3 rounded-lg border transition text-sm font-bold"
+        style={{ color: "var(--gold)", borderColor: "var(--text-soft)", background: "var(--bg-card)" }}
       >
         <Globe size={16} />
         <span>{localeFlags[currentLocale]}</span>
@@ -39,14 +50,22 @@ export default function LocaleSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute top-12 right-0 w-40 rounded-xl border border-silver-500/30 bg-silver-950/95 backdrop-blur-xl shadow-2xl overflow-hidden z-50">
+        <div
+          id="locale-switcher-menu"
+          className="absolute top-12 right-0 w-40 rounded-xl border backdrop-blur-xl shadow-2xl overflow-hidden z-50"
+          style={{ background: "var(--bg-card)", borderColor: "var(--text-soft)" }}
+        >
           {locales.map((loc) => (
             <button
+              type="button"
               key={loc}
               onClick={() => switchTo(loc)}
-              className={`w-full px-4 py-3 flex items-center justify-between text-sm hover:bg-gold-500/10 hover:text-gold-500 transition ${
-                loc === currentLocale ? "text-gold-500 font-bold" : "text-silver-200"
-              }`}
+              aria-current={loc === currentLocale ? "true" : undefined}
+              className="locale-switcher-option w-full px-4 py-3 flex items-center justify-between text-sm transition"
+              style={{
+                color: loc === currentLocale ? "var(--gold)" : "var(--text-soft)",
+                fontWeight: loc === currentLocale ? 800 : 600
+              }}
             >
               <span>{localeNames[loc]}</span>
               <span className="text-xs opacity-70">{localeFlags[loc]}</span>

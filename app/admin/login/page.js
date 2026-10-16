@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (data.ok) {
-        router.push("/admin");
+        router.push(data.role === "author" ? "/admin/author" : "/admin");
         router.refresh();
       } else {
         setError(data.error || "خطا");
@@ -127,9 +127,6 @@ export default function AdminLoginPage() {
           )}
         </button>
 
-        <p className="text-center text-xs mt-6" style={{ color: "var(--m-text-muted)" }}>
-          admin / <span className="font-mono">psm-admin-2025</span>
-        </p>
       </form>
     </div>
   );
