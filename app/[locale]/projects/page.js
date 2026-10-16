@@ -1,4 +1,7 @@
 import { getProjects, getContent } from "@/lib/content";
+import { Image as ImageIcon } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -12,15 +15,48 @@ export default async function ProjectsPage({ params }) {
   const content = getContent();
   const meta = content.projects || {};
 
-  const title = pick(meta.title, locale) || (locale === "fa" ? "پروژه‌های موفق" : "Projects");
-  const subtitle = pick(meta.subtitle, locale) || "";
-
   const labels = {
-    fa: { badge: "نمونه کارها", empty: "به‌زودی پروژه‌ها اضافه می‌شود" },
-    en: { badge: "Portfolio", empty: "Projects coming soon" },
-    ar: { badge: "الأعمال", empty: "المشاريع قريباً" },
-    ru: { badge: "Портфолио", empty: "Скоро" }
-  }[locale] || { badge: "Projects", empty: "Coming soon" };
+    fa: {
+      badge: "پروژه‌های منتشرشده",
+      title: "تجربه در میدان عمل",
+      subtitle: "نمونه‌ای از پروژه‌ها و فعالیت‌های فنی پترو سازه میهن که در وب‌سایت شرکت معرفی شده‌اند.",
+      count: "فعالیت فنی",
+      imageMissing: "تصویر این پروژه را می‌توان از پنل مدیریت افزود.",
+      empty: "پروژه‌ای برای نمایش وجود ندارد."
+    },
+    en: {
+      badge: "Published projects",
+      title: "Engineering in practice",
+      subtitle: "A selection of Petro Sazeh Mihan projects and technical work published on the company website.",
+      count: "technical works",
+      imageMissing: "Add this project's photo from the admin panel.",
+      empty: "There are no projects to display."
+    },
+    ar: {
+      badge: "المشاريع المنشورة",
+      title: "الهندسة في التطبيق",
+      subtitle: "مجموعة مختارة من مشاريع وأعمال بترو سازه ميهان الفنية المنشورة على موقع الشركة.",
+      count: "أعمال فنية",
+      imageMissing: "يمكن إضافة صورة هذا المشروع من لوحة الإدارة.",
+      empty: "لا توجد مشاريع للعرض."
+    },
+    ru: {
+      badge: "Опубликованные проекты",
+      title: "Инженерия на практике",
+      subtitle: "Подборка проектов и технических работ Petro Sazeh Mihan, опубликованных на сайте компании.",
+      count: "технических работ",
+      imageMissing: "Фотографию проекта можно добавить в панели управления.",
+      empty: "Нет проектов для отображения."
+    }
+  }[locale] || {
+    badge: "Published projects",
+    title: "Projects",
+    subtitle: "Projects and technical work published on the company website.",
+    count: "projects",
+    empty: "There are no projects to display."
+  };
+  const title = pick(meta.title, locale) || labels.title;
+  const subtitle = pick(meta.subtitle, locale) || labels.subtitle;
 
   return (
     <section className="container-x py-10 sm:py-16">
@@ -33,6 +69,11 @@ export default async function ProjectsPage({ params }) {
           <p className="mt-4 text-sm leading-7" style={{ color: "var(--text-soft)" }}>
             {subtitle}
           </p>
+        )}
+        {projects.length > 0 && (
+          <div className="mt-5 text-xs font-bold" style={{ color: "var(--gold)" }}>
+            {new Intl.NumberFormat(locale).format(projects.length)} {labels.count}
+          </div>
         )}
       </div>
 
@@ -57,9 +98,12 @@ export default async function ProjectsPage({ params }) {
                   placeItems: "center"
                 }}>
                   {p.image ? (
-                    <img src={p.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={p.image} alt={pick(p.title, locale)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <div style={{ fontSize: 40, opacity: 0.3 }}>📁</div>
+                    <div style={{ display: "grid", justifyItems: "center", gap: 8, color: "var(--text-muted)" }}>
+                      <ImageIcon size={28} strokeWidth={1.5} />
+                      <span style={{ fontSize: 11 }}>{labels.imageMissing}</span>
+                    </div>
                   )}
                 </div>
 
