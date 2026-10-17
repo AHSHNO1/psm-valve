@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseSizeRange, buildSizingCatalog, suggestValves } from "../lib/valve-catalog.js";
+import { parseSizeRange, buildSizingCatalog, suggestValves, selectCatalogValve, countCvSeries } from "../lib/valve-catalog.js";
 
 test("parseSizeRange reads catalogue ranges in inches", () => {
   assert.deepEqual(parseSizeRange({ en: "2 – 24 inch" }), { min: 2, max: 24 });
@@ -34,4 +34,48 @@ test("suggestValves returns real products covering the size, control valves firs
   assert.deepEqual(at25mm.map((p) => p.series), ["38000", "46000"]);
 
   assert.deepEqual(suggestValves(catalog, 30), []);
+});
+
+test("selectCatalogValve prefers control valves and the closest Cv above demand", () => {
+  const catalog = buildSizingCatalog([
+    { slug: "ball", series: "46000", name: { en: "Ball" }, categoryId: "ball-valves", spec: { size: { en: "1 – 24 inch" } } },
+    { slug: "globe", series: "51000", name: { en: "Globe" }, categoryId: "control-valves", spec: { size: { en: "2 – 24 inch" } } }
+  ]);
+
+  const tables = {
+    "46000": { sizes: [{ dn: "DN40", cv: 40 }, { dn: "DN50", cv: 70 }] },
+    "51000": { sizes: [{ dn: "DN50", cv: 45 }, { dn: "DN80", cv: 90 }] }
+  };
+
+  // The ball valve has a tighter fit (40) but the globe control valve wins.
+  const pick = selectCatalogValve(35, catalog, tables);
+  assert.equal(pick.product.series, "51000");
+  assert.equal(pick.dn, "DN50");
+  assert.equal(pick.cv, 45);
+  assert.equal(pick.source, "catalog");
+
+  const next = selectCatalogValve(60, catalog, tables);
+  assert.equal(next.product.series, "51000");
+  assert.equal(next.dn, "DN80");
+
+  assert.equal(selectCatalogValve(5000, catalog, tables), null);
+  assert.equal(selectCatalogValve(35, catalog, {}), null);
+  assert.equal(countCvSeries(tables), 2);
+});
+
+test("selectCatalogValve keeps the design opening near 80%", () => {
+  const catalog = buildSizingCatalog([
+    { slug: "globe", series: "51000", name: { en: "Globe" }, categoryId: "control-valves", spec: { size: { en: "2 – 24 inch" } } }
+  ]);
+  const tables = { "51000": { sizes: [{ dn: "DN80", cv: 90 }, { dn: "DN100", cv: 150 }] } };
+
+  // 81.74 / 0.8 = 102.2, so the DN100 (Cv 150) is the right pick, not DN80 (91% opening).
+  const pick = selectCatalogValve(81.74, catalog, tables);
+  assert.equal(pick.dn, "DN100");
+  assert.equal(pick.openingPercent, 54);
+
+  // Falls back to the tightest fit when nothing reaches the margin.
+  const tight = selectCatalogValve(89, catalog, { "51000": { sizes: [{ dn: "DN80", cv: 90 }] } });
+  assert.equal(tight.dn, "DN80");
+  assert.ok(tight.openingPercent > 80);
 });

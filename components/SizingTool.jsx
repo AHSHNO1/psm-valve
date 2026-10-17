@@ -29,7 +29,7 @@ import SizingCompare from "./SizingCompare";
 import SizingReportModal from "./SizingReportModal";
 import MaterialGuide from "./MaterialGuide";
 import FluidPicker from "./FluidPicker";
-import { suggestValves } from "@/lib/valve-catalog";
+import { suggestValves, selectCatalogValve } from "@/lib/valve-catalog";
 import { SYSTEMS, formToSI, formFromSI, tempToC } from "@/lib/unit-system";
 import { track } from "@/lib/analytics";
 
@@ -258,7 +258,7 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder, r
   );
 }
 
-export default function SizingTool({ catalog = [] }) {
+export default function SizingTool({ catalog = [], cvTables = {} }) {
   const { locale } = useDictionary();
   const [fluid, setFluid] = useState("liquid");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -293,16 +293,29 @@ export default function SizingTool({ catalog = [] }) {
   const hasErrors = Object.keys(errors).length > 0;
 
   const topProduct = useMemo(() => {
-    if (!result || !result.Cv || !result.size) return null;
+    if (!result || !result.Cv) return null;
+
+    const fromCatalog = selectCatalogValve(result.Cv, catalog, cvTables);
+    if (fromCatalog) {
+      return {
+        product: fromCatalog.product,
+        matchedSize: { dn: fromCatalog.dn, cv: fromCatalog.cv, size: fromCatalog.dn },
+        openingPercent: fromCatalog.openingPercent,
+        source: "catalog"
+      };
+    }
+
+    if (!result.size) return null;
     const sizeIn = parseFloat(String(result.size.size).replace(/[^0-9.]/g, ""));
     const match = suggestValves(catalog, sizeIn, { limit: 1 })[0];
     if (!match) return null;
     return {
       product: match,
       matchedSize: result.size,
-      openingPercent: result.openingPercent
+      openingPercent: result.openingPercent,
+      source: "generic"
     };
-  }, [result, catalog]);
+  }, [result, catalog, cvTables]);
 
   useEffect(() => { setSaved(loadScenarios()); }, []);
 
@@ -555,6 +568,9 @@ export default function SizingTool({ catalog = [] }) {
       resultEmptyHint: "یا از سناریوهای آماده استفاده کنید",
       product: "محصول پیشنهادی PSM",
       productDataNote: "نام و سری از کاتالوگ PSM انتخاب شده است. Cv این سایز از جدول عمومی محاسبه شده؛ Cv کاتالوگی هر سری در حال تکمیل است و انتخاب نهایی باید با مهندسی PSM تأیید شود.",
+      productSourceCatalog: "Cv کاتالوگ",
+      productSourceGeneric: "Cv عمومی",
+      productNoteCatalog: "سایز از جدول Cv ثبت‌شدهٔ همین سری انتخاب شده است؛ انتخاب نهایی را با مهندسی PSM تأیید کنید.",
       productHint: "بر اساس Cv محاسبه‌شده",
       noProduct: "محصولی برای این Cv یافت نشد",
       viewProduct: "مشاهده محصولات",
@@ -596,6 +612,9 @@ export default function SizingTool({ catalog = [] }) {
       resultEmptyHint: "or use a preset scenario",
       product: "Suggested PSM Product",
       productDataNote: "The name and series come from the PSM catalogue. The Cv belongs to the general size table; per-series catalogue Cv is still being completed, so the final selection must be confirmed with PSM engineering.",
+      productSourceCatalog: "Catalogue Cv",
+      productSourceGeneric: "General Cv",
+      productNoteCatalog: "This size comes from the recorded Cv table of this series; confirm the final selection with PSM engineering.",
       productHint: "Based on your calculated Cv",
       noProduct: "No matching product for this Cv",
       viewProduct: "View Products",
@@ -631,6 +650,9 @@ export default function SizingTool({ catalog = [] }) {
       resultEmptyHint: "أو اختر سيناريو",
       product: "منتج مقترح", productHint: "بناءً على Cv",
       productDataNote: "الاسم والسلسلة من كتالوج PSM. قيمة Cv من الجدول العام؛ جدول Cv الخاص بكل سلسلة قيد الإكمال ويجب تأكيد الاختيار النهائي مع مهندسي PSM.",
+      productSourceCatalog: "Cv الكتالوج",
+      productSourceGeneric: "Cv العام",
+      productNoteCatalog: "الحجم مأخوذ من جدول Cv المسجل لهذه السلسلة؛ أكد الاختيار النهائي مع مهندسي PSM.",
       noProduct: "لا يوجد", viewProduct: "عرض",
       refTitle: "المراجع", refStandards: "المعايير",
       refMaterial: "المواد", refCharts: "الرسوم",
@@ -661,6 +683,9 @@ export default function SizingTool({ catalog = [] }) {
       resultEmptyHint: "или выберите сценарий",
       product: "Продукт", productHint: "По Cv",
       productDataNote: "Название и серия взяты из каталога PSM. Cv относится к общей таблице; каталожные Cv по сериям ещё заполняются, окончательный выбор подтверждает инженер PSM.",
+      productSourceCatalog: "Cv каталога",
+      productSourceGeneric: "Общий Cv",
+      productNoteCatalog: "Размер выбран по записанной таблице Cv этой серии; окончательный выбор подтверждает инженер PSM.",
       noProduct: "Нет", viewProduct: "Смотреть",
       refTitle: "Справочники", refStandards: "Стандарты",
       refMaterial: "Материалы", refCharts: "Графики",
@@ -1086,6 +1111,14 @@ export default function SizingTool({ catalog = [] }) {
                     <span style={{ fontSize: 11.5, fontWeight: 900, color: "var(--text)" }}>
                       {L.product}
                     </span>
+                    <span style={{
+                      marginInlineStart: "auto",
+                      padding: "2px 8px", borderRadius: 20, fontSize: 8.5, fontWeight: 900,
+                      background: topProduct.source === "catalog" ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)",
+                      color: topProduct.source === "catalog" ? "#065F46" : "#92400E"
+                    }}>
+                      {topProduct.source === "catalog" ? L.productSourceCatalog : L.productSourceGeneric}
+                    </span>
                   </div>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 10 }}>
                     <div className="product-icon-sm" style={{ background: "var(--bg-soft)" }}>⚙️</div>
@@ -1102,7 +1135,7 @@ export default function SizingTool({ catalog = [] }) {
                     </div>
                   </div>
                   <div style={{ fontSize: 9.5, color: "var(--text-soft)", marginTop: 8, lineHeight: 1.7, fontWeight: 600 }}>
-                    {L.productDataNote}
+                    {topProduct.source === "catalog" ? L.productNoteCatalog : L.productDataNote}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10 }}>
                     <Link href={"/" + locale + "/contact?product=" + encodeURIComponent(topProduct.product.series)}

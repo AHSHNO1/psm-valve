@@ -4,6 +4,7 @@ import SizingTool from "@/components/SizingTool";
 import EngineeringCalculator from "@/components/EngineeringCalculator";
 import StandardsTable from "@/components/StandardsTable";
 import { getProducts } from "@/lib/product-store";
+import { getCvTables } from "@/lib/valve-cv";
 import { buildSizingCatalog } from "@/lib/valve-catalog";
 import "./sizing-hub.css";
 
@@ -172,6 +173,7 @@ export default function SizingPage({ params, searchParams }) {
   const isRTL = locale === "fa" || locale === "ar";
   const H = HUB[locale] || HUB.en;
   const catalog = buildSizingCatalog(getProducts());
+  const cvTables = getCvTables().series;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -264,7 +266,7 @@ export default function SizingPage({ params, searchParams }) {
 
       {/* ===== Tool Content ===== */}
       <div className="hub-content-wrapper">
-        {tool === "sizing" && <SizingTool catalog={catalog} />}
+        {tool === "sizing" && <SizingTool catalog={catalog} cvTables={cvTables} />}
 
         {tool === "calculator" && (
           <section className="container-x py-6">

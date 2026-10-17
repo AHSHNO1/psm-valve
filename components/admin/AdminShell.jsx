@@ -66,6 +66,12 @@ const NAV_GROUPS = [
     ]
   },
   {
+    label: "مهندسی",
+    items: [
+      { href: "/admin/cv-tables", label: "جدول Cv سایزینگ", icon: "package" }
+    ]
+  },
+  {
     label: "سیستم",
   items: [
     { href: "/admin/security", label: "امنیت", icon: "lock" },
