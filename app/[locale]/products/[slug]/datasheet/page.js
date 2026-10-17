@@ -1,18 +1,13 @@
-import { getProduct } from "@/lib/product-store";
-import { notFound } from "next/navigation";
-import { getDictionary } from "@/lib/getDictionary";
-import { getCompanyInfo } from "@/lib/company-info";
-import DatasheetPrint from "@/components/DatasheetPrint";
+import { redirect } from "next/navigation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function DatasheetPage({ params }) {
-  const { locale, slug } = params;
-  const p = getProduct(slug);
-  if (!p) notFound();
-  const dict = await getDictionary(locale);
-  const company = getCompanyInfo();
-
-  return <DatasheetPrint product={p} locale={locale} dict={dict} company={company} />;
+/**
+ * مسیر قدیمی دیتاشیت برای سازگاری با لینک‌های قبلی.
+ * دیتاشیت به مسیر مستقل /datasheet/[locale]/[slug] منتقل شده است
+ * تا بدون نوار سایت و تم تاریک چاپ شود.
+ */
+export default function LegacyDatasheetPage({ params }) {
+  redirect(`/${params.locale}/datasheet/${params.slug}`);
 }

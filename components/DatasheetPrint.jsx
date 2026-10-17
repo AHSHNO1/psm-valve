@@ -128,7 +128,7 @@ export default function DatasheetPrint({ product, locale, dict, company }) {
   }, [locale]);
 
   return (
-    <div className="min-h-screen" style={{ background: "#F5F6F8", color: "#1A1D21" }}>
+    <div className="min-h-screen datasheet-root" style={{ background: "#F5F6F8", color: "#1A1D21" }}>
       {/* Toolbar */}
       <div className="sticky top-0 z-10 bg-white border-b shadow-sm print:hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -317,6 +317,7 @@ export default function DatasheetPrint({ product, locale, dict, company }) {
         @media print {
           @page { size: A4; margin: 15mm; }
           body { background: white !important; }
+          .datasheet-root { background: #FFFFFF !important; }
           .print\\:hidden { display: none !important; }
         }
       `}</style>

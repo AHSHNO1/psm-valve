@@ -79,7 +79,7 @@ export default async function ProductPage({ params }) {
             {L.cta} <ArrowLeft size={14} className={rtl ? "" : "rotate-180"} />
           </Link>
           <a
-            href={`/${locale}/products/${slug}/datasheet`}
+            href={`/${locale}/datasheet/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-outline justify-center text-sm"
