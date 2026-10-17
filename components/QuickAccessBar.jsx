@@ -16,7 +16,7 @@ export default function QuickAccessBar() {
       sizingSub: "محاسبه Cv/Kv",
       catalog: "کاتالوگ",
       catalogSub: "دانلود PDF",
-      contact: "تماس",
+      contact: "تماس با ما",
       contactSub: "مشاوره فنی"
     },
     en: {
@@ -26,7 +26,7 @@ export default function QuickAccessBar() {
       sizingSub: "Cv/Kv calculator",
       catalog: "Catalog",
       catalogSub: "Download PDF",
-      contact: "Contact",
+      contact: "Contact Us",
       contactSub: "Technical support"
     },
     ar: {

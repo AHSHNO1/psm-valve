@@ -159,7 +159,7 @@ export default function ContactClient({ dict, locale, company, branding, content
     <div style={{ background: "var(--bg)" }}>
       {/* ============ Hero ============ */}
       <section style={{
-        background: "linear-gradient(135deg, #F7F9FC 0%, #EEF2F6 55%, #E8EEF5 100%)",
+        background: "linear-gradient(135deg, var(--bg) 0%, var(--bg-soft) 55%, var(--bg-card) 100%)",
         padding: "60px 0 80px",
         position: "relative",
         overflow: "hidden"
@@ -179,9 +179,9 @@ export default function ContactClient({ dict, locale, company, branding, content
         <div className="container-x" style={{ position: "relative", zIndex: 1 }}>
           <div className="text-center max-w-3xl mx-auto">
             <span className="chip" style={{
-              background: "rgba(255, 255, 255, 0.8)",
+              background: "var(--bg-card)",
               borderColor: "rgba(245, 197, 24, 0.4)",
-              color: "#76580A"
+              color: "var(--gold)"
             }}>
               {L.badge}
             </span>
