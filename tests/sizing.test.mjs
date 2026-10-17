@@ -4,7 +4,9 @@ import {
   calcGasCv,
   calcLiquidCv,
   calcSteamCv,
+  calcPipingFactor,
   cvToSize,
+  dnToMm,
   getRecommendation,
   VALVE_SIZES
 } from "../lib/sizing-advanced.js";
@@ -94,4 +96,29 @@ test("steam sizing detects choked flow and stops increasing Cv", () => {
   assert.equal(mild.choked, false);
   assert.equal(deep.choked, true);
   assert.ok(Math.abs(deep.Cv - calcSteamCv({ W: 1000, P1: 10, P2: 0.5 }).Cv) < 1e-9);
+});
+
+test("piping geometry factor (Fp) matches the ISA form", () => {
+  // 2" valve in a 4" line with abrupt reducers: ΣK = 0.84375, Cv/d² = 25.81
+  const fp = calcPipingFactor(100, 50, 100);
+  assert.equal(fp.applies, true);
+  assert.ok(fp.Fp > 0.77 && fp.Fp < 0.80, `Fp was ${fp.Fp}`);
+  assert.ok(Math.abs(fp.sigmaK - 0.84375) < 1e-9);
+
+  // No reducer or reducer backwards: no correction.
+  assert.equal(calcPipingFactor(100, 100, 100).Fp, 1);
+  assert.equal(calcPipingFactor(100, 100, 50).Fp, 1);
+  assert.equal(dnToMm("DN50"), 50);
+  assert.equal(dnToMm("DN600"), 600);
+});
+
+test("piping factor raises the required Cv when a reducer is present", () => {
+  const base = { Q: 100, Gf: 1, P1: 10, P2: 8, Pv: 0.0234, Pc: 220.6, FL: 0.9 };
+  const plain = calcLiquidCv(base);
+  const piped = calcLiquidCv({ ...base, pipeDnMm: 100 });
+  assert.ok(piped.Cv > plain.Cv);
+  assert.ok(piped.Fp < 1);
+  assert.equal(plain.Fp, 1);
+  assert.equal(plain.pipingApplied, false);
+  assert.equal(piped.pipingApplied, true);
 });

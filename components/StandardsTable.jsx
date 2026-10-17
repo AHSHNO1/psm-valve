@@ -242,9 +242,9 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["قطر اسمی نشیمن (mm)", "قطر (inch)", "حداکثر نشتی (ml/min)", "حباب در دقیقه"],
       fciNote: "ANSI/FCI 70-2-2006 کلاس‌های نشتی شیر کنترل و روش تست را تعیین می‌کند. کلاس IV حد متعارف شیرهای کنترل فلزی و کلاس VI برای نشیمن الاستومری «حباب‌بند» است. انتخاب کلاس، تابع الزام فرآیند و مشخصات خرید است؛ این جدول مرجع سریع است و جایگزین نسخهٔ رسمی استاندارد نیست.",
       isaHeaders: ["نماد", "واحد", "توضیح"],
-      isaNote: "سایزینگ این ابزار بر پایهٔ معادلات ISA-75.01.01 (هم‌راستا با IEC 60534-2-1) است: Cv = Q·√(Gf/ΔP) برای مایع با سقف ΔP بحرانی، و Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) برای گاز. اثر اتصالات (Fp)، عدد رینولدز (FR) و هندسهٔ مسیر در این نسخه لحاظ نشده و نتیجه تخمین مهندسی است.",
+      isaNote: "سایزینگ این ابزار بر پایهٔ معادلات ISA-75.01.01 (هم‌راستا با IEC 60534-2-1) است: Cv = Q·√(Gf/ΔP) برای مایع با سقف ΔP بحرانی، و Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) برای گاز. Fp در صورت وارد کردن DN لوله اعمال می‌شود (با فرض کاهندهٔ ناگهانی)؛ عدد رینولدز (FR) و هندسهٔ تیغه لحاظ نشده و نتیجه تخمین مهندسی است.",
       iecTab: "IEC 60534-2-1",
-      iecNote: "IEC 60534-2-1 نسخهٔ بین‌المللی همان معادلات است و با ISA-75.01.01 هم‌ارز فنی محسوب می‌شود؛ دو استاندارد هم را کامل می‌کنند. تفاوت اصلی در واحدها و ضریب است: IEC از Kv (m³/h در ۱ bar) و ثابت‌های SI استفاده می‌کند و ISA از Cv (gpm در 1 psi) و ثابت‌های US. تبدیل: Cv ≈ 1.156 Kv. هر دو برای دقت بیشتر ضریب هندسهٔ اتصالات (Fp) و ضریب رینولدز (FR) را تعریف می‌کنند؛ نسخهٔ فعلی ابزار این دو را اعمال نمی‌کند."
+      iecNote: "IEC 60534-2-1 نسخهٔ بین‌المللی همان معادلات است و با ISA-75.01.01 هم‌ارز فنی محسوب می‌شود؛ دو استاندارد هم را کامل می‌کنند. تفاوت اصلی در واحدها و ضریب است: IEC از Kv (m³/h در ۱ bar) و ثابت‌های SI استفاده می‌کند و ISA از Cv (gpm در 1 psi) و ثابت‌های US. تبدیل: Cv ≈ 1.156 Kv. هر دو برای دقت بیشتر ضریب هندسهٔ اتصالات (Fp) و ضریب رینولدز (FR) را تعریف می‌کنند؛ این ابزار Fp را در صورت وارد کردن DN لوله اعمال می‌کند، اما FR را نه."
     },
     en: {
       title: "Engineering Standards Tables",
@@ -294,9 +294,9 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["Nominal seat diameter (mm)", "Diameter (inch)", "Max leakage (ml/min)", "Bubbles per minute"],
       fciNote: "ANSI/FCI 70-2-2006 defines control valve leakage classes and test procedures. Class IV is the usual limit for metal-seated control valves and Class VI is bubble-tight for resilient seats. The required class comes from the process and the purchase specification; this table is a quick reference, not a substitute for the official standard.",
       isaHeaders: ["Symbol", "Unit", "Meaning"],
-      isaNote: "This tool follows the ISA-75.01.01 equations (harmonised with IEC 60534-2-1): Cv = Q·√(Gf/ΔP) for liquids with the critical ΔP limit, and Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) for gases. Piping geometry (Fp), Reynolds number (FR) and trim geometry are not included, so results are an engineering estimate.",
+      isaNote: "This tool follows the ISA-75.01.01 equations (harmonised with IEC 60534-2-1): Cv = Q·√(Gf/ΔP) for liquids with the critical ΔP limit, and Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) for gases. The piping geometry factor (Fp) is applied when a pipe DN is entered (abrupt reducers assumed); Reynolds number (FR) and trim geometry are not included, so results are an engineering estimate.",
       iecTab: "IEC 60534-2-1",
-      iecNote: "IEC 60534-2-1 is the international edition of the same equations and is technically equivalent to ISA-75.01.01; the two standards complete each other. The main difference is the unit system and coefficient: IEC uses Kv (m³/h at 1 bar) with SI constants, ISA uses Cv (gpm at 1 psi) with US constants. Conversion: Cv ≈ 1.156 Kv. Both define a piping geometry factor (Fp) and a Reynolds number factor (FR) for higher accuracy; this version of the tool does not apply them."
+      iecNote: "IEC 60534-2-1 is the international edition of the same equations and is technically equivalent to ISA-75.01.01; the two standards complete each other. The main difference is the unit system and coefficient: IEC uses Kv (m³/h at 1 bar) with SI constants, ISA uses Cv (gpm at 1 psi) with US constants. Conversion: Cv ≈ 1.156 Kv. Both define a piping geometry factor (Fp) and a Reynolds number factor (FR) for higher accuracy; this tool applies Fp when a pipe DN is entered, but not FR."
     },
     ar: {
       title: "جداول المعايير الهندسية",
@@ -346,9 +346,9 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["القطر الاسمي (mm)", "القطر (inch)", "أقصى تسرب (ml/min)", "فقاعات/دقيقة"],
       fciNote: "يحدد ANSI/FCI 70-2-2006 فئات تسرب صمام التحكم وإجراءات الاختبار. الفئة IV هي الحد المتعارف عليه للصمامات المعدنية والفئة VI للمقاعد المرنة. الفئة المطلوبة تأتي من العملية ومواصفات الشراء؛ هذا الجدول مرجع سريع وليس بديلاً عن النسخة الرسمية.",
       isaHeaders: ["الرمز", "الوحدة", "المعنى"],
-      isaNote: "تعتمد الأداة معادلات ISA-75.01.01 (المتوافقة مع IEC 60534-2-1): Cv = Q·√(Gf/ΔP) للسوائل مع حد ΔP الحرج، وCv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) للغازات. لا تُؤخذ هندسة التوصيلات (Fp) ورقم رينولدز (FR) في الحساب؛ لذا النتيجة تقدير هندسي.",
+      isaNote: "تعتمد الأداة معادلات ISA-75.01.01 (المتوافقة مع IEC 60534-2-1): Cv = Q·√(Gf/ΔP) للسوائل مع حد ΔP الحرج، وCv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) للغازات. يُطبَّق معامل هندسة التوصيلات (Fp) عند إدخال قطر الأنبوب DN (بافتراض مخفضات مفاجئة)؛ ولا يُؤخذ رقم رينولدز (FR) في الحساب.",
       iecTab: "IEC 60534-2-1",
-      iecNote: "IEC 60534-2-1 هو الإصدار الدولي للمعادلات نفسها ويعادل تقنيًا ISA-75.01.01؛ المعياران يكملان بعضهما. الفرق الأساسي في الوحدات والمعامل: IEC يستخدم Kv (m³/h عند 1 bar) وثوابت SI، بينما يستخدم ISA الرمز Cv (gpm عند 1 psi) وثوابت US. التحويل: Cv ≈ 1.156 Kv. يحدد المعياران معامل هندسة التوصيلات (Fp) ومعامل رينولدز (FR) لدقة أعلى؛ ولا يطبقهما هذا الإصدار من الأداة."
+      iecNote: "IEC 60534-2-1 هو الإصدار الدولي للمعادلات نفسها ويعادل تقنيًا ISA-75.01.01؛ المعياران يكملان بعضهما. الفرق الأساسي في الوحدات والمعامل: IEC يستخدم Kv (m³/h عند 1 bar) وثوابت SI، بينما يستخدم ISA الرمز Cv (gpm عند 1 psi) وثوابت US. التحويل: Cv ≈ 1.156 Kv. يحدد المعياران معامل هندسة التوصيلات (Fp) ومعامل رينولدز (FR) لدقة أعلى؛ تطبّق الأداة Fp عند إدخال DN الأنبوب، لكن ليس FR."
     },
     ru: {
       title: "Инженерные стандарты",
@@ -398,9 +398,9 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["Номинальный диаметр (mm)", "Диаметр (inch)", "Макс. утечка (ml/min)", "Пузырьков/мин"],
       fciNote: "ANSI/FCI 70-2-2006 определяет классы утечки регулирующих клапанов и методы испытаний. Класс IV — обычный предел для металлических седел, класс VI — для эластомерных. Требуемый класс задаётся процессом и спецификацией закупки; таблица справочная.",
       isaHeaders: ["Символ", "Единица", "Значение"],
-      isaNote: "Инструмент использует уравнения ISA-75.01.01 (согласованы с IEC 60534-2-1): Cv = Q·√(Gf/ΔP) для жидкости с критическим ΔP и Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) для газа. Геометрия трубопровода (Fp), число Рейнольдса (FR) и геометрия затвора не учитываются — результат является инженерной оценкой.",
+      isaNote: "Инструмент использует уравнения ISA-75.01.01 (согласованы с IEC 60534-2-1): Cv = Q·√(Gf/ΔP) для жидкости с критическим ΔP и Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) для газа. Fp применяется при указании DN трубы (предполагаются внезапные переходы); число Рейнольдса (FR) и геометрия затвора не учитываются.",
       iecTab: "IEC 60534-2-1",
-      iecNote: "IEC 60534-2-1 — международная редакция тех же уравнений, технически эквивалентная ISA-75.01.01; стандарты дополняют друг друга. Основное различие — единицы и коэффициент: IEC использует Kv (m³/h при 1 bar) и константы SI, ISA — Cv (gpm при 1 psi) и константы US. Перевод: Cv ≈ 1.156 Kv. Оба стандарта определяют коэффициент геометрии трубопровода (Fp) и коэффициент Рейнольдса (FR) для повышенной точности; текущая версия инструмента их не применяет."
+      iecNote: "IEC 60534-2-1 — международная редакция тех же уравнений, технически эквивалентная ISA-75.01.01; стандарты дополняют друг друга. Основное различие — единицы и коэффициент: IEC использует Kv (m³/h при 1 bar) и константы SI, ISA — Cv (gpm при 1 psi) и константы US. Перевод: Cv ≈ 1.156 Kv. Оба стандарта определяют коэффициент геометрии трубопровода (Fp) и коэффициент Рейнольдса (FR) для повышенной точности; инструмент применяет Fp при указании DN трубы, но не FR."
     }
   }[locale] || {};
 

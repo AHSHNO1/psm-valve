@@ -35,7 +35,7 @@ import { track } from "@/lib/analytics";
 
 const DEFAULT_FORM = {
   Q: null, Gf: 1, Gg: 0.65, P1: null, P2: null, T: null,
-  Pv: 0.5, Pc: 221, Z: 1, k: 1.4, xT: 0.7, FL: 0.9, W: null
+  Pv: 0.5, Pc: 221, Z: 1, k: 1.4, xT: 0.7, FL: 0.9, W: null, pipeDn: null
 };
 
 function getRecommendedCharacteristic(fluid, openingPercent) {
@@ -99,6 +99,12 @@ function validateForm(form, fluid, locale, unitSystem) {
     }
   }
 
+  if (optionalInvalidPositive(form.pipeDn)) {
+    errors.pipeDn = isFa ? "سایز لوله باید عددی مثبت باشد" : "Pipe size must be a positive number";
+  } else if (form.pipeDn != null && (form.pipeDn < 15 || form.pipeDn > 2000)) {
+    errors.pipeDn = isFa ? "سایز لوله باید بین DN15 و DN2000 باشد" : "Pipe size must be between DN15 and DN2000";
+  }
+
   return errors;
 }
 
@@ -116,7 +122,8 @@ const FIELD_HELP = {
     T: "دمای سیال بر حسب سلسیوس",
     Z: "ضریب تراکم‌پذیری گاز (گاز ایده‌آل = ۱)",
     k: "نسبت گرمای ویژه Cp/Cv (هوا = ۱.۴)",
-    xT: "ضریب افت فشار بحرانی (معمولاً ۰.۷)"
+    xT: "ضریب افت فشار بحرانی (معمولاً ۰.۷)",
+    pipeDn: "قطر اسمی لولهٔ ورودی/خروجی (DN). اگر شیر از لوله کوچک‌تر باشد، ضریب هندسهٔ اتصالات Fp روی Cv اعمال می‌شود."
   },
   en: {
     Q: "Volumetric flow — liquid: m³/h, gas: Nm³/h",
@@ -131,10 +138,11 @@ const FIELD_HELP = {
     T: "Fluid temperature in °C",
     Z: "Gas compressibility factor (ideal gas = 1)",
     k: "Specific heat ratio Cp/Cv (air = 1.4)",
-    xT: "Choked pressure drop ratio (typically 0.7)"
+    xT: "Choked pressure drop ratio (typically 0.7)",
+    pipeDn: "Nominal inlet/outlet pipe size (DN). When the valve is smaller than the pipe, the piping geometry factor Fp is applied to Cv."
   },
-  ar: { Q: "التدفق", W: "تدفق البخار", Gf: "الكثافة", Gg: "كثافة الغاز", P1: "الدخول", P2: "الخروج", Pv: "ضغط البخار", Pc: "الضغط الحرج", FL: "معامل الاسترداد", T: "الحرارة", Z: "الانضغاط", k: "الحرارة النوعية", xT: "الانسداد" },
-  ru: { Q: "Расход", W: "Расход пара", Gf: "Плотность", Gg: "Плотность газа", P1: "Вход", P2: "Выход", Pv: "Давление паров", Pc: "Крит. давление", FL: "Коэффициент", T: "Температура", Z: "Сжимаемость", k: "Показатель", xT: "Запирание" }
+  ar: { Q: "التدفق", W: "تدفق البخار", Gf: "الكثافة", Gg: "كثافة الغاز", P1: "الدخول", P2: "الخروج", Pv: "ضغط البخار", Pc: "الضغط الحرج", FL: "معامل الاسترداد", T: "الحرارة", Z: "الانضغاط", k: "الحرارة النوعية", xT: "الانسداد", pipeDn: "قطر الأنبوب (DN)؛ إذا كان الصمام أصغر يُطبَّق Fp." },
+  ru: { Q: "Расход", W: "Расход пара", Gf: "Плотность", Gg: "Плотность газа", P1: "Вход", P2: "Выход", Pv: "Давление паров", Pc: "Крит. давление", FL: "Коэффициент", T: "Температура", Z: "Сжимаемость", k: "Показатель", xT: "Запирание", pipeDn: "Диаметр трубы (DN); если клапан меньше, применяется Fp." }
 };
 
 function Field({ label, unit, value, onChange, step, help, error, placeholder, required }) {
@@ -347,11 +355,11 @@ export default function SizingTool({ catalog = [] }) {
     const siForm = formToSI(form, unitSystem, fluid);
     let r;
     if (fluid === "liquid") {
-      r = calcLiquidCv({ Q: siForm.Q, Gf: siForm.Gf, P1: siForm.P1, P2: siForm.P2, Pv: siForm.Pv, Pc: siForm.Pc, FL: siForm.FL });
+      r = calcLiquidCv({ Q: siForm.Q, Gf: siForm.Gf, P1: siForm.P1, P2: siForm.P2, Pv: siForm.Pv, Pc: siForm.Pc, FL: siForm.FL, pipeDnMm: form.pipeDn });
     } else if (fluid === "steam") {
-      r = calcSteamCv({ W: siForm.W, P1: siForm.P1, P2: siForm.P2, T: siForm.T });
+      r = calcSteamCv({ W: siForm.W, P1: siForm.P1, P2: siForm.P2, T: siForm.T, pipeDnMm: form.pipeDn });
     } else {
-      r = calcGasCv({ Q: siForm.Q, Gg: siForm.Gg, T: siForm.T, P1: siForm.P1, P2: siForm.P2, Z: siForm.Z, k: siForm.k, xT: siForm.xT });
+      r = calcGasCv({ Q: siForm.Q, Gg: siForm.Gg, T: siForm.T, P1: siForm.P1, P2: siForm.P2, Z: siForm.Z, k: siForm.k, xT: siForm.xT, pipeDnMm: form.pipeDn });
     }
     if (r.error) { setResult({ error: r.error }); return; }
     const openingPercent = Math.min(100, Math.round((r.Cv / r.size.cv) * 100));
@@ -873,6 +881,7 @@ export default function SizingTool({ catalog = [] }) {
                     <Field label="xT" unit={ratioUnit} value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} error={errors.xT} />
                   </>
                 )}
+                <Field label="D" unit="DN" value={form.pipeDn} onChange={update("pipeDn")} step={5} help={help.pipeDn} error={errors.pipeDn} placeholder="100" />
               </div>
             )}
 
@@ -1027,6 +1036,13 @@ export default function SizingTool({ catalog = [] }) {
                       <Gauge size={12} />
                       <span className="hero-metric-label">{L.noise}</span>
                       <span className="hero-metric-value">{result.noise}</span>
+                    </div>
+                  )}
+                  {result.pipingApplied && (
+                    <div className="hero-metric">
+                      <Activity size={12} />
+                      <span className="hero-metric-label">Fp</span>
+                      <span className="hero-metric-value">{result.Fp}</span>
                     </div>
                   )}
                   {result.cavitationRisk && (
