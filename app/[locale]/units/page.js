@@ -8,7 +8,8 @@ import {
   Lightbulb,
   Wrench
 } from "lucide-react";
-import { units } from "@/lib/units";
+import { getContent } from "@/lib/content";
+import { getDictionary } from "@/lib/getDictionary";
 
 const ICONS = {
   engineering: DraftingCompass,
@@ -19,49 +20,6 @@ const ICONS = {
   "maintenance-overhaul": Wrench
 };
 
-const COPY = {
-  fa: {
-    badge: "توانمندی‌های سازمانی",
-    title: "دپارتمان‌های",
-    titleAccent: "پتروسازه میهن",
-    intro: "از طراحی و تحقیق تا تولید، پوشش‌دهی، آزمون و بازسازی؛ توانمندی‌های تخصصی ما در کنار هم برای پاسخ‌گویی به نیاز صنایع کار می‌کنند.",
-    departments: "شش دپارتمان تخصصی",
-    contact: "گفت‌وگو با کارشناسان",
-    unit: "دپارتمان",
-    capabilities: "حوزه‌های فعالیت"
-  },
-  en: {
-    badge: "Our Capabilities",
-    title: "The Departments",
-    titleAccent: "Behind PSM",
-    intro: "From engineering and research to manufacturing, coating, testing, and overhaul, our specialist departments work together to meet industrial needs.",
-    departments: "Six specialist departments",
-    contact: "Talk to our team",
-    unit: "Department",
-    capabilities: "What we do"
-  },
-  ar: {
-    badge: "قدراتنا",
-    title: "الأقسام",
-    titleAccent: "المتخصصة في PSM",
-    intro: "من الهندسة والبحث إلى التصنيع والطلاء والاختبار والصيانة، تعمل أقسامنا المتخصصة معاً لتلبية احتياجات القطاع الصناعي.",
-    departments: "ستة أقسام متخصصة",
-    contact: "تواصل مع فريقنا",
-    unit: "القسم",
-    capabilities: "مجالات العمل"
-  },
-  ru: {
-    badge: "Наши компетенции",
-    title: "Подразделения",
-    titleAccent: "PSM",
-    intro: "От инженерных разработок и исследований до производства, нанесения покрытий, испытаний и ремонта — наши специалисты вместе решают задачи промышленности.",
-    departments: "Шесть специализированных подразделений",
-    contact: "Связаться с командой",
-    unit: "Подразделение",
-    capabilities: "Направления работы"
-  }
-};
-
 function pick(value, locale) {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -70,7 +28,9 @@ function pick(value, locale) {
 
 export default async function UnitsPage({ params }) {
   const { locale } = params;
-  const text = COPY[locale] || COPY.en;
+  const dictionary = await getDictionary(locale);
+  const text = dictionary.unitsPage;
+  const units = getContent().units;
   const isRtl = locale === "fa" || locale === "ar";
 
   return (

@@ -1,10 +1,13 @@
 import ProductWizard from "@/components/admin/ProductWizard";
+import ContentStudioNav from "@/components/admin/ContentStudioNav";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function NewProductPage() {
   return (
     <div className="space-y-6">
+      <ContentStudioNav />
+
       <div className="metro-in">
         <Link href="/admin/products" className="inline-flex items-center gap-2 text-sm mb-4 hover:underline"
           style={{ color: "#B8850A" }}>

@@ -28,7 +28,8 @@ function Ico({ name, size }) {
     external: <><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>,
     menu: <><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></>,
     close: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
-    bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>
+    bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+    layers: <><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>
   };
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -47,21 +48,13 @@ const NAV_GROUPS = [
   {
     label: "محتوا",
     items: [
-      { href: "/admin/products", label: "محصولات", icon: "package" },
+      { href: "/admin/content", label: "مدیریت محتوای سایت", icon: "layers" },
       { href: "/admin/services", label: "خدمات", icon: "cog" },
       { href: "/admin/news", label: "اخبار", icon: "newspaper" },
       { href: "/admin/articles", label: "مقاله‌ها", icon: "file" },
-      { href: "/admin/slider", label: "اسلایدر", icon: "sparkles" },
       { href: "/admin/certificates", label: "گواهینامه‌ها", icon: "award" },
       { href: "/admin/faq", label: "سوالات متداول", icon: "help" },
-      { href: "/admin/projects", label: "پروژه‌ها", icon: "package" },
-      { href: "/admin/content", label: "متن‌های سایت", icon: "file" }
-    ]
-  },
-  {
-    label: "رسانه",
-    items: [
-      { href: "/admin/media", label: "گالری و مدیا", icon: "image" }
+      { href: "/admin/projects", label: "پروژه‌ها", icon: "package" }
     ]
   },
   {
@@ -74,10 +67,8 @@ const NAV_GROUPS = [
   },
   {
     label: "سیستم",
-    items: [
-      { href: "/admin/branding", label: "هویت برند", icon: "palette" },
-      { href: "/admin/settings", label: "تنظیمات", icon: "settings" },
-      { href: "/admin/security", label: "امنیت", icon: "lock" },
+  items: [
+    { href: "/admin/security", label: "امنیت", icon: "lock" },
       { href: "/admin/users", label: "نویسندگان", icon: "user" },
       { href: "/admin/help", label: "راهنما", icon: "help" }
     ]
@@ -181,6 +172,10 @@ export default function AdminShell({ children, notifications = [], unreadCount =
         currentLabel = item.label;
       }
     }
+    if (pathname.startsWith("/admin/products")) currentLabel = "محصولات";
+    else if (pathname.startsWith("/admin/slider")) currentLabel = "اسلایدر صفحه اصلی";
+    else if (pathname.startsWith("/admin/media")) currentLabel = "گالری و رسانه";
+    else if (pathname.startsWith("/admin/content/text")) currentLabel = "متن‌ها و تصاویر سایت";
   }
 
   function isActive(href) {

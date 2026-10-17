@@ -29,7 +29,7 @@ export default function SecurityClient() {
       return;
     }
     if (form.newPassword.length < 12) {
-      notify("رمز جدید باید حداقل ۱۲ کاراکتر باشد", true);
+      notify("رمز جدید باید حداقل ۱۲ کاراکتر و حداکثر ۷۲ بایت باشد", true);
       return;
     }
 
@@ -44,12 +44,15 @@ export default function SecurityClient() {
         })
       });
       const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data.ok) {
         notify("رمز عبور با موفقیت تغییر کرد");
         setForm({ currentPassword: "", newPassword: "", confirm: "" });
       } else notify(data.error || "خطا", true);
-    } catch (e) { notify("خطای شبکه", true); }
-    setBusy(false);
+    } catch (error) {
+      notify("ارتباط با سرور برقرار نشد؛ رمز تغییر نکرد", true);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -106,22 +109,22 @@ export default function SecurityClient() {
           <form onSubmit={submit}>
             <div style={{ display: "grid", gap: 12, marginBottom: 14 }}>
               <div>
-                <label className="form-label">رمز عبور فعلی</label>
+                <label className="form-label" htmlFor="current-password">رمز عبور فعلی</label>
                 <input type="password" value={form.currentPassword}
                   onChange={function(e) { setForm(Object.assign({}, form, { currentPassword: e.target.value })); }}
-                  className="form-input" required />
+                  className="form-input" id="current-password" autoComplete="current-password" required />
               </div>
               <div>
-                <label className="form-label">رمز عبور جدید (حداقل ۱۲ کاراکتر)</label>
+                <label className="form-label" htmlFor="new-password">رمز عبور جدید (حداقل ۱۲ کاراکتر، حداکثر ۷۲ بایت)</label>
                 <input type="password" value={form.newPassword}
                   onChange={function(e) { setForm(Object.assign({}, form, { newPassword: e.target.value })); }}
-                  className="form-input" required minLength={12} />
+                  className="form-input" id="new-password" autoComplete="new-password" required minLength={12} maxLength={72} />
               </div>
               <div>
-                <label className="form-label">تکرار رمز جدید</label>
+                <label className="form-label" htmlFor="confirm-password">تکرار رمز جدید</label>
                 <input type="password" value={form.confirm}
                   onChange={function(e) { setForm(Object.assign({}, form, { confirm: e.target.value })); }}
-                  className="form-input" required />
+                  className="form-input" id="confirm-password" autoComplete="new-password" required minLength={12} maxLength={72} />
               </div>
             </div>
 

@@ -9,7 +9,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     fa: {
       sizingBadge: "ابزار آنلاین",
       sizingTitle: "نرم‌افزار سایزینگ شیر",
-      sizingDesc: "محاسبه دقیق Cv و انتخاب سایز مناسب شیر بر اساس استاندارد IEC 60534",
+      sizingDesc: "برآورد اولیه Cv و سایز شیر؛ برای انتخاب نهایی با مهندس شیر کنترل مشورت کنید",
       sizingFeatures: ["محاسبه Cv و Kv", "انتخاب سایز خودکار", "شناسایی کاویتاسیون", "دانلود دیتاشیت"],
       sizingCta: "امتحان کنید",
       videoBadge: "معرفی شرکت",
@@ -20,7 +20,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     en: {
       sizingBadge: "Online Tool",
       sizingTitle: "Valve Sizing Software",
-      sizingDesc: "Accurate Cv calculation and proper valve size selection per IEC 60534",
+      sizingDesc: "Preliminary Cv and valve-size estimate; confirm final selection with a control-valve engineer",
       sizingFeatures: ["Cv & Kv calculation", "Auto size selection", "Cavitation detection", "Download datasheet"],
       sizingCta: "Try It Now",
       videoBadge: "Company Intro",
@@ -31,7 +31,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     ar: {
       sizingBadge: "أداة عبر الإنترنت",
       sizingTitle: "برنامج تحديد حجم الصمام",
-      sizingDesc: "حساب دقيق Cv واختيار حجم الصمام المناسب وفقًا لـ IEC 60534",
+      sizingDesc: "تقدير أولي لـ Cv وحجم الصمام؛ أكّد الاختيار النهائي مع مهندس صمامات التحكم",
       sizingFeatures: ["حساب Cv و Kv", "اختيار تلقائي", "كشف التجويف", "تحميل صحيفة البيانات"],
       sizingCta: "جربه الآن",
       videoBadge: "تعريف بالشركة",
@@ -42,7 +42,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     ru: {
       sizingBadge: "Онлайн-инструмент",
       sizingTitle: "Программа подбора клапана",
-      sizingDesc: "Точный расчет Cv и выбор размера клапана по IEC 60534",
+      sizingDesc: "Предварительная оценка Cv и размера клапана; согласуйте окончательный выбор с инженером",
       sizingFeatures: ["Расчет Cv и Kv", "Авто-подбор размера", "Обнаружение кавитации", "Скачать техпаспорт"],
       sizingCta: "Попробовать",
       videoBadge: "О компании",

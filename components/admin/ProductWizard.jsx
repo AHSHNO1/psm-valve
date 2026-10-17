@@ -3,12 +3,14 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package, Type, Languages, Target, ListChecks, Eye, Save, ArrowRight, ArrowLeft,
-  Plus, X, Trash2, Loader2, CheckCircle2, AlertTriangle, Info, UploadCloud, Image as ImageIcon,
+  Plus, X, Trash2, Loader2, CheckCircle2, AlertTriangle, Info, UploadCloud,
   Sparkles
 } from "lucide-react";
 import { GUIDELINES } from "@/lib/upload-guidelines";
-import { categories } from "@/lib/categories";
+import { categories, getCategoryLabel } from "@/lib/categories";
 import { SPEC_FIELDS } from "@/lib/spec-fields";
+import ProductGallery from "@/components/ProductGallery";
+import ProductTechnicalSpecifications from "@/components/ProductTechnicalSpecifications";
 
 const LANGS = [
   { code: "fa", label: "فارسی", flag: "🇮🇷", dir: "rtl" },
@@ -18,10 +20,10 @@ const LANGS = [
 ];
 
 const STEPS = [
-  { id: 1, title: "اطلاعات پایه", sub: "نام، دسته، تصویر", icon: Package, color: "#0078D4" },
+  { id: 1, title: "اطلاعات پایه", sub: "نام، دسته و دو تصویر", icon: Package, color: "#0078D4" },
   { id: 2, title: "توضیحات چندزبانه", sub: "فارسی، انگلیسی، عربی، روسی", icon: Languages, color: "#107C10" },
-  { id: 3, title: "کاربردها و ویژگی‌ها", sub: "نقاط قوت محصول", icon: ListChecks, color: "#F7630C" },
-  { id: 4, title: "مشخصات فنی", sub: "جدول کلید-مقدار", icon: Target, color: "#8764B8" },
+  { id: 3, title: "محتوای فنی", sub: "کاربرد، ویژگی، آپشن و مشتری", icon: ListChecks, color: "#F7630C" },
+  { id: 4, title: "مشخصات فنی", sub: "افزودن ردیف‌های دلخواه", icon: Target, color: "#8764B8" },
   { id: 5, title: "پیش‌نمایش و انتشار", sub: "بازبینی نهایی", icon: Eye, color: "#E0A81A" }
 ];
 
@@ -61,9 +63,30 @@ function ensureSpec(val) {
   return out;
 }
 
-export default function ProductWizard({ initial, isNew = false }) {
+function ensureSpecifications(val, legacySpec) {
+  if (Array.isArray(val) && val.length > 0) {
+    return val.map(function(row, index) {
+      return {
+        id: row.id || "specification-" + index,
+        label: ensureML(row.label),
+        value: ensureML(row.value)
+      };
+    });
+  }
+  return SPEC_FIELDS
+    .map(function(field) {
+      return {
+        id: field.id,
+        label: ensureML(field.label),
+        value: ensureML(legacySpec && legacySpec[field.id])
+      };
+    })
+    .filter(function(row) { return Object.values(row.value).some(Boolean); });
+}
+
+export default function ProductWizard({ initial, isNew = false, initialStep = 1 }) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialStep === 2 ? 2 : 1);
   const [activeLang, setActiveLang] = useState("fa");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
@@ -75,11 +98,16 @@ export default function ProductWizard({ initial, isNew = false }) {
         series: initial.series || "",
         categoryId: initial.categoryId || "control-valves",
         image: initial.image || "",
+        image2: initial.image2 || "",
         name: ensureML(initial.name),
         short: ensureML(initial.short),
+        description: ensureML(initial.description),
         applications: ensureArrML(initial.applications),
         features: ensureArrML(initial.features),
-        spec: ensureSpec(initial.spec)
+        options: ensureArrML(initial.options),
+        clients: ensureArrML(initial.clients),
+        spec: ensureSpec(initial.spec),
+        specifications: ensureSpecifications(initial.specifications, initial.spec)
       };
     }
     return {
@@ -87,11 +115,16 @@ export default function ProductWizard({ initial, isNew = false }) {
       series: "",
       categoryId: "control-valves",
       image: "",
+      image2: "",
       name: emptyML(),
       short: emptyML(),
+      description: emptyML(),
       applications: emptyArrML(),
       features: emptyArrML(),
-      spec: ensureSpec(null)
+      options: emptyArrML(),
+      clients: emptyArrML(),
+      spec: ensureSpec(null),
+      specifications: []
     };
   });
 
@@ -111,29 +144,45 @@ export default function ProductWizard({ initial, isNew = false }) {
     });
   }
 
-  function addArrItem(key, lang, value) {
-    if (!value || !value.trim()) return;
+  function updateArrayList(key, lang, value) {
     setProduct(function(prev) {
       const clone = JSON.parse(JSON.stringify(prev));
-      if (!clone[key][lang]) clone[key][lang] = [];
-      clone[key][lang].push(value.trim());
+      clone[key][lang] = value.split(/\r?\n/);
       return clone;
     });
   }
 
-  function removeArrItem(key, lang, idx) {
+  function updateSpecification(specificationId, field, lang, value) {
     setProduct(function(prev) {
       const clone = JSON.parse(JSON.stringify(prev));
-      clone[key][lang].splice(idx, 1);
+      clone.specifications = clone.specifications.map(function(row) {
+        if (row.id !== specificationId) return row;
+        return { ...row, [field]: { ...row[field], [lang]: value } };
+      });
+      if (field === "value" && SPEC_FIELDS.some(function(item) { return item.id === specificationId; })) {
+        clone.spec[specificationId][lang] = value;
+      }
       return clone;
     });
   }
 
-  function updateSpec(fieldId, lang, value) {
+  function addSpecification() {
+    const id = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+    setProduct(function(prev) {
+      return {
+        ...prev,
+        specifications: [...prev.specifications, { id: id, label: emptyML(), value: emptyML() }]
+      };
+    });
+  }
+
+  function removeSpecification(specificationId) {
     setProduct(function(prev) {
       const clone = JSON.parse(JSON.stringify(prev));
-      if (!clone.spec[fieldId]) clone.spec[fieldId] = emptyML();
-      clone.spec[fieldId][lang] = value;
+      clone.specifications = clone.specifications.filter(function(row) { return row.id !== specificationId; });
+      if (SPEC_FIELDS.some(function(item) { return item.id === specificationId; })) {
+        clone.spec[specificationId] = emptyML();
+      }
       return clone;
     });
   }
@@ -176,13 +225,22 @@ export default function ProductWizard({ initial, isNew = false }) {
       return;
     }
 
+    const payload = JSON.parse(JSON.stringify(product));
+    ["applications", "features", "options", "clients"].forEach(function(field) {
+      Object.keys(payload[field]).forEach(function(lang) {
+        payload[field][lang] = payload[field][lang]
+          .map(function(item) { return item.trim(); })
+          .filter(Boolean);
+      });
+    });
+
     setBusy(true);
     try {
       const url = isNew ? "/api/products" : "/api/products/" + product.slug;
       const res = await fetch(url, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.ok) {
@@ -201,7 +259,7 @@ export default function ProductWizard({ initial, isNew = false }) {
   const stepColor = STEPS[step - 1].color;
 
   return (
-    <div className="space-y-6">
+    <div className="product-wizard space-y-6">
       {msg.text && (
         <div
           className="p-4 rounded-xl flex items-center gap-3 text-sm font-black metro-in sticky top-20 z-20"
@@ -226,6 +284,7 @@ export default function ProductWizard({ initial, isNew = false }) {
               {i > 0 && <div className={"wiz-line" + (isDone || isActive ? " wiz-line-done" : "")} />}
               <button
                 type="button"
+                aria-label={s.title + " — مرحله " + s.id}
                 onClick={function() { setStep(s.id); }}
                 className={"wiz-step" + (isActive ? " wiz-step-active" : "") + (isDone ? " wiz-step-done" : "")}
               >
@@ -272,8 +331,7 @@ export default function ProductWizard({ initial, isNew = false }) {
           {step === 3 && (
             <Step3
               product={product}
-              addArrItem={addArrItem}
-              removeArrItem={removeArrItem}
+              updateArrayList={updateArrayList}
               activeLang={activeLang}
               setActiveLang={setActiveLang}
             />
@@ -281,7 +339,9 @@ export default function ProductWizard({ initial, isNew = false }) {
           {step === 4 && (
             <Step4
               product={product}
-              updateSpec={updateSpec}
+              updateSpecification={updateSpecification}
+              addSpecification={addSpecification}
+              removeSpecification={removeSpecification}
               activeLang={activeLang}
               setActiveLang={setActiveLang}
             />
@@ -304,12 +364,18 @@ export default function ProductWizard({ initial, isNew = false }) {
 
         <div style={{ flex: 1 }} />
 
+        {!isNew && (
+          <button type="button" onClick={save} disabled={busy} className="big-btn big-btn-green">
+            {busy ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            ذخیره تغییرات
+          </button>
+        )}
         {step < 5 && (
           <button type="button" onClick={next} className="big-btn big-btn-primary">
             مرحله بعد <ArrowLeft size={18} />
           </button>
         )}
-        {step === 5 && (
+        {isNew && step === 5 && (
           <button type="button" onClick={save} disabled={busy} className="big-btn big-btn-green">
             {busy ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             ذخیره و انتشار
@@ -331,7 +397,7 @@ function Step1({ product, updateField, isNew }) {
   const guide = GUIDELINES.productImage;
 
   async function upload(file) {
-    if (!file) return;
+    if (!file || uploading) return;
     setUploadError("");
     setUploading(true);
     try {
@@ -340,12 +406,14 @@ function Step1({ product, updateField, isNew }) {
       fd.append("type", "images");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.ok) updateField("image", data.url);
-      else setUploadError(data.error || "خطای آپلود");
+      if (!res.ok || !data.ok || !data.url) throw new Error(data.error || "خطای آپلود");
+      updateField("image", data.url);
     } catch (e) {
-      setUploadError("خطای شبکه");
+      setUploadError(e.message || "خطای شبکه");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
-    setUploading(false);
   }
 
   return (
@@ -372,7 +440,7 @@ function Step1({ product, updateField, isNew }) {
           <div className="big-field-label">
             کد سری <span className="big-field-label-req">*</span>
           </div>
-          <div className="big-field-hint">شناسه محصول برای مشتریان — مثل PSM-BCV</div>
+          <div className="big-field-hint">کد یا شماره سری محصول؛ ارقام فارسی و انگلیسی قابل ورود هستند.</div>
           <input
             type="text"
             dir="ltr"
@@ -391,8 +459,8 @@ function Step1({ product, updateField, isNew }) {
             onChange={function(e) { updateField("categoryId", e.target.value); }}
             className="big-input"
           >
-            {categories.map(function(c) {
-              return <option key={c.id} value={c.id}>{c.name.fa}</option>;
+            {categories.filter(function(c) { return !c.children; }).map(function(c) {
+              return <option key={c.id} value={c.id}>{getCategoryLabel(c)}</option>;
             })}
           </select>
         </div>
@@ -402,6 +470,13 @@ function Step1({ product, updateField, isNew }) {
         <div className="big-field-label" style={{ marginBottom: "12px" }}>
           تصویر محصول
         </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={function(e) { upload(e.target.files && e.target.files[0]); }}
+        />
 
         <div
           className="rounded-xl p-3 mb-3 text-xs space-y-1"
@@ -422,14 +497,29 @@ function Step1({ product, updateField, isNew }) {
           <div className="relative rounded-xl overflow-hidden group"
             style={{ border: "2px solid #A7F3D0", background: "#ECFDF5" }}>
             <img src={product.image} alt="" className="w-full aspect-square object-contain" />
-            <button
-              type="button"
-              onClick={function() { updateField("image", ""); }}
-              className="absolute top-3 left-3 w-10 h-10 rounded-lg grid place-items-center"
-              style={{ background: "rgba(232, 17, 35, 0.9)", color: "#FFFFFF" }}
-            >
-              <X size={16} />
-            </button>
+            <div className="absolute top-3 left-3 flex gap-2">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={function() { inputRef.current && inputRef.current.click(); }}
+                className="h-10 px-3 rounded-lg inline-flex items-center gap-2 text-xs font-black disabled:opacity-60"
+                style={{ background: "rgba(201, 149, 13, 0.95)", color: "#FFFFFF" }}
+              >
+                {uploading ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} />}
+                {uploading ? "در حال بارگذاری..." : "تغییر تصویر"}
+              </button>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={function() { updateField("image", ""); }}
+                className="w-10 h-10 rounded-lg grid place-items-center disabled:opacity-60"
+                style={{ background: "rgba(232, 17, 35, 0.9)", color: "#FFFFFF" }}
+                aria-label="حذف تصویر محصول"
+                title="حذف تصویر"
+              >
+                <X size={16} />
+              </button>
+            </div>
             <div
               className="absolute bottom-0 inset-x-0 px-4 py-2 text-xs font-black text-white flex items-center gap-2"
               style={{ background: "linear-gradient(to top, rgba(16, 124, 16, 0.9), transparent)" }}
@@ -450,13 +540,6 @@ function Step1({ product, updateField, isNew }) {
             }}
             className={"big-dropzone" + (dragging ? " big-dropzone-active" : "")}
           >
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={function(e) { upload(e.target.files && e.target.files[0]); }}
-            />
             {uploading ? (
               <div>
                 <div
@@ -493,7 +576,95 @@ function Step1({ product, updateField, isNew }) {
             <AlertTriangle size={14} /> {uploadError}
           </div>
         )}
+        <AdditionalProductImageField
+          value={product.image2}
+          onChange={function(value) { updateField("image2", value); }}
+          guide={guide}
+        />
       </div>
+    </div>
+  );
+}
+
+function AdditionalProductImageField({ value, onChange, guide }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef(null);
+
+  async function upload(file) {
+    if (!file || uploading) return;
+    setError("");
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "images");
+      const response = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok || !data.ok || !data.url) throw new Error(data.error || "خطای آپلود");
+      onChange(data.url);
+    } catch (uploadError) {
+      setError(uploadError.message || "آپلود تصویر دوم ناموفق بود");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mt-5 rounded-xl p-4" style={{ border: "1px solid #D1D5DB", background: "#FFFFFF" }}>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <div className="text-sm font-black" style={{ color: "#1A1D21" }}>تصویر دوم محصول</div>
+          <div className="text-xs mt-1" style={{ color: "#7A8290" }}>برای نمایش نمای جانبی، جزئیات یا تصویر تکمیلی</div>
+        </div>
+        {value && (
+          <button
+            type="button"
+            onClick={function() { onChange(""); }}
+            className="w-9 h-9 rounded-lg grid place-items-center"
+            style={{ background: "#FEF2F2", color: "#B91C1C" }}
+            aria-label="حذف تصویر دوم"
+            title="حذف تصویر دوم"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={function(event) { upload(event.target.files && event.target.files[0]); }}
+      />
+      {value ? (
+        <div className="relative overflow-hidden rounded-lg" style={{ border: "1px solid #E2E8F0" }}>
+          <img src={value} alt="" className="w-full aspect-[4/3] object-contain bg-slate-50" />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={function() { inputRef.current && inputRef.current.click(); }}
+            className="absolute top-2 left-2 rounded-lg px-3 py-2 text-xs font-black text-white disabled:opacity-60"
+            style={{ background: "#B8850A" }}
+          >
+            {uploading ? "در حال آپلود..." : "تغییر تصویر"}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={function() { inputRef.current && inputRef.current.click(); }}
+          className="w-full rounded-xl p-6 text-center disabled:opacity-60"
+          style={{ border: "1px dashed #94A3B8", background: "#F8FAFC", color: "#475569" }}
+        >
+          {uploading ? <Loader2 size={24} className="mx-auto mb-2 animate-spin" /> : <UploadCloud size={24} className="mx-auto mb-2" />}
+          <span className="block text-sm font-bold">{uploading ? "در حال آپلود تصویر..." : "افزودن تصویر دوم"}</span>
+          <span className="block mt-1 text-[11px]">{guide.formats} · حداکثر {guide.maxSize}</span>
+        </button>
+      )}
+      {error && <p className="mt-2 text-xs font-semibold" role="alert" style={{ color: "#B91C1C" }}>{error}</p>}
     </div>
   );
 }
@@ -544,13 +715,27 @@ function Step2({ product, updateML, activeLang, setActiveLang }) {
       <div className="big-field">
         <div className="big-field-label">توضیح کوتاه در {currentLang.label}</div>
         <div className="big-field-hint">
-          ۲ تا ۳ جمله که در کارت محصول نمایش داده می‌شود
+          خلاصه‌ای که در فهرست و کارت محصول نمایش داده می‌شود
         </div>
         <textarea
           dir={currentLang.dir}
           value={product.short[activeLang] || ""}
           onChange={function(e) { updateML("short", activeLang, e.target.value); }}
           rows={5}
+          className="big-input"
+        />
+      </div>
+
+      <div className="big-field">
+        <div className="big-field-label">معرفی کامل محصول در {currentLang.label}</div>
+        <div className="big-field-hint">
+          این متن در ابتدای برگهٔ مشخصات فنی محصول نمایش داده می‌شود.
+        </div>
+        <textarea
+          dir={currentLang.dir}
+          value={product.description[activeLang] || ""}
+          onChange={function(e) { updateML("description", activeLang, e.target.value); }}
+          rows={6}
           className="big-input"
         />
       </div>
@@ -571,24 +756,26 @@ function Step2({ product, updateML, activeLang, setActiveLang }) {
 // ================================================================
 // STEP 3 - Applications & Features
 // ================================================================
-function Step3({ product, addArrItem, removeArrItem, activeLang, setActiveLang }) {
-  const [appInput, setAppInput] = useState("");
-  const [featInput, setFeatInput] = useState("");
+function Step3({ product, updateArrayList, activeLang, setActiveLang }) {
   const currentLang = LANGS.find(function(l) { return l.code === activeLang; }) || LANGS[0];
 
-  function handleAppKey(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addArrItem("applications", activeLang, appInput);
-      setAppInput("");
-    }
-  }
-  function handleFeatKey(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addArrItem("features", activeLang, featInput);
-      setFeatInput("");
-    }
+  function renderItemField(field, title, hint) {
+    const items = product[field]?.[activeLang] || [];
+    return (
+      <label className="big-field" key={field}>
+        <span className="big-field-label">{title} در {currentLang.label}</span>
+        <div className="big-field-hint">{hint}</div>
+        <textarea
+            rows={Math.min(6, Math.max(3, items.length + 1))}
+            dir={currentLang.dir}
+            value={items.join("\n")}
+            onChange={function(e) { updateArrayList(field, activeLang, e.target.value); }}
+            placeholder="هر مورد را در یک خط بنویسید یا فهرست را اینجا جای‌گذاری کنید"
+            className="big-input big-list-input"
+          />
+        <span className="big-field-hint">{items.filter(function(item) { return item.trim(); }).length} مورد · هر خط یک مورد</span>
+      </label>
+    );
   }
 
   return (
@@ -609,69 +796,15 @@ function Step3({ product, addArrItem, removeArrItem, activeLang, setActiveLang }
         })}
       </div>
 
-      <div className="big-field">
-        <div className="big-field-label">کاربردهای کلیدی در {currentLang.label}</div>
-        <div className="big-field-hint">
-          مثل: پالایشگاه، پتروشیمی، نیروگاه — بعد از تایپ Enter بزنید
-        </div>
-        <div className="chip-input-wrap">
-          {(product.applications[activeLang] || []).map(function(item, idx) {
-            return (
-              <span key={idx} className="chip-item">
-                {item}
-                <button
-                  type="button"
-                  onClick={function() { removeArrItem("applications", activeLang, idx); }}
-                  className="chip-item-remove"
-                >
-                  <X size={10} />
-                </button>
-              </span>
-            );
-          })}
-          <input
-            type="text"
-            dir={currentLang.dir}
-            value={appInput}
-            onChange={function(e) { setAppInput(e.target.value); }}
-            onKeyDown={handleAppKey}
-            placeholder="تایپ کنید و Enter بزنید..."
-            className="chip-input-inner"
-          />
-        </div>
+      <div className="product-list-editor-tip">
+        <Info size={17} />
+        <span>برای افزودن یا ویرایش موارد، کافی است متن را در کادر بنویسید؛ هر خط جداگانه در صفحهٔ محصول نمایش داده می‌شود. می‌توانید فهرست را مستقیم از فایل اکسل یا متن کپی کنید.</span>
       </div>
 
-      <div className="big-field">
-        <div className="big-field-label">ویژگی‌ها و مزایا در {currentLang.label}</div>
-        <div className="big-field-hint">
-          مثل: طراحی مطابق IEC 60534، پوشش HVOF، قابلیت Fail-Safe
-        </div>
-        <div className="chip-input-wrap">
-          {(product.features[activeLang] || []).map(function(item, idx) {
-            return (
-              <span key={idx} className="chip-item" style={{ background: "linear-gradient(135deg, #1B8F1B, #0A5F0A)" }}>
-                {item}
-                <button
-                  type="button"
-                  onClick={function() { removeArrItem("features", activeLang, idx); }}
-                  className="chip-item-remove"
-                >
-                  <X size={10} />
-                </button>
-              </span>
-            );
-          })}
-          <input
-            type="text"
-            dir={currentLang.dir}
-            value={featInput}
-            onChange={function(e) { setFeatInput(e.target.value); }}
-            onKeyDown={handleFeatKey}
-            placeholder="تایپ کنید و Enter بزنید..."
-            className="chip-input-inner"
-          />
-        </div>
-      </div>
+      {renderItemField("applications", "کاربردهای کلیدی", "مثل: پالایشگاه، پتروشیمی و نیروگاه")}
+      {renderItemField("features", "ویژگی‌ها و مزایا", "مثل: طراحی مطابق IEC 60534، پوشش HVOF و قابلیت Fail-Safe")}
+      {renderItemField("options", "آپشن‌ها", "موارد قابل انتخاب یا پیکربندی برای این محصول")}
+      {renderItemField("clients", "مشتریان", "نام مشتریان مرتبط با این محصول")}
     </div>
   );
 }
@@ -679,7 +812,7 @@ function Step3({ product, addArrItem, removeArrItem, activeLang, setActiveLang }
 // ================================================================
 // STEP 4 - Specs (fixed fields, shared with the public product page)
 // ================================================================
-function Step4({ product, updateSpec, activeLang, setActiveLang }) {
+function Step4({ product, updateSpecification, addSpecification, removeSpecification, activeLang, setActiveLang }) {
   const currentLang = LANGS.find(function(l) { return l.code === activeLang; }) || LANGS[0];
 
   return (
@@ -704,31 +837,54 @@ function Step4({ product, updateSpec, activeLang, setActiveLang }) {
         style={{ background: "rgba(135, 100, 184, 0.06)", border: "1px solid rgba(135, 100, 184, 0.25)" }}>
         <Info size={20} style={{ color: "#8764B8", flexShrink: 0, marginTop: "2px" }} />
         <div className="text-sm" style={{ color: "var(--m-text-soft)" }}>
-          هر فیلد را در زبان فعال پر کنید. فیلد خالی در سایت با «بهزودی» نمایش داده میشود.
+          برای هر ردیف، عنوان و مقدار مشخصه را در زبان فعال وارد کنید. می‌توانید هر تعداد مشخصه با عنوان دلخواه اضافه کنید.
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-x-6">
-        {SPEC_FIELDS.map(function(f) {
-          const value = (product.spec && product.spec[f.id] && product.spec[f.id][activeLang]) || "";
+      <div className="space-y-3">
+        {product.specifications.map(function(specification) {
+          const label = specification.label[activeLang] || "";
+          const value = specification.value[activeLang] || "";
           return (
-            <label key={f.id} className="block mb-4">
-              <span className="text-xs font-black mb-1.5 block" style={{ color: "var(--m-text-soft)" }}>
-                {f.label[activeLang] || f.label.fa}
-              </span>
-              <input
-                type="text"
-                dir={currentLang.dir}
-                value={value}
-                onChange={function(e) { updateSpec(f.id, activeLang, e.target.value); }}
-                placeholder={(f.hint && (f.hint[activeLang] || f.hint.fa)) || ""}
-                className="big-input"
-                style={{ padding: "12px 14px", fontSize: "14px" }}
-              />
-            </label>
+            <div key={specification.id} className="grid items-end gap-3 rounded-xl p-3 md:grid-cols-[1fr_1.4fr_auto]"
+              style={{ border: "1px solid var(--m-border)", background: "#FFFFFF" }}>
+              <label className="block">
+                <span className="text-xs font-black mb-1.5 block" style={{ color: "var(--m-text-soft)" }}>عنوان مشخصه · {currentLang.label}</span>
+                <input
+                  type="text"
+                  dir={currentLang.dir}
+                  value={label}
+                  onChange={function(e) { updateSpecification(specification.id, "label", activeLang, e.target.value); }}
+                  placeholder="مثلاً: نوع اتصال"
+                  className="big-input"
+                  style={{ padding: "12px 14px", fontSize: "14px" }}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-black mb-1.5 block" style={{ color: "var(--m-text-soft)" }}>مقدار · {currentLang.label}</span>
+                <input
+                  type="text"
+                  dir={currentLang.dir}
+                  value={value}
+                  onChange={function(e) { updateSpecification(specification.id, "value", activeLang, e.target.value); }}
+                  placeholder="مثلاً: فلنجی، جوشی یا رزوه‌ای"
+                  className="big-input"
+                  style={{ padding: "12px 14px", fontSize: "14px" }}
+                />
+              </label>
+              <button type="button" onClick={function() { removeSpecification(specification.id); }}
+                className="mb-0.5 grid h-10 w-10 place-items-center rounded-lg"
+                style={{ background: "#FEF2F2", color: "#B91C1C" }}
+                aria-label="حذف مشخصه" title="حذف مشخصه">
+                <X size={16} />
+              </button>
+            </div>
           );
         })}
       </div>
+      <button type="button" onClick={addSpecification} className="btn-add mt-4">
+        <Plus size={16} /> افزودن مشخصه
+      </button>
     </div>
   );
 }
@@ -739,14 +895,24 @@ function Step4({ product, updateSpec, activeLang, setActiveLang }) {
 function Step5({ product, activeLang, setActiveLang }) {
   const name = product.name[activeLang] || product.name.fa || "";
   const short = product.short[activeLang] || product.short.fa || "";
-  const apps = product.applications[activeLang] || [];
-  const feats = product.features[activeLang] || [];
-  const specs = SPEC_FIELDS
-    .map(function(f) {
-      const v = product.spec && product.spec[f.id] && (product.spec[f.id][activeLang] || product.spec[f.id].fa);
-      return { key: f.label[activeLang] || f.label.fa, value: v || "" };
+  const visibleItems = function(field) {
+    return (product[field][activeLang] || [])
+      .map(function(item) { return item.trim(); })
+      .filter(Boolean);
+  };
+  const apps = visibleItems("applications");
+  const feats = visibleItems("features");
+  const options = visibleItems("options");
+  const clients = visibleItems("clients");
+  const specs = product.specifications
+    .map(function(specification) {
+      return {
+        id: specification.id,
+        label: specification.label[activeLang] || specification.label.fa || "",
+        value: specification.value[activeLang] || specification.value.fa || ""
+      };
     })
-    .filter(function(s) { return s.value; });
+    .filter(function(specification) { return specification.label && specification.value; });
 
   return (
     <div>
@@ -774,92 +940,25 @@ function Step5({ product, activeLang, setActiveLang }) {
         </div>
       </div>
 
-      <div className="rounded-2xl overflow-hidden"
-        style={{ background: "#FFFFFF", border: "2px solid var(--m-border)", boxShadow: "0 8px 32px rgba(20, 22, 27, 0.08)" }}>
-        <div className="grid md:grid-cols-2">
-          <div className="p-6" style={{ background: "#F8F9FB", borderLeft: "1px solid var(--m-border)" }}>
-            {product.image ? (
-              <img src={product.image} alt="" className="w-full aspect-square object-contain rounded-xl" />
-            ) : (
-              <div className="w-full aspect-square rounded-xl grid place-items-center"
-                style={{ background: "#FFFFFF", border: "2px dashed var(--m-border-strong)" }}>
-                <ImageIcon size={60} style={{ color: "var(--m-text-muted)" }} />
-              </div>
-            )}
-          </div>
-
-          <div className="p-6">
-            <div className="inline-block px-3 py-1 rounded-md text-xs font-black mb-3"
-              style={{ background: "rgba(201, 149, 13, 0.15)", color: "#B8850A" }}>
-              {product.series || "PSM-XXX"}
-            </div>
-            <h2 className="text-2xl font-black mb-3" style={{ color: "var(--m-text)" }}>
-              {name || "—"}
-            </h2>
-            <p className="text-sm leading-7 mb-5" style={{ color: "var(--m-text-soft)" }}>
-              {short || "توضیح کوتاه محصول..."}
-            </p>
-
-            {apps.length > 0 && (
-              <div className="mb-5">
-                <div className="text-xs font-black mb-2" style={{ color: "var(--m-text-muted)" }}>کاربردها</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {apps.map(function(a, i) {
-                    return (
-                      <span key={i} className="px-2 py-1 rounded-md text-[11px] font-bold"
-                        style={{ background: "#F1F3F5", color: "var(--m-text-soft)" }}>
-                        {a}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {feats.length > 0 && (
-              <div className="mb-5">
-                <div className="text-xs font-black mb-2" style={{ color: "var(--m-text-muted)" }}>ویژگی‌ها</div>
-                <div className="space-y-1.5">
-                  {feats.slice(0, 5).map(function(f, i) {
-                    return (
-                      <div key={i} className="flex items-start gap-2 text-xs" style={{ color: "var(--m-text-soft)" }}>
-                        <CheckCircle2 size={14} style={{ color: "#107C10", flexShrink: 0, marginTop: "2px" }} />
-                        {f}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {specs.length > 0 && (
-              <div>
-                <div className="text-xs font-black mb-2" style={{ color: "var(--m-text-muted)" }}>
-                  مشخصات ({specs.length})
-                </div>
-                <div className="text-xs rounded-lg overflow-hidden" style={{ border: "1px solid var(--m-border)" }}>
-                  {specs.slice(0, 4).map(function(s, i) {
-                    const k = s.key;
-                    const v = s.value;
-                    return (
-                      <div key={i} className="flex justify-between px-3 py-2 gap-2"
-                        style={{ background: i % 2 === 0 ? "transparent" : "#F8F9FB", borderBottom: i < Math.min(specs.length, 4) - 1 ? "1px solid var(--m-border)" : "none" }}>
-                        <span style={{ color: "var(--m-text-muted)" }}>{k}</span>
-                        <span className="font-bold" style={{ color: "var(--m-text)" }}>{v}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                {specs.length > 4 && (
-                  <div className="text-[10px] mt-1" style={{ color: "var(--m-text-muted)" }}>
-                    و {specs.length - 4} مشخصه دیگر...
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+      <div className="grid items-start gap-6 rounded-2xl border-2 p-4 md:grid-cols-2"
+        style={{ background: "#FFFFFF", borderColor: "var(--m-border)", boxShadow: "0 8px 32px rgba(20, 22, 27, 0.08)" }}>
+        <div>
+          <ProductGallery images={[product.image, product.image2]} name={name} noImage="تصویری انتخاب نشده است" />
         </div>
-      </div>
+        <ProductTechnicalSpecifications
+          title={name || "—"}
+          series={product.series || ""}
+          description={product.description[activeLang] || product.description.fa || short}
+          features={feats}
+          options={options}
+          specifications={specs.map(function(spec) {
+            return { id: spec.key, label: spec.key, value: spec.value };
+          })}
+          applications={apps}
+          clients={clients}
+          language={activeLang}
+        />
+        </div>
     </div>
   );
 }

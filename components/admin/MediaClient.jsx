@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { Icon } from "./AdminIcons";
 import { DeleteBtn, EditBtn, SaveBtn, CancelBtn, ToggleBtn } from "./Actions";
+import ContentStudioNav from "./ContentStudioNav";
 
 const TABS = [
   { id: "gallery", label: "تصاویر", icon: "image" },
@@ -80,6 +81,8 @@ export default function MediaClient({ initial }) {
 
   return (
     <div>
+      <ContentStudioNav />
+
       <div className="page-header anim-in">
         <div className="page-header-left">
           <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #107C10, #0A5F0A)" }}>
@@ -216,7 +219,13 @@ export default function MediaClient({ initial }) {
                       <Icon name="package" size={26} />
                     )
                   )}
-                  {tab === "catalogs" && <Icon name="file" size={30} />}
+                  {tab === "catalogs" && (
+                    <img
+                      src={item.cover || "/images/media/catalog-cover.svg"}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
                 </div>
 
                 <div className="card-item-title" style={{
@@ -262,13 +271,20 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
     : (initialItem && initialItem.title) || "";
   const [url, setUrl] = useState((initialItem && initialItem.url) || "");
   const [poster, setPoster] = useState((initialItem && initialItem.poster) || "");
+  const [cover, setCover] = useState((initialItem && initialItem.cover) || "");
   const [title, setTitle] = useState(initialTitle);
-  const [description, setDescription] = useState((initialItem && initialItem.description) || "");
+  const initialDescription = initialItem && initialItem.description;
+  const [description, setDescription] = useState(
+    typeof initialDescription === "string"
+      ? initialDescription
+      : initialDescription?.fa || initialDescription?.en || ""
+  );
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef(null);
   const posterInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   const labels = {
     gallery: { title: "تصویر", accept: "image/*", uploadType: "images" },
@@ -285,13 +301,14 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("type", target === "poster" ? "posters" : label.uploadType);
+      fd.append("type", target === "poster" ? "posters" : target === "cover" ? "images" : label.uploadType);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok || !data.url) {
         throw new Error(data.error || "آپلود فایل انجام نشد");
       }
       if (target === "poster") setPoster(data.url);
+      else if (target === "cover") setCover(data.url);
       else setUrl(data.url);
     } catch (uploadError) {
       setError(uploadError.message || "آپلود فایل انجام نشد");
@@ -309,6 +326,14 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
       setError(type === "videos" ? "لطفاً لینک ویدئو یا فایل آن را انتخاب کنید" : "لطفاً فایل را انتخاب کنید");
       return;
     }
+    if (type === "catalogs" && !description.trim()) {
+      setError("لطفاً توضیحات کاتالوگ را وارد کنید");
+      return;
+    }
+    if (type === "catalogs" && !cover.trim()) {
+      setError("لطفاً تصویر روی جلد کاتالوگ را بارگذاری کنید");
+      return;
+    }
 
     setBusy(true);
     setError("");
@@ -321,6 +346,7 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
         ...(initialItem && initialItem.active === false ? { active: false } : {})
       };
       if (type === "videos") item.poster = poster;
+      if (type === "catalogs") item.cover = cover;
       const res = await fetch("/api/media", {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -384,9 +410,26 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
         </div>
       )}
 
-      <label className="form-label" style={{ marginTop: 10 }}>توضیحات (اختیاری)</label>
+      {type === "catalogs" && (
+        <div style={{ marginTop: 10 }}>
+          <label className="form-label">تصویر روی جلد کاتالوگ *</label>
+          <button type="button" className="btn-cancel" onClick={function() { coverInputRef.current && coverInputRef.current.click(); }}>
+            <Icon name="upload" size={14} /> انتخاب تصویر کاور
+          </button>
+          <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }}
+            onChange={function(e) {
+              upload(e.target.files[0], "cover");
+              e.target.value = "";
+            }} />
+          {cover && <img src={cover} alt="پیش‌نمایش جلد کاتالوگ" style={{ width: "100%", maxWidth: 360, aspectRatio: "16/9", objectFit: "cover", borderRadius: 10, marginTop: 8 }} />}
+        </div>
+      )}
+
+      <label className="form-label" style={{ marginTop: 10 }}>
+        توضیحات {type === "catalogs" ? "*" : "(اختیاری)"}
+      </label>
       <textarea rows={2} value={description} onChange={function(e) { setDescription(e.target.value); }}
-        className="form-input" />
+        className="form-input" required={type === "catalogs"} />
 
       {error && <div className="msg msg-error" role="alert">{error}</div>}
       <div className="save-bar">

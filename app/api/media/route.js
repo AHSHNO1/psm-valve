@@ -4,7 +4,11 @@ import { getAparatChannelVideos, getMedia, addMediaItem, mergeAparatVideos, remo
 
 function isValidMediaItem(type, item) {
   if (typeof item.url !== "string" || !item.url.trim() || item.url.length > 2048) return false;
-  if (type === "catalogs") return /^\/uploads\/catalogs\/[a-zA-Z0-9._-]+\.pdf$/i.test(item.url);
+  if (type === "catalogs") {
+    return /^\/uploads\/catalogs\/[a-zA-Z0-9._-]+\.pdf$/i.test(item.url) &&
+      (item.cover === undefined ||
+        (typeof item.cover === "string" && /^\/uploads\/images\/[a-zA-Z0-9._-]+$/i.test(item.cover)));
+  }
   if (type === "gallery") return /^\/uploads\/images\/[a-zA-Z0-9._-]+$/i.test(item.url);
   if (type === "videos") {
     return /^\/uploads\/videos\/[a-zA-Z0-9._-]+$/i.test(item.url) ||

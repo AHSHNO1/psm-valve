@@ -33,7 +33,7 @@ function Loader() {
   }[locale] || "Preparing 3D model…";
 
   return (
-    <div className="grid h-[390px] place-items-center text-sm font-bold sm:h-[450px]" style={{ color: "var(--text-muted)" }}>
+    <div className="grid h-[440px] place-items-center text-sm font-bold sm:h-[520px]" style={{ color: "var(--text-muted)" }}>
       <span className="animate-pulse">{label}</span>
     </div>
   );

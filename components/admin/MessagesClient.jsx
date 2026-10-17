@@ -15,27 +15,38 @@ export default function MessagesClient({ initial }) {
     setTimeout(function() { setMsg({ type: "", text: "" }); }, 3000);
   }
 
-  async function refresh() {
-    const res = await fetch("/api/messages");
-    const data = await res.json();
-    if (data.ok) setMessages(data.messages);
-  }
-
   async function patch(id, body) {
-    await fetch("/api/messages", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.assign({ id: id }, body))
-    });
-    refresh();
+    try {
+      const res = await fetch("/api/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({ id: id }, body))
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "ذخیره تغییرات پیام ناموفق بود");
+      setMessages(function(items) {
+        return items.map(function(item) { return item.id === id ? Object.assign({}, item, body) : item; });
+      });
+      setSelected(function(item) { return item && item.id === id ? Object.assign({}, item, body) : item; });
+      return true;
+    } catch (error) {
+      notify(error.message || "ذخیره تغییرات پیام ناموفق بود", true);
+      return false;
+    }
   }
 
   async function remove(id) {
     if (!confirm("این پیام حذف شود؟")) return;
-    await fetch("/api/messages?id=" + id, { method: "DELETE" });
-    setSelected(null);
-    refresh();
-    notify("پیام حذف شد");
+    try {
+      const res = await fetch("/api/messages?id=" + encodeURIComponent(id), { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "حذف پیام ناموفق بود");
+      setMessages(function(items) { return items.filter(function(item) { return item.id !== id; }); });
+      setSelected(null);
+      notify("پیام حذف شد");
+    } catch (error) {
+      notify(error.message || "حذف پیام ناموفق بود", true);
+    }
   }
 
   function open(m) {
@@ -43,16 +54,19 @@ export default function MessagesClient({ initial }) {
     if (!m.read) patch(m.id, { read: true });
   }
 
-  async function sendReply() {
+  function openReplyDraft() {
     if (!selected || !replyText.trim()) return;
     setBusy(true);
-    const subject = "پاسخ پترو سازه میهن";
-    const body = "سلام " + selected.name + ",\n\n" + replyText + "\n\nبا احترام\nپترو سازه میهن";
-    window.location.href = "mailto:" + selected.email + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-    await patch(selected.id, { replied: true, read: true });
-    setReplyText("");
-    setBusy(false);
-    notify("پاسخ ارسال شد");
+    try {
+      const subject = "پاسخ پترو سازه میهن";
+      const body = "سلام " + selected.name + ",\n\n" + replyText + "\n\nبا احترام\nپترو سازه میهن";
+      window.location.href = "mailto:" + selected.email + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      notify("پیش‌نویس ایمیل آماده شد؛ پس از ارسال، وضعیت پاسخ را جداگانه ثبت کنید");
+    } catch (error) {
+      notify("بازکردن پیش‌نویس ایمیل ناموفق بود", true);
+    } finally {
+      setBusy(false);
+    }
   }
 
   const filtered = messages.filter(function(m) {
@@ -89,13 +103,13 @@ export default function MessagesClient({ initial }) {
 
       {/* Filters */}
       <div className="tabs anim-in">
-        <button onClick={function() { setFilter("all"); }} className={"tab" + (filter === "all" ? " tab-active" : "")}>
+        <button onClick={function() { setFilter("all"); }} aria-pressed={filter === "all"} className={"tab" + (filter === "all" ? " tab-active" : "")}>
           همه <span className="tab-badge">{counts.all}</span>
         </button>
-        <button onClick={function() { setFilter("unread"); }} className={"tab" + (filter === "unread" ? " tab-active" : "")}>
+        <button onClick={function() { setFilter("unread"); }} aria-pressed={filter === "unread"} className={"tab" + (filter === "unread" ? " tab-active" : "")}>
           خوانده‌نشده <span className="tab-badge">{counts.unread}</span>
         </button>
-        <button onClick={function() { setFilter("replied"); }} className={"tab" + (filter === "replied" ? " tab-active" : "")}>
+        <button onClick={function() { setFilter("replied"); }} aria-pressed={filter === "replied"} className={"tab" + (filter === "replied" ? " tab-active" : "")}>
           پاسخ داده <span className="tab-badge">{counts.replied}</span>
         </button>
       </div>
@@ -110,8 +124,20 @@ export default function MessagesClient({ initial }) {
         <div>
           {filtered.map(function(m, i) {
             return (
-              <div key={m.id} className="row anim-in" style={{ animationDelay: (i * 25) + "ms", cursor: "pointer" }}
-                onClick={function() { open(m); }}>
+              <div
+                key={m.id}
+                className="row anim-in"
+                style={{ animationDelay: (i * 25) + "ms", cursor: "pointer" }}
+                role="button"
+                tabIndex={0}
+                onClick={function() { open(m); }}
+                onKeyDown={function(event) {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    open(m);
+                  }
+                }}
+              >
                 <div className="row-thumb" style={{
                   background: m.read ? "#F4F5F7" : "linear-gradient(135deg, #F59E0B, #D97706)",
                   color: m.read ? "#7A8290" : "#FFFFFF",
@@ -197,9 +223,9 @@ export default function MessagesClient({ initial }) {
                 className="form-input" style={{ marginBottom: 10 }} />
 
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                <button onClick={sendReply} disabled={busy || !replyText.trim()}
+                <button onClick={openReplyDraft} disabled={busy || !replyText.trim()}
                   className="btn-add" style={{ flex: 1, justifyContent: "center" }}>
-                  <Icon name="mail" /> ارسال پاسخ ایمیلی
+                  <Icon name="mail" /> بازکردن پیش‌نویس ایمیل
                 </button>
               </div>
 

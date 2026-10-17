@@ -28,7 +28,21 @@
     "services": "Services",
     "units": "Units",
     "partners": "Partners",
-    "news": "News"
+    "news": "News",
+    "aboutPage": "Company Profile",
+    "aboutProcess": "Our Process",
+    "aboutWhy": "Why Us",
+    "aboutProjects": "Projects",
+    "aboutFaq": "FAQ",
+    "mediaNews": "News",
+    "mediaArticles": "Articles",
+    "mediaVideos": "Videos",
+    "mediaCatalogs": "Catalogs",
+    "mediaImages": "Images",
+    "allProducts": "All Products",
+    "consult": "Get Consultation",
+    "menu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "hero": {
     "badge": "Knowledge-Based · Oil Industry Approved",
@@ -67,7 +81,14 @@
     "catalog": "Product Catalog",
     "pageTitle1": "Industrial",
     "pageTitle2": "Valves",
-    "specs": "Technical Specifications"
+    "specs": "Technical Specifications",
+    "applications": "Key Applications",
+    "features": "Features & Benefits",
+    "datasheet": "Download Datasheet",
+    "series": "Series",
+    "noImage": "Image coming soon",
+    "ctaSubtitle": "Our engineers are ready to help you select and size the right valve.",
+    "pendingSpec": "Coming soon"
   },
   "articles": {
     "badge": "Articles & Training",
@@ -130,12 +151,97 @@
     "vision": "Vision",
     "visionDesc": "Become the specialized reference for control valves in the Middle East",
     "values": "Values",
-    "valuesDesc": "Engineering precision, business integrity, continuous innovation and long-term support"
+    "valuesDesc": "Engineering precision, business integrity, continuous innovation and long-term support",
+    "subtitle": "Engineering solutions, design and manufacturing of industrial valves, backed by technical expertise and specialist teams",
+    "knowledgeType": "Knowledge-Based Production Type I",
+    "valuesTitle": "Our Values",
+    "statsFounded": "Established",
+    "statsDepartments": "Specialist departments",
+    "statsCoating": "Coating capability",
+    "statsType": "Knowledge-based classification",
+    "journey": "Our Journey",
+    "ceo": {
+      "badge": "Leadership",
+      "bioTitle": "About the CEO",
+      "resumeTitle": "Professional Profile",
+      "msgTitle": "CEO Message",
+      "knowledge": "Knowledge-Based Company",
+      "knowledgeType": "Production Type I",
+      "knowledgeDesc": "Based on the company's published description; this badge is not an official certificate.",
+      "standards": "Published Certificates & Permits",
+      "standardsSub": "Scans published on the company website; check each document's current validity below."
+    }
+  },
+  "unitsPage": {
+    "badge": "Our Capabilities",
+    "title": "The Departments",
+    "titleAccent": "Behind PSM",
+    "intro": "From engineering and research to manufacturing, coating, testing, and overhaul, our specialist departments work together to meet industrial needs.",
+    "departments": "Six specialist departments",
+    "contact": "Talk to our team",
+    "unit": "Department",
+    "capabilities": "What we do"
+  },
+  "processPage": {
+    "title": "Our Work Process",
+    "badge": "Steps",
+    "empty": "Coming soon"
+  },
+  "whyUsPage": {
+    "title": "Why Us?",
+    "badge": "Advantages",
+    "empty": "Coming soon"
+  },
+  "partnersPage": {
+    "badge": "Industrial customers & partners",
+    "title1": "Partners of",
+    "title2": "Petro Sazeh Mihan",
+    "subtitle": "Organizations in oil, gas, petrochemical, energy and steel industries listed on the company website.",
+    "empty": "The partner directory is not available yet."
+  },
+  "slider": {
+    "label": "Homepage image slider",
+    "previous": "Previous slide",
+    "next": "Next slide",
+    "slide": "Slide",
+    "pause": "Pause slides",
+    "play": "Resume slides"
   },
   "contact": {
     "badge": "Contact Us",
     "title1": "Contact",
     "title2": "Petro Sazeh Mihan",
+    "subtitle": "Our engineering team is ready to answer technical questions and provide consultation",
+    "formTitle": "Send Message",
+    "formSubtitle": "Send us a message and we'll respond as soon as possible",
+    "mapTitle": "Factory Location",
+    "mapSubtitle": "Get Directions",
+    "infoTitle": "Contact Information",
+    "office": "Head Office",
+    "factory": "Factory",
+    "phoneLabel": "Phone",
+    "mobileLabel": "Mobile",
+    "faxLabel": "Fax",
+    "emailLabel": "Email",
+    "addressLabel": "Address",
+    "postalLabel": "Postal Code",
+    "socialTitle": "Follow Us",
+    "iranianSocial": "Iranian Messengers",
+    "websiteLabel": "Website",
+    "guide": {
+      "title": "Start an engineering conversation",
+      "description": "Tell us about your process conditions and project needs. Your message will be routed to the relevant team for review.",
+      "expertiseTitle": "Areas we can discuss",
+      "expertise": ["Control valve design", "Valve testing", "HVOF coating", "Repair and reverse engineering"],
+      "stepsTitle": "What happens next",
+      "steps": [
+        ["Share your need", "Describe the equipment, operating conditions or service you need."],
+        ["Technical review", "The request is routed to the relevant team for review."],
+        ["Follow-up", "We will respond using the contact details included in your message."]
+      ],
+      "action": "Send a consultation request",
+      "imageAlt": "Petro Sazeh Mihan manufacturing department"
+    },
     "address": "Address",
     "phone": "Phone",
     "email": "Email",
@@ -153,7 +259,24 @@
     "desc": "Specialized manufacturer of ball and segmented control valves, providing calibration, repair, refurbishment and HVOF coating services.",
     "quickLinks": "Quick Links",
     "contact": "Contact",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "office": "Head Office",
+    "phone": "Phone",
+    "mobile": "Mobile",
+    "fax": "Fax",
+    "email": "Email",
+    "hours": "Working Hours",
+    "hoursValue": "Saturday – Thursday: 7:00 – 15:00",
+    "hoursClosed": "Friday: Closed",
+    "postal": "Postal Code",
+    "socialIntl": "International",
+    "socialIran": "Iranian Messengers",
+    "socialTitle": "Follow Us",
+    "knowledge": "Knowledge-Based",
+    "knowledgeType": "Production Type I",
+    "designCredit": "Designed and developed by",
+    "itDepartment": "IT Department",
+    "itEmail": "it@psmvalve.com"
   },
   "media": {
     "badge": "Media",

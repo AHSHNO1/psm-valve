@@ -7,6 +7,7 @@ export default function BrandingClient({ initial }) {
   const [form, setForm] = useState({
     logo: (initial && initial.logo) || "",
     logoLight: (initial && initial.logoLight) || "",
+    logoIcon: (initial && initial.logoIcon) || "",
     favicon: (initial && initial.favicon) || "",
     primaryColor: (initial && initial.primaryColor) || "#D4A017",
     secondaryColor: (initial && initial.secondaryColor) || "#C0C0C0",
@@ -84,6 +85,14 @@ export default function BrandingClient({ initial }) {
           value={form.logoLight}
           onChange={function(url) { update({ logoLight: url }); }}
           onClear={function() { update({ logoLight: "" }); }}
+        />
+
+        <UploadTile
+          label="نشان لوگو برای هدر"
+          hint="نسخه مربعی و خوانا برای نمایش در اندازه کوچک"
+          value={form.logoIcon}
+          onChange={function(url) { update({ logoIcon: url }); }}
+          onClear={function() { update({ logoIcon: "" }); }}
         />
 
         <UploadTile

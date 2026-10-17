@@ -41,6 +41,8 @@ data/*.backup-*.json
 data/admin.json
 data/users.json
 data/messages.json
+data/*.sqlite
+data/*.sqlite-*
 
 # Archives
 archive/

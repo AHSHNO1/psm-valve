@@ -1,66 +1,50 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { deleteProduct, getProduct, updateProduct } from "@/lib/product-store";
+import { isProductCategory } from "@/lib/categories";
 
-function readProducts() {
-  const filePath = path.join(process.cwd(), "lib", "products.js");
-  const content = fs.readFileSync(filePath, "utf8");
-  const match = content.match(/export const products = (\[[\s\S]*?\]);/);
-  if (!match) return [];
-  try {
-    return JSON.parse(match[1]);
-  } catch {
-    return [];
-  }
-}
-
-function writeProducts(products) {
-  const filePath = path.join(process.cwd(), "lib", "products.js");
-  const content = `// Auto-generated products database
-// Edited via admin panel
-
-export const products = ${JSON.stringify(products, null, 2)};
-
-export function getProduct(slug) {
-  return products.find((p) => p.slug === slug);
-}
-
-export function getProductsByCategory(categoryId) {
-  return products.filter((p) => p.categoryId === categoryId);
-}
-
-export function getAllProducts() {
-  return products;
-}
-`;
-  fs.writeFileSync(filePath, content, "utf8");
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request, { params }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
-  const list = readProducts();
-  const p = list.find((x) => x.slug === params.slug);
-  if (!p) return NextResponse.json({ ok: false }, { status: 404 });
-  return NextResponse.json({ ok: true, product: p });
+
+  try {
+    const product = getProduct(params.slug);
+    if (!product) return NextResponse.json({ ok: false, error: "محصول پیدا نشد." }, { status: 404 });
+    return NextResponse.json({ ok: true, product });
+  } catch (error) {
+    console.error("Unable to load product:", error);
+    return NextResponse.json({ ok: false, error: "بارگذاری محصول ناموفق بود." }, { status: 500 });
+  }
 }
 
 export async function PATCH(request, { params }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
 
+  let updates;
   try {
-    const updates = await request.json();
-    const list = readProducts();
-    const idx = list.findIndex((x) => x.slug === params.slug);
-    if (idx === -1) return NextResponse.json({ ok: false, error: "محصول یافت نشد" }, { status: 404 });
+    updates = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "درخواست نامعتبر است." }, { status: 400 });
+  }
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    return NextResponse.json({ ok: false, error: "اطلاعات محصول معتبر نیست." }, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, "categoryId") && !isProductCategory(updates.categoryId)) {
+    return NextResponse.json({ ok: false, error: "دسته‌بندی محصول معتبر نیست." }, { status: 400 });
+  }
 
-    list[idx] = { ...list[idx], ...updates, slug: params.slug };
-    writeProducts(list);
+  try {
+    if (!updateProduct(params.slug, updates)) {
+      return NextResponse.json({ ok: false, error: "محصول پیدا نشد." }, { status: 404 });
+    }
     return NextResponse.json({ ok: true });
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+  } catch (error) {
+    console.error("Unable to update product:", error);
+    return NextResponse.json({ ok: false, error: "ذخیره تغییرات محصول ناموفق بود." }, { status: 500 });
   }
 }
 
@@ -68,8 +52,13 @@ export async function DELETE(request, { params }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
 
-  const list = readProducts();
-  const filtered = list.filter((x) => x.slug !== params.slug);
-  writeProducts(filtered);
-  return NextResponse.json({ ok: true });
+  try {
+    if (!deleteProduct(params.slug)) {
+      return NextResponse.json({ ok: false, error: "محصول پیدا نشد." }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Unable to delete product:", error);
+    return NextResponse.json({ ok: false, error: "حذف محصول ناموفق بود." }, { status: 500 });
+  }
 }

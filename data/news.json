@@ -27,8 +27,9 @@
       "ru": "Новости"
     },
     "image": "",
-    "date": "1404/07/15",
+    "date": "1405/07/30",
     "active": true,
-    "order": 1
+    "order": 1,
+    "status": "published"
   }
 ]

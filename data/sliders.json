@@ -1,77 +1,102 @@
 [
   {
-    "id": "slide-project",
+    "id": "slide-loop-test",
     "title": {
-      "fa": "شیرهای کنترلی برای پروژه‌های حیاتی",
-      "en": "Control valves for critical projects",
-      "ar": "صمامات تحكم للمشاريع الحيوية",
-      "ru": "Регулирующие клапаны для ответственных проектов"
+      "fa": "تست میدانی شیرهای کنترلی",
+      "en": "Precision Control Valve Testing",
+      "ar": "اختبارات دقيقة لصمامات التحكم",
+      "ru": "Точные испытания регулирующих клапанов"
     },
     "subtitle": {
-      "fa": "طراحی و ساخت شیرآلات صنعتی با تکیه بر مهندسی دقیق و تجربه پروژه‌ای",
-      "en": "Industrial valve design and manufacturing backed by precise engineering and project experience",
-      "ar": "تصميم وتصنيع الصمامات الصناعية بالاعتماد على الهندسة الدقيقة وخبرة المشاريع",
-      "ru": "Проектирование и производство промышленной арматуры на основе точных инженерных решений и опыта реализации проектов"
+      "fa": "میز لوپ تست برای ارزیابی عملکرد شیرهای صنعتی کنترلی در شرایط آزمون تعریف‌شده و خروجی CV",
+      "en": "A dedicated loop test bench for evaluating control valve performance under defined test conditions",
+      "ar": "منصة اختبار مخصصة لتقييم أداء صمام التحكم وفق شروط اختبار محددة",
+      "ru": "Специализированный стенд для проверки регулирующих клапанов в заданных условиях испытаний"
     },
-    "image": "https://psmvalve.com/wp-content/uploads/2025/12/imgi_28_project_65e43b11cdfdfb5f8bfa068e_1716017132788.jpg",
+    "image": "/uploads/images/mvc0ivej-t6ursz.jpg",
     "ctaText": {
-      "fa": "مشاهده محصولات",
-      "en": "Explore products",
-      "ar": "استكشف المنتجات",
-      "ru": "Смотреть продукцию"
+      "fa": "جزئیات  لوپ تست",
+      "en": "Loop Test Details",
+      "ar": "تفاصيل اختبار الحلقة",
+      "ru": "Подробнее об испытаниях"
     },
-    "ctaHref": "/products",
+    "ctaHref": "/services",
     "order": 1,
     "active": true
   },
   {
-    "id": "slide-coating",
+    "id": "slide-hvof",
     "title": {
-      "fa": "پوشش‌دهی صنعتی برای شرایط سخت کاری",
-      "en": "Industrial coatings for demanding conditions",
-      "ar": "طلاءات صناعية لظروف التشغيل القاسية",
-      "ru": "Промышленные покрытия для тяжелых условий эксплуатации"
+      "fa": "پوشش‌دهی حرارتی به روش HVOF با رباط 7 محور",
+      "en": "HVOF Thermal Spray Coating",
+      "ar": "الطلاء بالرش الحراري HVOF",
+      "ru": "Термическое напыление HVOF"
     },
     "subtitle": {
-      "fa": "راهکارهای پوشش‌دهی برای افزایش مقاومت سطوح در کاربردهای صنعتی",
-      "en": "Surface coating solutions to improve durability in industrial applications",
-      "ar": "حلول طلاء الأسطح لتعزيز المتانة في التطبيقات الصناعية",
-      "ru": "Решения по нанесению покрытий для повышения стойкости поверхностей в промышленности"
+      "fa": "راهکار پوشش‌دهی صنعتی برای قطعات در معرض سایش و شرایط کاری دشوار",
+      "en": "Industrial coating solutions for components exposed to wear and demanding service conditions",
+      "ar": "حلول طلاء صناعية للأجزاء المعرضة للتآكل وظروف التشغيل الصعبة",
+      "ru": "Промышленные покрытия для деталей, работающих в условиях износа и высоких нагрузок"
     },
-    "image": "/uploads/images/mv9boiqi-f4gb76.jpg",
+    "image": "/uploads/images/mvc0ntnc-fywhky.jpg",
     "ctaText": {
-      "fa": "آشنایی با خدمات",
-      "en": "Explore our services",
-      "ar": "اكتشف خدماتنا",
-      "ru": "Наши услуги"
+      "fa": "آشنایی با خدمات HVOF",
+      "en": "Explore HVOF Services",
+      "ar": "اكتشف خدمات HVOF",
+      "ru": "Услуги HVOF"
     },
     "ctaHref": "/services",
     "order": 2,
     "active": true
   },
   {
-    "id": "slide-engineering",
+    "id": "slide-factory",
     "title": {
-      "fa": "از مهندسی معکوس تا بازسازی تخصصی",
-      "en": "From reverse engineering to expert refurbishment",
-      "ar": "من الهندسة العكسية إلى إعادة التأهيل المتخصصة",
-      "ru": "От реверс-инжиниринга до профессионального восстановления"
+      "fa": "تولید شیرهای صنعتی",
+      "en": "Manufacturing Capabilities",
+      "ar": "قدرات التصنيع",
+      "ru": "Производственные возможности"
     },
     "subtitle": {
-      "fa": "توانمندی‌های مهندسی و تعمیراتی برای بازگرداندن تجهیزات صنعتی به چرخه کار",
-      "en": "Engineering and repair capabilities that help return industrial equipment to service",
-      "ar": "قدرات هندسية وخدمات إصلاح تساعد على إعادة المعدات الصناعية إلى الخدمة",
-      "ru": "Инженерные и ремонтные решения для возвращения промышленного оборудования в эксплуатацию"
+      "fa": "امکانات تولید و تست شیرهای صنعتی از سایز 1/2 تا 44 اینچ در تمام کلاس ها",
+      "en": "Petro Sazeh Mihan's industrial manufacturing facilities in Arak",
+      "ar": "مرافق بترو سازه ميهان للتصنيع الصناعي في أراك",
+      "ru": "Промышленные производственные мощности Petro Sazeh Mihan в Араке"
     },
-    "image": "/uploads/images/mv9bnre6-ff9ohy.jpg",
+    "image": "/uploads/images/mvc0yh8m-f76vge.jpg",
     "ctaText": {
-      "fa": "مشاهده خدمات",
-      "en": "View services",
-      "ar": "عرض الخدمات",
-      "ru": "Посмотреть услуги"
+      "fa": "درباره شرکت",
+      "en": "About the Company",
+      "ar": "عن الشركة",
+      "ru": "О компании"
     },
-    "ctaHref": "/services",
+    "ctaHref": "/about",
     "order": 3,
+    "active": true
+  },
+  {
+    "id": "slide-control-valves",
+    "title": {
+      "fa": "طراحی و ساخت شیرهای کنترلی",
+      "en": "Control Valve Design & Manufacturing",
+      "ar": "تصميم وتصنيع صمامات التحكم",
+      "ru": "Проектирование и производство регулирующих клапанов"
+    },
+    "subtitle": {
+      "fa": "شیرهای کنترلی صنعتی برای صنایع نفت،گاز،پتروشیمی،فولاد،نیروگاه",
+      "en": "Industrial control valves for a range of process industry applications",
+      "ar": "صمامات تحكم صناعية لمجموعة متنوعة من تطبيقات الصناعات العملية",
+      "ru": "Промышленные регулирующие клапаны для различных технологических процессов"
+    },
+    "image": "/uploads/images/mvc19m4n-84l9u7.jpg",
+    "ctaText": {
+      "fa": "مشاهده محصولات",
+      "en": "View Products",
+      "ar": "عرض المنتجات",
+      "ru": "Смотреть продукцию"
+    },
+    "ctaHref": "/products",
+    "order": 4,
     "active": true
   }
 ]

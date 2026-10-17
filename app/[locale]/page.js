@@ -6,6 +6,7 @@ import SizingVideoCombined from "@/components/SizingVideoCombined";
 import CredibilityCombined from "@/components/CredibilityCombined";
 import { getDictionary } from "@/lib/getDictionary";
 import { getMedia } from "@/lib/media";
+import { getProducts } from "@/lib/product-store";
 import {
   getContent,
   getSliders,
@@ -14,6 +15,9 @@ import {
   getServices,
   getBranding
 } from "@/lib/content";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function Home({ params }) {
   const { locale } = params;
@@ -25,6 +29,7 @@ export default async function Home({ params }) {
   const partners = getPartners();
   const services = getServices();
   const branding = getBranding();
+  const products = getProducts();
 
   return (
     <>
@@ -37,7 +42,7 @@ export default async function Home({ params }) {
 
       <ExplodedViewer locale={locale} />
 
-      <ProductGrid limit={8} />
+      <ProductGrid products={products} limit={8} />
 
       <ServicesCombined services={services} locale={locale} />
 

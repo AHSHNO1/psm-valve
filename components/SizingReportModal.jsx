@@ -31,7 +31,9 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
 
   const L = {
     fa: {
-      title: "گزارش سایزینگ شیر کنترلی", subtitle: "طبق استاندارد IEC 60534",
+      title: "گزارش برآورد اولیه سایزینگ شیر", subtitle: "نتیجه تأییدشده IEC 60534 نیست",
+      engineeringDisclaimer: "این برآورد جایگزین محاسبه کامل IEC 60534 یا تأیید سازنده نیست؛ انتخاب نهایی را با مهندس شیر کنترل بررسی کنید.",
+      capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ انتخاب نهایی نیازمند بررسی مهندسی است.",
       reportRef: "شماره گزارش", date: "تاریخ",
       inputs: "پارامترهای ورودی", chart: "مشخصه جریان شیر",
       candidates: "سایزهای پیشنهادی", candidateHint: "سه سایز حول نقطه کار شما",
@@ -46,7 +48,9 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       recommended: "پیشنهاد", tooSmall: "خیلی کوچک", small: "کوچک", optimal: "بهینه", large: "بزرگ", tooLarge: "خیلی بزرگ"
     },
     en: {
-      title: "Control Valve Sizing Report", subtitle: "Per IEC 60534 Standard",
+      title: "Preliminary Control Valve Sizing Estimate", subtitle: "Not a validated IEC 60534 calculation",
+      engineeringDisclaimer: "This estimate is not a substitute for a complete IEC 60534 calculation or manufacturer validation. Confirm final selection with a control-valve engineer.",
+      capacityExceeded: "Required Cv exceeds the largest listed valve size. Final selection requires engineering review.",
       reportRef: "Report No.", date: "Date",
       inputs: "Input Parameters", chart: "Valve Flow Characteristic",
       candidates: "Suggested Valve Sizes", candidateHint: "Three sizes around your operating point",
@@ -61,7 +65,9 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       recommended: "Recommended", tooSmall: "Too Small", small: "Small", optimal: "Optimal", large: "Large", tooLarge: "Too Large"
     },
     ar: {
-      title: "تقرير تحديد حجم الصمام", subtitle: "وفقًا لـ IEC 60534",
+      title: "تقدير أولي لحجم صمام التحكم", subtitle: "ليس حسابًا معتمدًا وفق IEC 60534",
+      engineeringDisclaimer: "هذا التقدير لا يغني عن حساب كامل وفق IEC 60534 أو تأكيد الشركة المصنّعة. يجب مراجعة الاختيار النهائي مع مهندس صمامات التحكم.",
+      capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ يتطلب الاختيار النهائي مراجعة هندسية.",
       reportRef: "رقم التقرير", date: "التاريخ",
       inputs: "المدخلات", chart: "الرسم", candidates: "الأحجام المقترحة",
       candidateHint: "ثلاثة أحجام", tips: "التوصيات", exports: "التصدير",
@@ -74,7 +80,9 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       recommended: "موصى به", tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل", large: "كبير", tooLarge: "كبير جدًا"
     },
     ru: {
-      title: "Отчет по подбору клапана", subtitle: "По IEC 60534",
+      title: "Предварительная оценка регулирующего клапана", subtitle: "Расчет не подтвержден по IEC 60534",
+      engineeringDisclaimer: "Эта оценка не заменяет полный расчет по IEC 60534 или подтверждение производителя. Окончательный выбор согласуйте с инженером.",
+      capacityExceeded: "Требуемый Cv превышает максимальный размер в списке; необходима инженерная проверка.",
       reportRef: "№", date: "Дата", inputs: "Входные данные", chart: "График",
       candidates: "Размеры", candidateHint: "Три варианта", tips: "Рекомендации", exports: "Экспорт",
       fullReport: "PDF", image: "Изображение", excel: "Excel", copy: "Копировать", copied: "Скопировано",
@@ -195,6 +203,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       [L.velocityLbl, result.velocity || "-", "m/s"],
       [L.noiseLbl, result.noise || "-", "dB"],
       [L.cavLbl, result.cavitationRisk || "-", ""],
+      ["Engineering note", L.engineeringDisclaimer, ""],
       [""], ["Alternative Sizes", "", ""],
       ["Size", "Cv", "Opening %", "Verdict"]
     ];
@@ -223,6 +232,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       `Cv: ${result.Cv} · Kv: ${result.Kv}`,
       `${L.sizeLbl}: ${result.size.size} (${result.size.dn})`,
       `${L.openingLbl}: ${result.openingPercent}%`, "",
+      L.engineeringDisclaimer, "",
       "───── ALTERNATIVE SIZES ─────",
       ...candidates.map(c => `${c.size.size}: Cv ${c.size.cv} · ${c.opening}% · ${c.verdict}`),
       "", `Generated: ${new Date().toLocaleString()}`, "PSM Valve · psm-valve.com"
@@ -478,10 +488,14 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
                     </div>
                     <div className="card-glass" style={{ padding: 14 }}>
                       <div style={{ fontSize: 11.5, color: "var(--text-soft)", lineHeight: 1.8 }}>
-                        ✓ Cv = {result.Cv} {isFa ? "طبق IEC 60534" : "per IEC 60534"}<br />
+                        ✓ Cv = {result.Cv} ({isFa ? "برآورد اولیه" : "preliminary estimate"})<br />
                         ✓ {L.openingLbl} {result.openingPercent}% — {result.openingPercent >= 20 && result.openingPercent <= 80 ? (isFa ? "بهینه" : "Optimal") : (isFa ? "خارج از محدوده" : "Out of range")}<br />
                         ✓ {L.cavLbl}: {result.cavitationRisk || (isFa ? "کم" : "Low")}<br />
-                        {result.choked && "⚠️ " + (isFa ? "جریان Choked" : "Choked Flow")}
+                        {result.choked && "⚠️ " + (isFa ? "جریان Choked" : "Choked Flow")}<br />
+                        {result.capacityExceeded && "⚠️ " + L.capacityExceeded}
+                      </div>
+                      <div role="note" style={{ fontSize: 10.5, color: "var(--text-muted)", lineHeight: 1.7, marginTop: 8 }}>
+                        {L.engineeringDisclaimer}
                       </div>
                     </div>
                   </div>

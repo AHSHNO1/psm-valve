@@ -1,13 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Gauge, Circle, Sun, Square, ArrowRight, Cylinder, Minus,
-  ShieldAlert, Snowflake, Flame, ArrowLeft, Filter, Package
+  ShieldAlert, Snowflake, Flame, ArrowLeft, Filter, Package, Search, X
 } from "lucide-react";
-import { categories } from "@/lib/categories";
-import { products as catalog } from "@/lib/products";
+import { categories, getCategoryLabel } from "@/lib/categories";
 import { useDictionary } from "./Providers";
 
 const ICONS = {
@@ -20,42 +19,137 @@ const PRODUCTS_LABELS = {
     categories: "دسته",
     products: "محصول",
     filter: "فیلتر بر اساس دسته",
-    all: "همه"
+    all: "همه",
+    search: "جستجو در کاتالوگ محصولات",
+    searchPlaceholder: "نام محصول، سری یا مشخصات را جستجو کنید",
+    results: "نمایش {count} از {total} محصول",
+    noResults: "محصولی مطابق جستجوی شما پیدا نشد.",
+    emptyCategory: "هنوز محصولی در این دسته ثبت نشده است.",
+    clear: "پاک کردن فیلترها",
+    clearSearch: "پاک کردن جستجو"
   },
   en: {
     categories: "categories",
     products: "products",
     filter: "Filter by category",
-    all: "All"
+    all: "All",
+    search: "Search product catalog",
+    searchPlaceholder: "Search product name, series or specifications",
+    results: "Showing {count} of {total} products",
+    noResults: "No products match your search.",
+    emptyCategory: "No products have been added to this category yet.",
+    clear: "Clear filters",
+    clearSearch: "Clear search"
   },
   ar: {
     categories: "فئات",
     products: "منتج",
     filter: "تصفية حسب الفئة",
-    all: "الكل"
+    all: "الكل",
+    search: "البحث في كتالوج المنتجات",
+    searchPlaceholder: "ابحث باسم المنتج أو السلسلة أو المواصفات",
+    results: "عرض {count} من أصل {total} منتج",
+    noResults: "لم يتم العثور على منتجات تطابق بحثك.",
+    emptyCategory: "لم تتم إضافة منتجات إلى هذه الفئة بعد.",
+    clear: "مسح عوامل التصفية",
+    clearSearch: "مسح البحث"
   },
   ru: {
     categories: "категории",
     products: "продуктов",
     filter: "Фильтр по категории",
-    all: "Все"
+    all: "Все",
+    search: "Поиск по каталогу продукции",
+    searchPlaceholder: "Название продукта, серия или характеристики",
+    results: "Показано {count} из {total} продуктов",
+    noResults: "По вашему запросу ничего не найдено.",
+    emptyCategory: "В этой категории пока нет продуктов.",
+    clear: "Сбросить фильтры",
+    clearSearch: "Очистить поиск"
   }
 };
 
-function catalogImage(slug) {
-  return catalog.find((x) => x.slug === slug)?.image || null;
+const DIGITS = {
+  "۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4",
+  "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9",
+  "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
+  "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9"
+};
+
+function normalizeSearchText(value) {
+  return value
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩]/g, (digit) => DIGITS[digit])
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .trim();
 }
 
-export default function ProductsMasonelian() {
+function getSearchText(value) {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+  return Object.values(value).map(getSearchText).join(" ");
+}
+
+function pickLocalized(value, locale) {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+  return value[locale] || value.en || value.fa || "";
+}
+
+export default function ProductsMasonelian({ products = [] }) {
   const { locale, t } = useDictionary();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [query, setQuery] = useState("");
   const labels = PRODUCTS_LABELS[locale] || PRODUCTS_LABELS.en;
+  const normalizedQuery = normalizeSearchText(query);
 
-  const filtered = activeCategory === "all"
-    ? categories
-    : categories.filter((c) => c.id === activeCategory);
+  const catalogCategories = useMemo(() => categories
+    .filter((category) =>
+      Boolean(category.children) ||
+      Boolean(category.parentId) ||
+      products.some((product) => product.categoryId === category.id)
+    )
+    .map((category) => ({
+      ...category,
+      products: products.filter((product) => product.categoryId === category.id)
+    })), [products]);
 
-  const totalProducts = categories.reduce((s, c) => s + c.products.length, 0);
+  const filterCategories = categories;
+
+  const filtered = useMemo(() => catalogCategories
+    .filter((category) =>
+      activeCategory === "all" ||
+      category.id === activeCategory ||
+      category.parentId === activeCategory
+    )
+    .map((category) => ({
+      ...category,
+      products: category.products.filter((product) => {
+        if (!normalizedQuery) return true;
+        const searchableText = normalizeSearchText([
+          product.series,
+          product.name,
+          product.short,
+          product.spec,
+          product.specs,
+          category.name,
+          category.desc,
+          category.parentId && categories.find((item) => item.id === category.parentId)?.name
+        ].map(getSearchText).join(" "));
+        return searchableText.includes(normalizedQuery);
+      })
+    })), [activeCategory, catalogCategories, normalizedQuery]);
+
+  const totalProducts = products.length;
+  const resultCount = filtered.reduce((count, category) => count + category.products.length, 0);
+  const visibleCategoryCount = new Set(categories.map((category) => category.parentId || category.id)).size;
+  const hasFilters = activeCategory !== "all" || Boolean(query.trim());
+  const resultMessage = labels.results
+    .replace("{count}", String(resultCount))
+    .replace("{total}", String(totalProducts));
 
   return (
     <section className="container-x py-10 sm:py-16" aria-labelledby="products-page-title">
@@ -69,17 +163,70 @@ export default function ProductsMasonelian() {
           <span className="heading-gold">{t.products.pageTitle2}</span>
         </h1>
         <p className="mt-4 text-sm sm:text-base text-soft">
-          {categories.length} {labels.categories} · {totalProducts} {labels.products}
+          {visibleCategoryCount} {labels.categories} · {totalProducts} {labels.products}
         </p>
       </div>
 
-      {/* Filter bar */}
-      <div className="mb-8 sm:mb-12" role="group" aria-label={labels.filter}>
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={16} style={{ color: "var(--gold)" }} />
-          <span className="text-sm font-bold" style={{ color: "var(--text-soft)" }}>
-            {locale === "fa" ? "فیلتر بر اساس دسته" : "Filter by category"}
-          </span>
+      <div className="mb-8 sm:mb-12">
+        <form
+          role="search"
+          aria-label={labels.search}
+          className="relative mb-5 max-w-2xl"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <Search
+            size={18}
+            aria-hidden="true"
+            className="absolute inset-y-0 my-auto"
+            style={{ insetInlineStart: "1rem", color: "var(--text-muted)" }}
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label={labels.search}
+            placeholder={labels.searchPlaceholder}
+            className="input-field"
+            style={{ paddingInlineStart: "2.9rem", paddingInlineEnd: query ? "2.9rem" : undefined }}
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label={labels.clearSearch}
+              className="absolute inset-y-0 my-auto grid h-9 w-9 place-items-center rounded-lg transition hover:bg-[var(--bg-soft)]"
+              style={{ insetInlineEnd: "0.5rem", color: "var(--text-muted)" }}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          )}
+        </form>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter size={16} aria-hidden="true" style={{ color: "var(--gold)" }} />
+            <span className="text-sm font-bold" style={{ color: "var(--text-soft)" }}>
+              {labels.filter}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold" aria-live="polite" style={{ color: "var(--text-muted)" }}>
+              {resultMessage}
+            </span>
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCategory("all");
+                  setQuery("");
+                }}
+                className="text-xs font-bold underline underline-offset-4"
+                style={{ color: "var(--gold)" }}
+              >
+                {labels.clear}
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -93,7 +240,7 @@ export default function ProductsMasonelian() {
           >
             {labels.all}
           </button>
-          {categories.map((cat) => {
+          {filterCategories.map((cat) => {
             const Icon = ICONS[cat.icon] || Package;
             return (
               <button
@@ -106,8 +253,8 @@ export default function ProductsMasonelian() {
                 }`}
               >
                 <Icon size={14} />
-                <span className="hidden sm:inline">{cat.name[locale] || cat.name.fa}</span>
-                <span className="sm:hidden">{(cat.name[locale] || cat.name.fa).split(" ")[0]}</span>
+                <span className="hidden sm:inline">{getCategoryLabel(cat, locale)}</span>
+                <span className="sm:hidden">{getCategoryLabel(cat, locale).split(" / ").at(-1).split(" ")[0]}</span>
               </button>
             );
           })}
@@ -115,6 +262,7 @@ export default function ProductsMasonelian() {
       </div>
 
       {/* Product loops */}
+      {filtered.length > 0 ? (
       <div className="space-y-12 sm:space-y-16">
         {filtered.map((cat) => {
           const Icon = ICONS[cat.icon] || Package;
@@ -127,8 +275,13 @@ export default function ProductsMasonelian() {
                   <Icon size={20} />
                 </div>
                 <div className="min-w-0">
+                  {cat.parentId && (
+                    <p className="mb-1 text-[10px] sm:text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                      {getCategoryLabel(categories.find((item) => item.id === cat.parentId), locale)}
+                    </p>
+                  )}
                   <h2 className="font-black text-lg sm:text-2xl" style={{ color: "var(--text)" }}>
-                    {cat.name[locale] || cat.name.fa}
+                    {getCategoryLabel(cat, locale)}
                   </h2>
                   <p className="text-xs sm:text-sm mt-1 text-soft leading-relaxed">
                     {cat.desc[locale] || cat.desc.fa}
@@ -136,7 +289,8 @@ export default function ProductsMasonelian() {
                 </div>
               </div>
 
-              {/* Product grid */}
+              {/* Child categories are rendered as their own sections below. */}
+              {cat.products.length > 0 ? (
               <div className="product-grid-masonelian">
                 {cat.products.map((p, i) => (
                   <motion.div
@@ -150,14 +304,14 @@ export default function ProductsMasonelian() {
                       href={`/${locale}/products/${p.slug}`}
                       className="product-card-masonelian group block p-4 sm:p-6 h-full"
                     >
-                      {catalogImage(p.slug) ? (
+                      {p.image ? (
                         <div
                           className="relative aspect-[4/3] rounded-xl mb-4 sm:mb-5 overflow-hidden bg-white"
                           style={{ border: "1px solid var(--border)" }}
                         >
                           <img
-                            src={catalogImage(p.slug)}
-                            alt={p.name[locale] || p.name.fa}
+                            src={p.image}
+                            alt={pickLocalized(p.name, locale)}
                             className="w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500 group-hover:scale-105"
                             loading="lazy"
                           />
@@ -185,10 +339,10 @@ export default function ProductsMasonelian() {
                       )}
 
                       <h3 className="font-bold text-sm sm:text-base leading-6" style={{ color: "var(--text)" }}>
-                        {p.name[locale] || p.name.fa}
+                        {pickLocalized(p.name, locale)}
                       </h3>
                       <p className="mt-1.5 text-xs sm:text-sm leading-5" style={{ color: "var(--text-muted)" }}>
-                        {p.short[locale] || p.short.fa}
+                        {pickLocalized(p.short, locale)}
                       </p>
 
                       <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs sm:text-sm font-bold" style={{ color: "var(--gold)" }}>
@@ -198,10 +352,33 @@ export default function ProductsMasonelian() {
                   </motion.div>
                 ))}
               </div>
+              ) : (
+                <div className="card-glass rounded-2xl px-5 py-6 text-sm leading-7 text-soft" role="status">
+                  {cat.desc[locale] || cat.desc.fa}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+      ) : (
+        <div className="card-glass px-5 py-12 text-center" role="status">
+          <Search size={28} aria-hidden="true" className="mx-auto mb-3" style={{ color: "var(--gold)" }} />
+          <p className="font-bold" style={{ color: "var(--text)" }}>
+            {activeCategory !== "all" && !normalizedQuery ? labels.emptyCategory : labels.noResults}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveCategory("all");
+              setQuery("");
+            }}
+            className="btn-outline mt-5 text-sm"
+          >
+            {labels.clear}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

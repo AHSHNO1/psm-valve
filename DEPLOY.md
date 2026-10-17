@@ -12,8 +12,8 @@
 | نوع اپلیکیشن | Next.js 14 App Router — نیازمند **پروسهٔ Node** (`next start`). روی هاست اشتراکی cPanel/PHP اجرا نمیشود. |
 | پورت پیشفرض | `3000` (قابل تغییر با `PORT`) |
 | نسخهٔ Node | **۲۰ LTS** یا ۲۲ LTS (حداقل ۱۸.۱۷) |
-| ذخیرهسازی داده | **فایلسیستم**: `data/*.json` + `public/uploads/**` → دیسک باید **پایدار** باشد |
-| نقشهٔ داده | ۱) `data/` دادهٔ زندهٔ سایت · ۲) `public/uploads/**` فایلهای آپلودشده از پنل · ۳) `lib/products.js` توسط پنل محصولات بازنویسی میشود |
+| ذخیرهسازی داده | **فایلسیستم پایدار**: `data/*.json`, پایگاه‌دادهٔ `data/psm-valve.sqlite` و `public/uploads/**` |
+| نقشهٔ داده | ۱) `data/` دادهٔ زندهٔ JSON و SQLite · ۲) `public/uploads/**` فایلهای آپلودشده از پنل · ۳) `lib/products.js` فقط دادهٔ اولیهٔ seed محصولات |
 | ناسازگار با | Vercel، Netlify، Render Static، Cloudflare Pages، هر PaaS با دیسک موقت (فایل نوشتهشده با هر دیپلوی/ریاستارت پاک میشود) |
 | سازگار با | VPS لینوکسی (توصیهشده)، کانتینر با Volume پایدار، سرور اختصاصی، PaaS با دیسک پایدار (مثل Liara با دیسک، یا Dokploy/Coolify روی VPS) |
 | دامنهٔ canonical | `https://psmvalve.com` — در `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` **هاردکد** شده است |
@@ -147,7 +147,10 @@ ADMIN_PASSWORD_HASH=
 # ۴) در تولید باید خالی/false باشد (اجازهٔ admin/admin فقط در dev)
 ADMIN_ALLOW_INSECURE_DEV_CREDENTIALS=false
 
-# ۵) اختیاری: کلید جدا برای چالش ضداسپم فرم تماس (پیشفرض: JWT_SECRET)
+# ۵) مسیر اختیاری پایگاه‌دادهٔ SQLite محصولات (پیشفرض: data/psm-valve.sqlite)
+PSM_DATABASE_PATH=/var/www/psm-valve/data/psm-valve.sqlite
+
+# ۶) اختیاری: کلید جدا برای چالش ضداسپم فرم تماس (پیشفرض: JWT_SECRET)
 CONTACT_CHALLENGE_SECRET=
 EOF
 
@@ -297,8 +300,9 @@ crontab -e
 
 - `data/` (کل دادهٔ سایت)
 - `public/uploads/` (تمام فایلهای آپلودشده)
-- `lib/products.js` (لیست محصولات — توسط پنل بازنویسی میشود)
 - `ecosystem.config.js` و `.env.production` (نسخهٔ رمزگذاری/فشرده، جدا و محدود)
+
+SQLite محصولات در `data/psm-valve.sqlite` است. اسکریپت بکاپ با `deploy/backup-products-db.cjs` از دیتابیس snapshot تراکنشی می‌گیرد و آن را جداگانه از JSONها نگه می‌دارد. اگر `PSM_DATABASE_PATH` سفارشی داری، همان متغیر را هنگام اجرای اسکریپت‌های deploy/backup در محیط shell هم export کن. در اولین اجرا، پایگاه‌داده از `lib/products.js` seed می‌شود؛ پس از آن، تغییرات پنل فقط در SQLite ثبت می‌شوند.
 
 **بکاپ خارج از سرور (توصیهٔ جدی):** یکی از این دو را فعال کن:
 
@@ -310,7 +314,7 @@ rsync -avz /var/backups/psm-valve/ backupuser@BACKUP_HOST:/backups/psm-valve/
 rclone copy /var/backups/psm-valve remote:psm-valve-backups
 ```
 
-> نسخهٔ بازیابی (Restore): بکاپ را باز کن و محتویات را در `/var/www/psm-valve/` جایگذاری، سپس `pm2 reload psm-valve`.
+> بازیابی (Restore): ابتدا سرویس را متوقف کن؛ آرشیو JSON را در `/var/www/psm-valve/` باز کن و فایل `products-*.sqlite` را به مسیر `PSM_DATABASE_PATH` (پیشفرض `data/psm-valve.sqlite`) کپی کن. سپس سرویس را راه‌اندازی و سلامت صفحات را بررسی کن.
 
 ---
 
@@ -347,6 +351,7 @@ rclone copy /var/backups/psm-valve remote:psm-valve-backups
 | `data/admin.json` | نام کاربری و **هش رمز مدیر** |
 | `data/users.json` | کاربران author با هش رمز |
 | `data/messages.json` | پیامهای واقعی مشتریان (اطلاعات شخصی) |
+| `data/*.sqlite*` | پایگاه‌دادهٔ زندهٔ محصولات و فایلهای journal آن |
 | `data/*.backup-*.json` | بکاپهای محلی |
 | `public/uploads/*` | داراییهای آپلودشده در زمان اجرا (در سرور منتقل میشوند) |
 | `node_modules/`, `.next/`, `logs/`, `*.log` | قابل بازسازی/موقت |

@@ -178,9 +178,9 @@ export default function ExplodedBallValve() {
     : ({ fa: "بازکردن کامل", en: "Explode view", ar: "تفكيك كامل", ru: "Разнести детали" }[locale] || "Explode view");
 
   return (
-    <div className="relative h-[390px] sm:h-[450px]">
-      <Canvas camera={{ position: [4.5, 3.2, 7], fov: 42 }} dpr={[1, 1.5]}>
-        <group position={[0, -0.25, 0]} scale={0.9}>
+    <div className="relative h-[440px] sm:h-[520px]">
+      <Canvas camera={{ position: [4.5, 3.2, 7], fov: 40 }} dpr={[1, 1.5]}>
+        <group position={[0, -0.25, 0]} scale={1}>
           <BallValveModel explode={explode} locale={locale} />
         </group>
         <OrbitControls

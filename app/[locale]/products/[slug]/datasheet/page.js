@@ -1,14 +1,10 @@
-import { getProduct, products } from "@/lib/products";
+import { getProduct } from "@/lib/product-store";
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/lib/getDictionary";
 import DatasheetPrint from "@/components/DatasheetPrint";
 
-export async function generateStaticParams() {
-  const { locales } = await import("@/lib/i18n");
-  return locales.flatMap((locale) =>
-    products.map((p) => ({ locale, slug: p.slug }))
-  );
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function DatasheetPage({ params }) {
   const { locale, slug } = params;

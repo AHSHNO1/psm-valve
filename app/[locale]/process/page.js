@@ -1,4 +1,5 @@
 import { getContent } from "@/lib/content";
+import { getDictionary } from "@/lib/getDictionary";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -8,19 +9,14 @@ function pick(obj, locale) {
 
 export default async function ProcessPage({ params }) {
   const { locale } = params;
+  const dictionary = await getDictionary(locale);
   const content = getContent();
   const process = content.process || {};
   const steps = process.steps || [];
 
-  const title = pick(process.title, locale) || (locale === "fa" ? "فرآیند کار ما" : "Our Work Process");
+  const title = pick(process.title, locale) || dictionary.processPage.title;
   const subtitle = pick(process.subtitle, locale) || "";
-
-  const labels = {
-    fa: { badge: "مراحل کار", empty: "به‌زودی" },
-    en: { badge: "Steps", empty: "Coming soon" },
-    ar: { badge: "خطوات العمل", empty: "قريباً" },
-    ru: { badge: "Этапы", empty: "Скоро" }
-  }[locale] || { badge: "Process", empty: "Coming soon" };
+  const labels = dictionary.processPage;
 
   return (
     <section className="container-x py-10 sm:py-16">

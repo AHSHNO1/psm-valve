@@ -1,4 +1,5 @@
 import { getContent } from "@/lib/content";
+import { getDictionary } from "@/lib/getDictionary";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -17,19 +18,14 @@ const ICONS = {
 
 export default async function WhyUsPage({ params }) {
   const { locale } = params;
+  const dictionary = await getDictionary(locale);
   const content = getContent();
   const whyUs = content.whyUs || {};
   const features = whyUs.features || [];
 
-  const title = pick(whyUs.title, locale) || (locale === "fa" ? "چرا ما؟" : "Why Us?");
+  const title = pick(whyUs.title, locale) || dictionary.whyUsPage.title;
   const subtitle = pick(whyUs.subtitle, locale) || "";
-
-  const labels = {
-    fa: { badge: "مزیت‌ها", empty: "به‌زودی" },
-    en: { badge: "Advantages", empty: "Coming soon" },
-    ar: { badge: "المزايا", empty: "قريباً" },
-    ru: { badge: "Преимущества", empty: "Скоро" }
-  }[locale] || { badge: "Advantages", empty: "Coming soon" };
+  const labels = dictionary.whyUsPage;
 
   return (
     <section className="container-x py-10 sm:py-16">

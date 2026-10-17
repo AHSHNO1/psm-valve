@@ -1,133 +1,174 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, User, AlertTriangle, Loader2, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+  ShieldCheck,
+  UserRound
+} from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
       });
-      const data = await res.json();
-      if (data.ok) {
+      const data = await response.json();
+      if (response.ok && data.ok) {
         router.push(data.role === "author" ? "/admin/author" : "/admin");
         router.refresh();
       } else {
-        setError(data.error || "خطا");
+        setError(data.error || "ورود انجام نشد. اطلاعات واردشده را بررسی کنید.");
       }
     } catch {
-      setError("خطای شبکه");
+      setError("ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Decorative metro tiles */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-        <div className="absolute top-10 right-10 w-40 h-40 metro-blue rounded-md" />
-        <div className="absolute top-32 right-56 w-24 h-24 metro-amber rounded-md" />
-        <div className="absolute bottom-20 left-10 w-32 h-32 metro-purple rounded-md" />
-        <div className="absolute bottom-40 left-48 w-20 h-20 metro-green rounded-md" />
-        <div className="absolute top-1/3 left-1/3 w-16 h-16 metro-gold rounded-md" />
-        <div className="absolute bottom-1/4 right-1/3 w-28 h-28 metro-red rounded-md" />
+    <main className="admin-login-page" dir="rtl">
+      <div className="admin-login-frame">
+        <section className="admin-login-form-panel" aria-labelledby="admin-login-title">
+          <div className="admin-login-mobile-brand" aria-label="PSM Valve">
+            <span className="admin-login-mark">PSM</span>
+            <span className="admin-login-mobile-name">PETRO SAZEH MIHAN</span>
+          </div>
+
+          <div className="admin-login-form-content">
+            <div className="admin-login-eyebrow">
+              <span className="admin-login-eyebrow-dot" />
+              دسترسی امن مدیران
+            </div>
+            <h1 id="admin-login-title">خوش آمدید</h1>
+            <p className="admin-login-description">برای ورود به پنل مدیریت، اطلاعات حساب خود را وارد کنید.</p>
+
+            <form onSubmit={submit} className="admin-login-form">
+              <label className="admin-login-label" htmlFor="admin-username">نام کاربری</label>
+              <div className="admin-login-input-wrap">
+                <UserRound size={18} aria-hidden="true" />
+                <input
+                  id="admin-username"
+                  type="text"
+                  value={form.username}
+                  onChange={(event) => setForm({ ...form, username: event.target.value })}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  required
+                  autoFocus
+                  placeholder="نام کاربری خود را وارد کنید"
+                />
+              </div>
+
+              <label className="admin-login-label" htmlFor="admin-password">رمز عبور</label>
+              <div className="admin-login-input-wrap">
+                <LockKeyhole size={18} aria-hidden="true" />
+                <input
+                  id="admin-password"
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  autoComplete="current-password"
+                  required
+                  placeholder="رمز عبور خود را وارد کنید"
+                />
+                <button
+                  type="button"
+                  className="admin-login-password-toggle"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </div>
+
+              {error && (
+                <div className="admin-login-error" role="alert">
+                  <AlertTriangle size={17} aria-hidden="true" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button type="submit" className="admin-login-submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 size={18} className="admin-login-spinner" />
+                    در حال بررسی اطلاعات...
+                  </>
+                ) : (
+                  <>
+                    ورود به پنل
+                    <ArrowLeft size={18} aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="admin-login-secure-note">
+              <ShieldCheck size={16} aria-hidden="true" />
+              اتصال شما با محافظت احراز هویت امن شده است.
+            </div>
+          </div>
+
+          <footer className="admin-login-credit">
+            طراحی و توسعه توسط <strong>دپارتمان فناوری اطلاعات (IT)</strong>
+            <span>پترو سازه میهن</span>
+          </footer>
+        </section>
+
+        <aside className="admin-login-brand-panel" aria-label="معرفی پترو سازه میهن">
+          <div className="admin-login-brand-grid" aria-hidden="true" />
+          <div className="admin-login-orbit admin-login-orbit-one" aria-hidden="true" />
+          <div className="admin-login-orbit admin-login-orbit-two" aria-hidden="true" />
+          <div className="admin-login-brand-content">
+            <div className="admin-login-brand-lockup">
+              <span className="admin-login-mark admin-login-mark-large">PSM</span>
+              <div>
+                <div className="admin-login-brand-name">PETRO SAZEH MIHAN</div>
+                <div className="admin-login-brand-caption">INDUSTRIAL CONTROL VALVES</div>
+              </div>
+            </div>
+
+            <div className="admin-login-brand-copy">
+              <span className="admin-login-brand-kicker">پنل مدیریت محتوا</span>
+              <h2>مدیریت یکپارچه،<br /><span>برای مهندسی دقیق‌تر.</span></h2>
+              <p>محتوا، محصولات و ارتباط با مشتریان را از یک فضای امن و متمرکز مدیریت کنید.</p>
+            </div>
+
+            <div className="admin-login-brand-status">
+              <span className="admin-login-status-icon"><ShieldCheck size={19} /></span>
+              <span>
+                <strong>فضای مدیریتی امن</strong>
+                <small>دسترسی فقط برای کاربران مجاز</small>
+              </span>
+              <span className="admin-login-status-dot" aria-label="فعال" />
+            </div>
+          </div>
+          <div className="admin-login-brand-footer">
+            <span>PSM VALVE</span>
+            <span>ENGINEERED FOR INDUSTRY</span>
+          </div>
+        </aside>
       </div>
-
-      <form
-        onSubmit={submit}
-        className="relative w-full max-w-md rounded-lg p-8 lg:p-10 metro-in"
-        style={{
-          background: "rgba(255, 255, 255, 0.92)",
-          border: "1px solid rgba(20, 22, 27, 0.08)",
-          backdropFilter: "blur(20px)",
-          boxShadow: "0 20px 60px rgba(20, 22, 27, 0.15)"
-        }}
-      >
-        <div className="text-center mb-8">
-          <div
-            className="w-20 h-20 rounded-lg mx-auto grid place-items-center mb-4"
-            style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)", boxShadow: "0 8px 24px rgba(201, 149, 13, 0.4)" }}
-          >
-            <ShieldCheck size={36} style={{ color: "#FFFFFF" }} />
-          </div>
-          <h1 className="text-2xl font-black mb-1" style={{ color: "var(--m-text)" }}>ورود به پنل</h1>
-          <p className="text-sm" style={{ color: "var(--m-text-muted)" }}>
-            پترو سازه میهن
-          </p>
-        </div>
-
-        <label className="block mb-4">
-          <span className="text-xs font-black mb-2 block" style={{ color: "var(--m-text-soft)" }}>
-            نام کاربری
-          </span>
-          <div className="relative">
-            <User size={18} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--m-text-muted)" }} />
-            <input
-              type="text"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-              required
-              autoComplete="username"
-              className="metro-input"
-              style={{ paddingRight: "44px" }}
-            />
-          </div>
-        </label>
-
-        <label className="block mb-6">
-          <span className="text-xs font-black mb-2 block" style={{ color: "var(--m-text-soft)" }}>
-            رمز عبور
-          </span>
-          <div className="relative">
-            <Lock size={18} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--m-text-muted)" }} />
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-              autoComplete="current-password"
-              className="metro-input"
-              style={{ paddingRight: "44px" }}
-            />
-          </div>
-        </label>
-
-        {error && (
-          <div
-            className="flex items-center gap-2 text-sm p-3 rounded-md mb-4"
-            style={{ background: "rgba(232, 17, 35, 0.10)", border: "1px solid #E81123", color: "#C40E1C" }}
-          >
-            <AlertTriangle size={16} /> {error}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="metro-btn metro-btn-gold w-full"
-          style={{ padding: "14px", fontSize: "15px" }}
-        >
-          {loading ? (
-            <>
-              <Loader2 size={18} className="animate-spin" /> در حال ورود...
-            </>
-          ) : (
-            "ورود"
-          )}
-        </button>
-
-      </form>
-    </div>
+    </main>
   );
 }

@@ -66,7 +66,6 @@ export default function ContactForm() {
         setStatus("success");
         setForm({ name: "", email: "", phone: "", message: "", website: "" });
         setCaptchaInput("");
-        refreshCaptcha();
       } else {
         if (data.code === "invalid_challenge") {
           setStatus("idle");
@@ -128,7 +127,13 @@ export default function ContactForm() {
         <p className="text-sm" style={{ color: "var(--text-soft)" }}>
           {t.contact && t.contact.successDesc || "به‌زودی با شما تماس خواهیم گرفت."}
         </p>
-        <button onClick={function() { setStatus("idle"); }} className="btn-outline mt-6 text-sm">
+        <button
+          onClick={function() {
+            setStatus("idle");
+            refreshCaptcha();
+          }}
+          className="btn-outline mt-6 text-sm"
+        >
           {t.contact && t.contact.sendAnother || "ارسال پیام جدید"}
         </button>
       </div>

@@ -10,7 +10,7 @@ export function useDictionary() {
 
 export default function Providers({ children, locale, dict }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
       <DictionaryContext.Provider value={{ locale, t: dict }}>
         {children}
       </DictionaryContext.Provider>

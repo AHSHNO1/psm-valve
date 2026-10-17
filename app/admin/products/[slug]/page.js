@@ -1,8 +1,12 @@
-import { getProduct } from "@/lib/products";
+import { getProduct } from "@/lib/product-store";
 import { notFound } from "next/navigation";
 import ProductWizard from "@/components/admin/ProductWizard";
+import ContentStudioNav from "@/components/admin/ContentStudioNav";
 import Link from "next/link";
 import { ArrowRight, ExternalLink, Pencil } from "lucide-react";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default function EditProductPage({ params }) {
   const { slug } = params;
@@ -13,6 +17,8 @@ export default function EditProductPage({ params }) {
 
   return (
     <div className="space-y-6">
+      <ContentStudioNav />
+
       <div className="metro-in flex flex-wrap items-center justify-between gap-3">
         <Link href="/admin/products" className="inline-flex items-center gap-2 text-sm hover:underline"
           style={{ color: "#B8850A" }}>
@@ -38,7 +44,7 @@ export default function EditProductPage({ params }) {
         </div>
       </div>
 
-      <ProductWizard initial={product} />
+      <ProductWizard initial={product} initialStep={2} />
     </div>
   );
 }

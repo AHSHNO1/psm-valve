@@ -1,11 +1,14 @@
 import { getDictionary } from "@/lib/getDictionary";
-import { getSettings } from "@/lib/db";
 import ContactClient from "@/components/ContactClient";
+import { getCompanyInfo } from "@/lib/company-info";
+import { getBranding, getContent } from "@/lib/content";
 
 export default async function ContactPage({ params }) {
   const { locale } = params;
   const dict = await getDictionary(locale);
-  const settings = getSettings();
+  const company = getCompanyInfo();
+  const branding = getBranding();
+  const content = getContent();
 
-  return <ContactClient dict={dict} settings={settings} locale={locale} />;
+  return <ContactClient dict={dict} locale={locale} company={company} branding={branding} content={content} />;
 }

@@ -1,7 +1,8 @@
 {
-  "logo": "",
+  "logo": "/logo/logo-main.png",
   "logoLight": "",
-  "favicon": "",
+  "logoIcon": "/logo/logo-icon.png",
+  "favicon": "/logo/logo-icon.png",
   "primaryColor": "#D4A017",
   "secondaryColor": "#C0C0C0",
   "socialLinks": {

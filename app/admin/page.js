@@ -1,6 +1,6 @@
 import { getMessages } from "@/lib/db";
 import { getMedia } from "@/lib/media";
-import { products } from "@/lib/products";
+import { getProducts } from "@/lib/product-store";
 import { getNews, getServices } from "@/lib/content";
 import Link from "next/link";
 
@@ -22,8 +22,12 @@ function Ico({ name, size }) {
   );
 }
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export default function AdminDashboard() {
   const messages = getMessages();
+  const products = getProducts();
   const media = getMedia();
   const services = getServices();
   const news = getNews();

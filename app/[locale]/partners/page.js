@@ -1,42 +1,13 @@
 import { getPartners } from "@/lib/content";
 import PartnersDirectory from "@/components/PartnersDirectory";
+import { getDictionary } from "@/lib/getDictionary";
 
 export default async function PartnersPage({ params }) {
   const { locale } = params;
+  const dictionary = await getDictionary(locale);
   const allPartners = getPartners();
   const partners = allPartners.filter(function(p) { return p.active !== false; });
-
-  const t = {
-    fa: {
-      badge: "مشتریان و همراهان صنعتی",
-      title1: "همراهان",
-      title2: "پترو سازه میهن",
-      subtitle: "مجموعه‌ای از شرکت‌های فعال در صنایع نفت، گاز، پتروشیمی، انرژی و فولاد که نام و نشان آن‌ها در وب‌سایت شرکت منتشر شده است."
-    },
-    en: {
-      badge: "Industrial customers & partners",
-      title1: "Partners of",
-      title2: "Petro Sazeh Mihan",
-      subtitle: "Organizations in oil, gas, petrochemical, energy and steel industries listed on the company website."
-    },
-    ar: {
-      badge: "العملاء والشركاء الصناعيون",
-      title1: "شركاء",
-      title2: "بترو سازه ميهان",
-      subtitle: "مجموعة من الشركات العاملة في قطاعات النفط والغاز والبتروكيماويات والطاقة والصلب، والمنشورة أسماؤها على موقع الشركة."
-    },
-    ru: {
-      badge: "Промышленные заказчики и партнеры",
-      title1: "Партнеры",
-      title2: "Petro Sazeh Mihan",
-      subtitle: "Компании нефтегазовой, нефтехимической, энергетической и металлургической отраслей, указанные на сайте компании."
-    }
-  }[locale] || {
-    badge: "Partners",
-    title1: "Business",
-    title2: "Partners",
-    subtitle: "Organizations listed on the company website."
-  };
+  const t = dictionary.partnersPage;
 
   return (
     <section className="container-x py-10 sm:py-16">
@@ -54,7 +25,7 @@ export default async function PartnersPage({ params }) {
       {partners.length === 0 ? (
         <div className="card-glass p-12 text-center">
           <p style={{ color: "var(--text-muted)" }}>
-            {locale === "fa" ? "فهرست همراهان هنوز منتشر نشده است." : "The partner directory is not available yet."}
+            {t.empty}
           </p>
         </div>
       ) : (

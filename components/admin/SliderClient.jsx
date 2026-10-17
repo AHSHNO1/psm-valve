@@ -2,11 +2,25 @@
 import { useState, useRef } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import ContentStudioNav from "./ContentStudioNav";
 
 function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+const LANGUAGES = [
+  { code: "fa", label: "فارسی", dir: "rtl" },
+  { code: "en", label: "English", dir: "ltr" },
+  { code: "ar", label: "العربية", dir: "rtl" },
+  { code: "ru", label: "Русский", dir: "ltr" }
+];
+
+function localizedValue(value, language) {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+  return value[language] || value.fa || value.en || "";
 }
 
 function blank() {
@@ -86,6 +100,8 @@ export default function SliderClient({ initial }) {
 
   return (
     <div>
+      <ContentStudioNav />
+
       <div className="page-header anim-in">
         <div className="page-header-left">
           <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #0078D4, #005A9E)" }}>
@@ -184,7 +200,17 @@ export default function SliderClient({ initial }) {
 function SlideForm({ slide, update, onSave, onCancel }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [language, setLanguage] = useState("fa");
   const inputRef = useRef(null);
+  const currentLanguage = LANGUAGES.find((item) => item.code === language) || LANGUAGES[0];
+
+  function updateLocalized(field, value) {
+    const current = slide[field];
+    const localized = current && typeof current === "object" && !Array.isArray(current)
+      ? current
+      : { fa: typeof current === "string" ? current : "", en: "", ar: "", ru: "" };
+    update(slide.id, { [field]: { ...localized, [language]: value } });
+  }
 
   async function upload(file) {
     if (!file) return;
@@ -210,8 +236,100 @@ function SlideForm({ slide, update, onSave, onCancel }) {
   }
 
   return (
-    <div>
-      <label className="form-label">تصویر اسلاید</label>
+    <div className="slide-editor">
+      <div className="slide-editor-heading">
+        <div>
+          <h3>محتوای اسلاید</h3>
+          <p>عنوان، توضیح و دکمه را برای زبان‌های سایت ویرایش کنید.</p>
+        </div>
+        <span className="chip chip-blue">پیش‌نمایش زنده</span>
+      </div>
+
+      <div className="slide-editor-grid">
+        <div className="slide-editor-fields">
+          <div className="slide-language-tabs" role="tablist" aria-label="زبان متن اسلاید">
+            {LANGUAGES.map((item) => (
+              <button
+                key={item.code}
+                type="button"
+                role="tab"
+                aria-selected={language === item.code}
+                className={"slide-language-tab" + (language === item.code ? " slide-language-tab-active" : "")}
+                onClick={() => setLanguage(item.code)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <label className="form-label" htmlFor={"slide-title-" + slide.id}>تیتر اسلاید · {currentLanguage.label}</label>
+          <input
+            id={"slide-title-" + slide.id}
+            type="text"
+            dir={currentLanguage.dir}
+            value={localizedValue(slide.title, language)}
+            onChange={(event) => updateLocalized("title", event.target.value)}
+            className="form-input"
+            placeholder="تیتر اصلی که روی تصویر نمایش داده می‌شود"
+          />
+
+          <label className="form-label slide-editor-label" htmlFor={"slide-subtitle-" + slide.id}>
+            توضیح زیر تیتر · {currentLanguage.label}
+          </label>
+          <textarea
+            id={"slide-subtitle-" + slide.id}
+            dir={currentLanguage.dir}
+            value={localizedValue(slide.subtitle, language)}
+            onChange={(event) => updateLocalized("subtitle", event.target.value)}
+            className="form-input"
+            rows={3}
+            placeholder="توضیح کوتاهی که زیر تیتر اسلاید دیده می‌شود"
+          />
+
+          <div className="slide-editor-cta">
+            <div>
+              <label className="form-label" htmlFor={"slide-cta-" + slide.id}>متن دکمه · {currentLanguage.label}</label>
+              <input
+                id={"slide-cta-" + slide.id}
+                type="text"
+                dir={currentLanguage.dir}
+                value={localizedValue(slide.ctaText, language)}
+                onChange={(event) => updateLocalized("ctaText", event.target.value)}
+                className="form-input"
+                placeholder="مثلاً مشاهده محصولات"
+              />
+            </div>
+            <div>
+              <label className="form-label" htmlFor={"slide-cta-href-" + slide.id}>لینک دکمه</label>
+              <input
+                id={"slide-cta-href-" + slide.id}
+                type="text"
+                dir="ltr"
+                value={slide.ctaHref || ""}
+                onChange={(event) => update(slide.id, { ctaHref: event.target.value })}
+                className="form-input"
+                placeholder="/products"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="slide-editor-preview" dir={currentLanguage.dir}>
+          {slide.image && <img src={slide.image} alt="" className="slide-preview-image" />}
+          <div className="slide-preview-shade" />
+          <div className="slide-preview-copy">
+            <span>پیش‌نمایش اسلاید · {currentLanguage.label}</span>
+            <strong>{localizedValue(slide.title, language) || "تیتر اسلاید شما"}</strong>
+            <p>{localizedValue(slide.subtitle, language) || "توضیحات اسلاید در این قسمت نمایش داده می‌شود."}</p>
+            {localizedValue(slide.ctaText, language) && (
+              <span className="slide-preview-button">{localizedValue(slide.ctaText, language)}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="slide-image-editor">
+        <label className="form-label">تصویر اسلاید</label>
       <input
         ref={inputRef}
         type="file"
@@ -265,6 +383,7 @@ function SlideForm({ slide, update, onSave, onCancel }) {
       )}
       <div style={{ marginTop: 7, color: "#6B7280", fontSize: 11 }}>
         فرمت‌های مجاز: JPG، PNG، WebP و GIF؛ حداکثر حجم ۵۰ مگابایت.
+      </div>
       </div>
 
       <div className="save-bar">

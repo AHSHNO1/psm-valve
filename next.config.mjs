@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   experimental: {
+    serverComponentsExternalPackages: ["better-sqlite3"],
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",

@@ -3,6 +3,29 @@
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import Link from "next/link";
+import { useDictionary } from "./Providers";
+
+const LOCALES = ["fa", "en", "ar", "ru"];
+
+function getLocalizedText(value, locale) {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+  return value[locale] || value.en || value.fa || "";
+}
+
+function getSlideDestination(href, locale) {
+  if (typeof href !== "string") return null;
+  const destination = href.trim();
+  if (/^https?:\/\//i.test(destination)) {
+    return { href: destination, external: true };
+  }
+  if (!destination.startsWith("/") || destination.startsWith("//")) return null;
+  if (new RegExp("^/(" + LOCALES.join("|") + ")(/|$)").test(destination)) {
+    return { href: destination, external: false };
+  }
+  return { href: "/" + locale + destination, external: false };
+}
 
 function shuffleIndices(count, avoidFirst) {
   const indexes = Array.from({ length: count }, function(_, index) { return index; });
@@ -23,14 +46,8 @@ function shuffleIndices(count, avoidFirst) {
   return indexes;
 }
 
-const CONTROL_LABELS = {
-  fa: { label: "اسلایدر تصاویر صفحه اصلی", previous: "اسلاید قبلی", next: "اسلاید بعدی", slide: "اسلاید", pause: "توقف اسلایدها", play: "ادامه اسلایدها" },
-  en: { label: "Homepage image slider", previous: "Previous slide", next: "Next slide", slide: "Slide", pause: "Pause slides", play: "Resume slides" },
-  ar: { label: "عارض صور الصفحة الرئيسية", previous: "الشريحة السابقة", next: "الشريحة التالية", slide: "الشريحة", pause: "إيقاف الشرائح", play: "استئناف الشرائح" },
-  ru: { label: "Слайдер изображений главной страницы", previous: "Предыдущий слайд", next: "Следующий слайд", slide: "Слайд", pause: "Приостановить слайды", play: "Продолжить слайды" }
-};
-
-export default function HeroSlider({ sliders, locale, logo }) {
+export default function HeroSlider({ sliders, locale, logo, fallbackDict }) {
+  const { t } = useDictionary();
   const active = (sliders || []).filter(function(slide) { return slide.active !== false; });
   const activeKey = active.map(function(slide) { return slide.id; }).join("|");
   const [sequence, setSequence] = useState(function() {
@@ -39,7 +56,7 @@ export default function HeroSlider({ sliders, locale, logo }) {
   const [position, setPosition] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduceMotion = useReducedMotion();
-  const labels = CONTROL_LABELS[locale] || CONTROL_LABELS.en;
+  const labels = t.slider;
 
   useEffect(function() {
     setSequence(shuffleIndices(active.length));
@@ -52,6 +69,19 @@ export default function HeroSlider({ sliders, locale, logo }) {
     ? sequence
     : active.map(function(_, index) { return index; });
   const currentPosition = Math.min(position, Math.max(order.length - 1, 0));
+  const currentSlide = active.length > 0 ? active[order[currentPosition]] : null;
+  const fallbackTitle = fallbackDict && fallbackDict.hero
+    ? [fallbackDict.hero.title1, fallbackDict.hero.title2, fallbackDict.hero.title3].filter(Boolean).join(" ")
+    : "";
+  const title = getLocalizedText(currentSlide && currentSlide.title, locale) || fallbackTitle;
+  const subtitle = getLocalizedText(currentSlide && currentSlide.subtitle, locale) ||
+    (fallbackDict && fallbackDict.hero && fallbackDict.hero.desc) || "";
+  const ctaText = getLocalizedText(currentSlide && currentSlide.ctaText, locale) ||
+    (fallbackDict && fallbackDict.hero && fallbackDict.hero.cta1) || "";
+  const ctaDestination = getSlideDestination(
+    (currentSlide && currentSlide.ctaHref) || "/products",
+    locale
+  );
 
   useEffect(function() {
     if (active.length < 2 || paused || reduceMotion) return;
@@ -95,26 +125,40 @@ export default function HeroSlider({ sliders, locale, logo }) {
         fetchPriority="high"
         className="hero-photo-slider-image"
       />
+      <div className="hero-photo-slider-overlay" aria-hidden="true" />
 
-      <div className="hero-brand-plaque" dir="ltr" aria-label="PSM | Grade 1 Knowledge Company. Designing and Manufacturing of Control Valves.">
-        {logo && (
-          <img
-            className="hero-brand-logo"
-            src={logo}
-            alt=""
-            onError={function(e) { e.currentTarget.style.display = "none"; }}
-          />
-        )}
-        <div className="hero-brand-copy">
-          <div className="hero-brand-heading">
-            <span className="hero-brand-name">PSM</span>
-            <span className="hero-brand-divider" aria-hidden="true" />
-            <span className="hero-brand-grade">Grade 1 Knowledge Company</span>
-          </div>
-          <div className="hero-brand-description">
-            Designing &amp; Manufacturing of Control Valves
-          </div>
+      <div className="hero-slide-copy" dir={locale === "fa" || locale === "ar" ? "rtl" : "ltr"}>
+        <div className="hero-slide-brand" dir="ltr">
+          {logo && (
+            <img
+              className="hero-slide-logo"
+              src={logo}
+              alt=""
+              onError={function(e) { e.currentTarget.style.display = "none"; }}
+            />
+          )}
+          <span>PSM VALVE</span>
         </div>
+        {title && <h1 className="hero-slide-title">{title}</h1>}
+        {subtitle && <p className="hero-slide-subtitle">{subtitle}</p>}
+        {ctaText && ctaDestination && (
+          ctaDestination.external ? (
+            <a
+              className="hero-slide-cta"
+              href={ctaDestination.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ctaText}
+              <ChevronLeft size={18} aria-hidden="true" />
+            </a>
+          ) : (
+            <Link className="hero-slide-cta" href={ctaDestination.href}>
+              {ctaText}
+              <ChevronLeft size={18} aria-hidden="true" />
+            </Link>
+          )
+        )}
       </div>
 
       {active.length > 1 && (
@@ -180,74 +224,86 @@ export default function HeroSlider({ sliders, locale, logo }) {
           object-position: center;
           animation: hero-photo-appear .35s ease-out both;
         }
-        .hero-brand-plaque {
+        .hero-photo-slider-overlay {
           position: absolute;
-          z-index: 2;
-          inset-inline-start: clamp(24px, 7vw, 96px);
-          top: 50%;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          width: min(520px, calc(100% - 112px));
-          padding: clamp(17px, 2.4vw, 23px);
-          border: 1px solid rgba(255,255,255,.28);
-          border-inline-start: 3px solid #E0A81A;
-          border-radius: 16px;
-          background: linear-gradient(120deg, rgba(12,15,18,.86), rgba(25,29,34,.72));
-          box-shadow: 0 18px 42px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.12);
-          backdrop-filter: blur(10px);
-          transform: translateY(-50%) perspective(1200px) rotateY(-2deg);
-          transform-style: preserve-3d;
-          color: #FFFFFF;
+          inset: 0;
+          background: linear-gradient(90deg, rgba(10,12,15,.22), rgba(10,12,15,.1) 52%, rgba(10,12,15,.04)),
+            linear-gradient(0deg, rgba(10,12,15,.14), transparent 58%);
           pointer-events: none;
         }
-        .hero-brand-logo {
-          width: clamp(48px, 6vw, 64px);
-          height: clamp(48px, 6vw, 64px);
-          flex: 0 0 auto;
-          object-fit: contain;
-          border-radius: 10px;
-          background: #FFFFFF;
-          padding: 2px;
-          box-shadow: 0 7px 16px rgba(0,0,0,.24);
-          transform: translateZ(10px);
-        }
-        .hero-brand-copy { min-width: 0; transform: translateZ(12px); }
-        .hero-brand-heading {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-bottom: 8px;
-        }
-        .hero-brand-name {
-          color: #F5C518;
-          font-size: clamp(25px, 4vw, 38px);
-          font-weight: 900;
-          letter-spacing: .06em;
-          line-height: 1;
-          text-shadow: 0 2px 0 #8D6500, 0 5px 12px rgba(0,0,0,.42);
-        }
-        .hero-brand-divider {
-          width: 1px;
-          height: 22px;
-          background: rgba(255,255,255,.42);
-        }
-        .hero-brand-grade {
-          color: #F1F3F5;
-          font-size: clamp(11px, 1.45vw, 14px);
-          font-weight: 800;
-          letter-spacing: .025em;
-          text-shadow: 0 2px 9px rgba(0,0,0,.55);
-        }
-        .hero-brand-description {
+        .hero-slide-copy {
+          position: absolute;
+          z-index: 2;
+          inset-inline-start: clamp(24px, 9vw, 132px);
+          top: 50%;
+          width: min(760px, calc(100% - 160px));
           color: #FFFFFF;
-          font-size: clamp(13px, 1.8vw, 17px);
-          font-weight: 700;
-          line-height: 1.45;
-          letter-spacing: .015em;
+          transform: translateY(-50%);
+        }
+        .hero-slide-brand {
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          margin-bottom: 18px;
+          color: #F5C518;
+          font-size: 13px;
+          font-weight: 900;
+          letter-spacing: .12em;
+        }
+        .hero-slide-logo {
+          width: 34px;
+          height: 34px;
+          object-fit: contain;
+          border-radius: 9px;
+          background: #FFFFFF;
+          padding: 3px;
+          box-shadow: 0 2px 12px rgba(0,0,0,.24);
+        }
+        .hero-slide-title {
+          max-width: 15ch;
+          margin: 0;
+          color: #FFFFFF;
+          font-size: clamp(28px, 4.2vw, 52px);
+          font-weight: 800;
+          line-height: 1.35;
           text-wrap: balance;
-          text-shadow: 0 2px 10px rgba(0,0,0,.55);
+          text-shadow: 0 2px 12px rgba(0,0,0,.3);
+        }
+        .hero-slide-subtitle {
+          max-width: 58ch;
+          margin: 14px 0 0;
+          color: rgba(255,255,255,.94);
+          font-size: clamp(14px, 1.45vw, 17px);
+          font-weight: 550;
+          line-height: 1.9;
+          text-wrap: balance;
+          text-shadow: 0 1px 8px rgba(0,0,0,.32);
+        }
+        .hero-slide-cta {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          min-height: 48px;
+          margin-top: 28px;
+          padding: 0 22px;
+          border: 1px solid #F5C518;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #F5C518, #D9A615);
+          color: #1A1D21;
+          font-size: 14px;
+          font-weight: 900;
+          text-decoration: none;
+          box-shadow: 0 8px 24px rgba(0,0,0,.2);
+          transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .hero-slide-cta:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(0,0,0,.28);
+        }
+        .hero-slide-cta:focus-visible {
+          outline: 3px solid #FFFFFF;
+          outline-offset: 4px;
         }
         .hero-photo-slider-arrow {
           position: absolute;
@@ -327,25 +383,24 @@ export default function HeroSlider({ sliders, locale, logo }) {
         }
         @media (max-width: 640px) {
           .hero-photo-slider { height: min(68vh, 560px); min-height: 360px; }
+          .hero-photo-slider-overlay {
+            background: linear-gradient(0deg, rgba(10,12,15,.34), rgba(10,12,15,.18) 58%, rgba(10,12,15,.05));
+          }
           .hero-photo-slider-arrow { width: 38px; height: 38px; }
           .hero-photo-slider-previous { inset-inline-start: 12px; }
           .hero-photo-slider-next { inset-inline-end: 12px; }
           .hero-photo-slider-controls { bottom: 14px; }
-          .hero-brand-plaque {
-            top: 40%;
+          .hero-slide-copy {
+            top: 48%;
             inset-inline-start: 16px;
             width: calc(100% - 80px);
-            gap: 10px;
-            padding: 14px 12px;
-            border-radius: 13px;
-            transform: translateY(-50%) perspective(1200px) rotateY(-1deg);
+            transform: translateY(-50%);
           }
-          .hero-brand-logo { width: 42px; height: 42px; }
-          .hero-brand-heading { gap: 7px; margin-bottom: 6px; }
-          .hero-brand-name { font-size: 25px; }
-          .hero-brand-grade { font-size: 10px; }
-          .hero-brand-divider { height: 18px; }
-          .hero-brand-description { font-size: 12px; }
+          .hero-slide-brand { margin-bottom: 12px; font-size: 11px; }
+          .hero-slide-logo { width: 28px; height: 28px; }
+          .hero-slide-title { font-size: clamp(28px, 8vw, 42px); }
+          .hero-slide-subtitle { margin-top: 12px; font-size: 14px; line-height: 1.65; }
+          .hero-slide-cta { min-height: 44px; margin-top: 18px; padding-inline: 17px; font-size: 13px; }
         }
         @media (prefers-reduced-motion: reduce) {
           .hero-photo-slider-image { animation: none; }

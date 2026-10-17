@@ -282,9 +282,9 @@ export default function ExplodedValve() {
     : ({ fa: "بازکردن قطعات", en: "Explode view", ar: "تفكيك الأجزاء", ru: "Разнести детали" }[locale] || "Explode view");
 
   return (
-    <div className="relative h-[390px] sm:h-[450px]">
-      <Canvas camera={{ position: [4.6, 3.2, 7.2], fov: 40 }} dpr={[1, 1.5]}>
-        <group position={[0, -0.45, 0]} scale={0.78}>
+    <div className="relative h-[440px] sm:h-[520px]">
+      <Canvas camera={{ position: [4.6, 3.2, 7.2], fov: 38 }} dpr={[1, 1.5]}>
+        <group position={[0, -0.45, 0]} scale={0.94}>
           <GlobeValveModel explode={explode} locale={locale} />
         </group>
         <OrbitControls

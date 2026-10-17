@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test tests/sizing.test.mjs tests/product-store.test.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.108.3",
@@ -13,6 +14,7 @@
     "@studio-freight/lenis": "^1.0.42",
     "apexcharts": "^8.1.0",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^11.3.0",
     "html2canvas": "^1.4.1",

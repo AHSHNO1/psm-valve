@@ -12,43 +12,43 @@ export default function HeroStatsCombined({ sliders, locale, fallbackDict, logo 
   const L = {
     fa: {
       products: "محصولات",
-      productsSub: "۱۲۶ سری صنعتی",
+      productsSub: "مشاهده دسته‌بندی محصولات",
       sizing: "سایزینگ آنلاین",
-      sizingSub: "محاسبه Cv/Kv طبق IEC",
+      sizingSub: "محاسبه اولیه Cv و Kv",
       catalog: "کاتالوگ PDF",
-      catalogSub: "دانلود کاتالوگ‌ها",
+      catalogSub: "دریافت کاتالوگ‌های محصولات",
       contact: "مشاوره فنی",
-      contactSub: "پاسخ در کمتر از ۱ ساعت"
+      contactSub: "ارتباط با کارشناسان ما"
     },
     en: {
       products: "Products",
-      productsSub: "126 industrial series",
+      productsSub: "Browse product categories",
       sizing: "Online Sizing",
-      sizingSub: "Cv/Kv per IEC 60534",
+      sizingSub: "Estimate Cv and Kv",
       catalog: "PDF Catalog",
-      catalogSub: "Download catalogs",
+      catalogSub: "Browse product catalogs",
       contact: "Technical Support",
-      contactSub: "Reply under 1 hour"
+      contactSub: "Talk with our specialists"
     },
     ar: {
       products: "المنتجات",
-      productsSub: "١٢٦ سلسلة صناعية",
+      productsSub: "تصفح فئات المنتجات",
       sizing: "تحديد الحجم",
-      sizingSub: "حساب Cv/Kv وفق IEC",
+      sizingSub: "تقدير أولي لقيمتي Cv وKv",
       catalog: "الكتالوج PDF",
-      catalogSub: "تحميل الكتالوجات",
+      catalogSub: "تصفح كتالوجات المنتجات",
       contact: "دعم فني",
-      contactSub: "رد في أقل من ساعة"
+      contactSub: "تواصل مع خبرائنا"
     },
     ru: {
       products: "Продукты",
-      productsSub: "126 промышленных серий",
+      productsSub: "Категории продукции",
       sizing: "Онлайн-подбор",
-      sizingSub: "Расчет Cv/Kv по IEC 60534",
+      sizingSub: "Предварительный расчет Cv и Kv",
       catalog: "Каталог PDF",
-      catalogSub: "Скачать каталоги",
+      catalogSub: "Каталоги продукции",
       contact: "Техподдержка",
-      contactSub: "Ответ за 1 час"
+      contactSub: "Связь с нашими специалистами"
     }
   }[locale] || {};
 
@@ -90,7 +90,12 @@ export default function HeroStatsCombined({ sliders, locale, fallbackDict, logo 
 
   return (
     <div>
-      <HeroSlider sliders={sliders} locale={locale} logo={logo} />
+      <HeroSlider
+        sliders={sliders}
+        locale={locale}
+        logo={logo}
+        fallbackDict={fallbackDict}
+      />
 
       {/* Smart Action Bar */}
       <div className="smart-bar-section">

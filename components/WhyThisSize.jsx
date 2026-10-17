@@ -9,7 +9,7 @@ export default function WhyThisSize({ result, form, fluid, locale }) {
       autoOpen: "انتخاب خودکار",
       basedOn: "بر اساس",
       points: {
-        cvCalc: "محاسبه Cv بر اساس استاندارد IEC 60534",
+        cvCalc: "برآورد اولیه Cv؛ نیازمند تأیید مهندسی",
         openingRange: "قرار گرفتن در محدوده بهینه بازشدگی (۲۰-۸۰٪)",
         cavitation: "کنترل ریسک کاویتاسیون",
         velocity: "سرعت جریان مناسب در لوله",
@@ -23,7 +23,7 @@ export default function WhyThisSize({ result, form, fluid, locale }) {
       autoOpen: "Automatic Selection",
       basedOn: "Based on",
       points: {
-        cvCalc: "Cv calculated per IEC 60534 standard",
+        cvCalc: "Preliminary Cv estimate; requires engineering validation",
         openingRange: "Optimal opening range (20-80%)",
         cavitation: "Cavitation risk control",
         velocity: "Proper flow velocity in line",
@@ -37,7 +37,7 @@ export default function WhyThisSize({ result, form, fluid, locale }) {
       autoOpen: "الاختيار التلقائي",
       basedOn: "بناءً على",
       points: {
-        cvCalc: "حساب Cv وفقًا لـ IEC 60534",
+        cvCalc: "تقدير أولي لـ Cv يتطلب مراجعة هندسية",
         openingRange: "نطاق الفتح الأمثل (20-80%)",
         cavitation: "التحكم في خطر التجويف",
         velocity: "سرعة تدفق مناسبة",
@@ -51,7 +51,7 @@ export default function WhyThisSize({ result, form, fluid, locale }) {
       autoOpen: "Автоматический выбор",
       basedOn: "На основе",
       points: {
-        cvCalc: "Расчет Cv по IEC 60534",
+        cvCalc: "Предварительная оценка Cv требует инженерной проверки",
         openingRange: "Оптимальный диапазон открытия (20-80%)",
         cavitation: "Контроль риска кавитации",
         velocity: "Правильная скорость потока",
@@ -67,7 +67,7 @@ export default function WhyThisSize({ result, form, fluid, locale }) {
     {
       label: L.points.cvCalc,
       pass: true,
-      detail: "Cv = " + result.Cv + " · IEC 60534"
+      detail: "Cv = " + result.Cv + " · estimate"
     },
     {
       label: L.points.openingRange,

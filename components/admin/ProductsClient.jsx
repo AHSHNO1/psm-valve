@@ -3,6 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./AdminIcons";
 import { EditBtn, ViewBtn } from "./Actions";
+import { getCategoryLabel } from "@/lib/categories";
+import ContentStudioNav from "./ContentStudioNav";
 
 function pick(obj) {
   if (!obj) return "بدون نام";
@@ -33,12 +35,18 @@ export default function ProductsClient({ products, categories }) {
     const matchSearch = !q ||
       pick(p.name).toLowerCase().indexOf(q) !== -1 ||
       (p.series || "").toLowerCase().indexOf(q) !== -1;
-    const matchCat = activeCat === "all" || p.categoryId === activeCat;
+    const activeCategory = categories.find(function(category) { return category.id === activeCat; });
+    const matchCat = activeCat === "all" ||
+      p.categoryId === activeCat ||
+      (activeCategory?.children || []).includes(p.categoryId) ||
+      categories.some(function(category) { return category.id === p.categoryId && category.parentId === activeCat; });
     return matchSearch && matchCat;
   });
 
   return (
     <div>
+      <ContentStudioNav />
+
       <div className="page-header anim-in">
         <div className="page-header-left">
           <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #E0A81A, #B8850A)" }}>
@@ -89,12 +97,16 @@ export default function ProductsClient({ products, categories }) {
             <span className="tab-badge">{products.length}</span>
           </button>
           {categories.map(function(c) {
-            const count = products.filter(function(p) { return p.categoryId === c.id; }).length;
-            if (count === 0) return null;
+            const count = products.filter(function(p) {
+              return p.categoryId === c.id ||
+                (c.children || []).includes(p.categoryId) ||
+                categories.some(function(child) { return child.id === p.categoryId && child.parentId === c.id; });
+            }).length;
+            if (count === 0 && !c.children) return null;
             return (
               <button key={c.id} onClick={function() { setActiveCat(c.id); }}
                 className={"tab" + (activeCat === c.id ? " tab-active" : "")}>
-                {pick(c.name)}
+                {getCategoryLabel(c)}
                 <span className="tab-badge">{count}</span>
               </button>
             );

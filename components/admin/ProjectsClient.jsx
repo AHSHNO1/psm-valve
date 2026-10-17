@@ -41,6 +41,10 @@ export default function ProjectsClient({ initial }) {
   }
 
   async function save(list) {
+    if (list.some((project) => !project.image)) {
+      notify("برای ذخیره و انتشار هر پروژه، تصویر اختصاصی آن را بارگذاری کنید", true);
+      return false;
+    }
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -216,6 +220,14 @@ function ProjectForm({ project, update, onSave, onCancel }) {
     }
   }
 
+  async function saveProject() {
+    if (!project.image) {
+      setUploadError("برای هر پروژه بارگذاری تصویر الزامی است");
+      return;
+    }
+    await onSave();
+  }
+
   return (
     <div>
       <div className="tabs">
@@ -275,7 +287,7 @@ function ProjectForm({ project, update, onSave, onCancel }) {
       {uploadError && <div className="msg msg-error" style={{ marginTop: 8 }}>{uploadError}</div>}
 
       <div className="save-bar">
-        <SaveBtn onClick={onSave} busy={uploading} />
+        <SaveBtn onClick={saveProject} busy={uploading} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

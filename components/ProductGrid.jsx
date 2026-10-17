@@ -2,18 +2,10 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
-import { products } from "@/lib/products";
+import { categories, getCategoryLabel } from "@/lib/categories";
 import { useDictionary } from "./Providers";
 
-const categoryLabel = {
-  "control-valves": { fa: "شیر کنترلی", en: "Control Valve", ar: "صمام تحكم", ru: "Регулирующий клапан" },
-  "ball-valves": { fa: "شیر توپی", en: "Ball Valve", ar: "صمام كروي", ru: "Шаровой клапан" },
-  "pneumatic-actuators": { fa: "اکچوئیتور", en: "Actuator", ar: "مؤثر", ru: "Привод" },
-  "filters": { fa: "فیلتر", en: "Filter", ar: "مرشح", ru: "Фильтр" },
-  default: { fa: "محصول", en: "Product", ar: "منتج", ru: "Продукт" }
-};
-
-export default function ProductGrid({ limit }) {
+export default function ProductGrid({ products, limit }) {
   const { locale, t } = useDictionary();
   const isRtl = locale === "fa" || locale === "ar";
   const DirectionalArrow = isRtl ? ArrowLeft : ArrowRight;
@@ -26,8 +18,8 @@ export default function ProductGrid({ limit }) {
   };
 
   const getCategory = (product) => {
-    const map = categoryLabel[product.categoryId] || categoryLabel.default;
-    return map[locale] || map.en || map.fa || "Product";
+    const category = categories.find((item) => item.id === product.categoryId);
+    return getCategoryLabel(category, locale) || "Product";
   };
 
   return (

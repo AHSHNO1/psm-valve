@@ -1,6 +1,6 @@
 import { getAparatChannelVideos, getMedia, mergeAparatVideos } from "@/lib/media";
 import { getDictionary } from "@/lib/getDictionary";
-import { getNews } from "@/lib/content";
+import { getNews, getProjects } from "@/lib/content";
 import { getArticles } from "@/lib/articles";
 import MediaTabsSimple from "@/components/MediaTabsSimple";
 
@@ -22,6 +22,17 @@ export default async function MediaPage({ params, searchParams }) {
   const displayMedia = {
     ...media,
     videos: mergeAparatVideos(channelVideos, media.videos || []),
+    gallery: [
+      ...(media.gallery || []),
+      ...getProjects()
+        .filter((project) => project.active !== false && project.image)
+        .map((project) => ({
+          id: `project-${project.id}`,
+          url: project.image,
+          title: project.title,
+          description: project.description
+        }))
+    ],
     aparatUnavailable,
     catalogs: (media.catalogs || []).filter((catalog) =>
       typeof catalog.url === "string" && catalog.url.startsWith("/uploads/catalogs/")

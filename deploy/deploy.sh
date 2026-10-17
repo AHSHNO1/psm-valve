@@ -4,9 +4,9 @@
 # اجرا روی سرور:  /var/www/psm-valve/deploy/deploy.sh
 #
 # چه میکند؟
-#   ۱) از دادهٔ زندهٔ سرور (data/ و lib/products.js) بکاپ میگیرد
+#   ۱) از دادهٔ زندهٔ سرور (data/ شامل SQLite محصولات) بکاپ میگیرد
 #   ۲) کد را به آخرین نسخهٔ origin/main میرساند (git reset --hard)
-#   ۳) دادهٔ زنده را برمیگرداند (چون git فایلهای data/*.json را بازنویسی میکند)
+#   ۳) دادهٔ زنده را برمیگرداند (چون git فایلهای محتوای اولیه را بازنویسی میکند)
 #   ۴) npm ci + build و ریاستارت بدون قطعی با pm2 reload
 #
 # ⚠️ این فایل و کد سایت با git میآید، پس هر deploy تغییرات خودش را از دست میدهد.
@@ -23,20 +23,27 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 cd "$APP_DIR"
 mkdir -p logs "$BACKUP_DIR"
 
+PRODUCT_DB_PATH="${PSM_DATABASE_PATH:-$APP_DIR/data/psm-valve.sqlite}"
+case "$PRODUCT_DB_PATH" in
+  /*) ;;
+  *) PRODUCT_DB_PATH="$APP_DIR/$PRODUCT_DB_PATH" ;;
+esac
+
 echo "[deploy] ۱/۶ بکاپ دادهٔ زنده"
-tar -czf "$BACKUP_DIR/runtime-$STAMP.tar.gz" data
-if [ -f lib/products.js ]; then
-  cp -a lib/products.js "$BACKUP_DIR/products.js-$STAMP"
+tar -czf "$BACKUP_DIR/runtime-$STAMP.tar.gz" --exclude='*.sqlite' --exclude='*.sqlite-*' data
+node deploy/backup-products-db.cjs "$BACKUP_DIR/products-$STAMP.sqlite"
+if [ ! -f "$PRODUCT_DB_PATH" ] && [ -f lib/products.js ]; then
+  cp -a lib/products.js "$BACKUP_DIR/products-seed-$STAMP.js"
 fi
 
 echo "[deploy] ۲/۶ دریافت آخرین کد (origin/$BRANCH)"
 git fetch --all --prune
 git reset --hard "origin/$BRANCH"
 
-echo "[deploy] ۳/۶ برگرداندن دادهٔ زنده (data/ + lib/products.js)"
+echo "[deploy] ۳/۶ برگرداندن دادهٔ زنده (data/)"
 tar -xzf "$BACKUP_DIR/runtime-$STAMP.tar.gz" -C "$APP_DIR"
-if [ -f "$BACKUP_DIR/products.js-$STAMP" ]; then
-  cp -a "$BACKUP_DIR/products.js-$STAMP" lib/products.js
+if [ ! -f "$PRODUCT_DB_PATH" ] && [ -f "$BACKUP_DIR/products-seed-$STAMP.js" ]; then
+  cp -a "$BACKUP_DIR/products-seed-$STAMP.js" lib/products.js
 fi
 
 echo "[deploy] ۴/۶ نصب وابستگیها"
@@ -64,6 +71,7 @@ fi
 
 # پاکسازی: بکاپهای اجرایی قدیمیتر از ۳۰ روز و نسخههای قدیمی بیلد
 find "$BACKUP_DIR" -type f -name "runtime-*.tar.gz" -mtime +30 -delete
-find "$BACKUP_DIR" -type f -name "products.js-*" -mtime +30 -delete
+find "$BACKUP_DIR" -type f -name "products-*.sqlite" -mtime +30 -delete
+find "$BACKUP_DIR" -type f -name "products-seed-*.js" -mtime +30 -delete
 
 echo "[deploy] تمام شد در $(date -Is)"

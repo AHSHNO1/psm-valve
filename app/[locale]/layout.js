@@ -9,10 +9,14 @@ import ScrollProgress from "@/components/ScrollProgress";
 import SkipLink from "@/components/SkipLink";
 import { locales, isValidLocale, localeDirs, defaultLocale } from "@/lib/i18n";
 import { getBranding } from "@/lib/content";
-import { COMPANY } from "@/lib/company-info";
+import { COMPANY, getCompanyInfo } from "@/lib/company-info";
+import { getProducts } from "@/lib/product-store";
+import { getSiteChrome } from "@/lib/site-chrome";
+import { getDictionary } from "@/lib/getDictionary";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -39,12 +43,7 @@ const META = {
 
 export async function generateMetadata({ params }) {
   const { locale } = params;
-  let messages;
-  try {
-    messages = (await import(`@/messages/${locale}.json`)).default;
-  } catch {
-    messages = (await import("@/messages/fa.json")).default;
-  }
+  const messages = await getDictionary(locale);
 
   const safeLocale = isValidLocale(locale) ? locale : defaultLocale;
   const meta = META[safeLocale];
@@ -93,8 +92,8 @@ export async function generateMetadata({ params }) {
       images: ["/og/og-default.jpg"]
     },
     icons: {
-      icon: branding.favicon || "/icon.svg",
-      apple: branding.favicon || "/icon.svg"
+      icon: branding.favicon || "/logo/logo-icon.png",
+      apple: branding.favicon || "/logo/logo-icon.png"
     },
     formatDetection: { telephone: true, email: true, address: true },
     robots: { index: true, follow: true }
@@ -105,15 +104,13 @@ export default async function LocaleLayout({ children, params }) {
   const { locale } = params;
   if (!isValidLocale(locale)) notFound();
 
-  let dict;
-  try {
-    dict = (await import(`@/messages/${locale}.json`)).default;
-  } catch {
-    dict = (await import("@/messages/fa.json")).default;
-  }
+  const dict = await getDictionary(locale);
 
   const dir = localeDirs[locale] || "rtl";
   const branding = getBranding();
+  const company = getCompanyInfo();
+  const products = getProducts();
+  const siteChrome = getSiteChrome();
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
@@ -124,20 +121,20 @@ export default async function LocaleLayout({ children, params }) {
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})();`
+            __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light');}catch(e){document.documentElement.classList.add('light');}})();`
           }}
         />
       </head>
-      <body className="antialiased" style={{ background: "var(--bg)", color: "var(--text)" }}>
+      <body className="antialiased">
         <Providers locale={locale} dict={dict}>
           <SkipLink />
           <ScrollProgress />
           <SmoothScroll>
-            <Navbar logo={branding.logo} />
-            <main id="main-content" tabIndex={-1} className="pt-20 outline-none">
+            <Navbar logo={branding.logo} logoIcon={branding.logoIcon} products={products} chrome={siteChrome} />
+            <main id="main-content" tabIndex={-1} className={(siteChrome.header.layout === "compact" ? "pt-16" : "pt-20") + " outline-none"}>
               {children}
             </main>
-            <Footer logo={branding.logo} />
+            <Footer logo={branding.logo} company={company} socialLinks={branding.socialLinks} chrome={siteChrome} />
             <BottomPopup />
             <BackToTop />
           </SmoothScroll>

@@ -8,57 +8,17 @@ function pick(obj, locale) {
   return obj[locale] || obj.en || obj.fa || "";
 }
 
-export default function CeoSection({ ceo, locale, certificates }) {
+export default function CeoSection({ ceo, locale, certificates, labels }) {
   if (!ceo || !ceo.name) return null;
 
   const name = pick(ceo.name, locale);
   const role = pick(ceo.role, locale);
   const bio = pick(ceo.bio, locale);
   const message = pick(ceo.message, locale);
+  const resume = ceo.resume || {};
+  const resumeItems = Array.isArray(resume.items) ? resume.items : [];
 
-  const labels = {
-    fa: {
-      badge: "مدیریت ارشد",
-      bioTitle: "معرفی مدیرعامل",
-      msgTitle: "سخن مدیرعامل",
-      knowledge: "شرکت دانش‌بنیان",
-      knowledgeType: "تولیدی نوع یک",
-      knowledgeDesc: "بر اساس معرفی شرکت؛ این نشان، تصویر یا جایگزین گواهی رسمی نیست.",
-      standards: "گواهینامه‌ها و مجوزهای منتشرشده",
-      standardsSub: "تصاویر اسناد منتشرشده در سایت شرکت؛ اعتبار فعلی هر سند را از متن زیر آن بررسی کنید."
-    },
-    en: {
-      badge: "Leadership",
-      bioTitle: "About the CEO",
-      msgTitle: "CEO Message",
-      knowledge: "Knowledge-Based Company",
-      knowledgeType: "Production Type I",
-      knowledgeDesc: "Based on the company's published description; this badge is not an official certificate.",
-      standards: "Published Certificates & Permits",
-      standardsSub: "Scans published on the company website; check each document's current validity below."
-    },
-    ar: {
-      badge: "القيادة",
-      bioTitle: "عن الرئيس التنفيذي",
-      msgTitle: "رسالة الرئيس",
-      knowledge: "شركة قائمة على المعرفة",
-      knowledgeType: "إنتاجية النوع الأول",
-      knowledgeDesc: "استناداً إلى تعريف الشركة؛ هذه العلامة ليست شهادة رسمية ولا بديلاً عنها.",
-      standards: "الشهادات والتصاريح المنشورة",
-      standardsSub: "صور الوثائق المنشورة على موقع الشركة؛ يرجى مراجعة صلاحية كل وثيقة أدناه."
-    },
-    ru: {
-      badge: "Руководство",
-      bioTitle: "О директоре",
-      msgTitle: "Слово директора",
-      knowledge: "Наукоемкая компания",
-      knowledgeType: "Производство тип I",
-      knowledgeDesc: "По опубликованному описанию компании; этот знак не является официальным сертификатом.",
-      standards: "Опубликованные сертификаты и разрешения",
-      standardsSub: "Сканы документов с сайта компании; актуальность каждого документа указана ниже."
-    }
-  };
-  const L = labels[locale] || labels.en;
+  const L = labels;
 
   const activeCerts = (certificates || []).filter(function(c) { return c.active !== false; });
 
@@ -110,6 +70,37 @@ export default function CeoSection({ ceo, locale, certificates }) {
               {bio}
             </p>
           </div>
+
+          {resumeItems.length > 0 && (
+            <div className="card-glass p-6 sm:p-8">
+              <h3 className="font-black text-lg sm:text-xl mb-5" style={{ color: "var(--gold)" }}>
+                {pick(resume.title, locale) || L.resumeTitle}
+              </h3>
+              <dl className="grid sm:grid-cols-2 gap-3">
+                {resumeItems.map(function(item, index) {
+                  return (
+                    <div
+                      key={index}
+                      className="rounded-xl border p-4"
+                      style={{ borderColor: "var(--border)", background: "var(--bg-card)" }}
+                    >
+                      <dt className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>
+                        {pick(item.label, locale)}
+                      </dt>
+                      <dd className="mt-2 text-sm font-semibold leading-7" style={{ color: "var(--text)" }}>
+                        {pick(item.value, locale)}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+              {pick(resume.note, locale) && (
+                <p className="mt-4 text-xs leading-6" style={{ color: "var(--text-muted)" }}>
+                  {pick(resume.note, locale)}
+                </p>
+              )}
+            </div>
+          )}
 
           {message && (
             <div className="relative card-glass p-6 sm:p-8 overflow-hidden">

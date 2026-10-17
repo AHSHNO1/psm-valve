@@ -21,7 +21,7 @@ export default function UploadDropzone({
 
   const upload = useCallback(
     async (file) => {
-      if (!file) return;
+      if (!file || uploading) return;
       setError("");
       setUploading(true);
       setProgress(10);
@@ -35,7 +35,7 @@ export default function UploadDropzone({
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         const data = await res.json();
 
-        if (!data.ok) throw new Error(data.error || "خطای آپلود");
+        if (!res.ok || !data.ok || !data.url) throw new Error(data.error || "خطای آپلود");
         setProgress(100);
         onChange(data.url);
         setTimeout(() => setProgress(0), 500);
@@ -44,7 +44,7 @@ export default function UploadDropzone({
       }
       setUploading(false);
     },
-    [type, onChange]
+    [type, onChange, uploading]
   );
 
   const onDrop = useCallback(
@@ -61,6 +61,8 @@ export default function UploadDropzone({
     onChange("");
     setError("");
   };
+  const isPdf = typeof value === "string" && value.toLowerCase().endsWith(".pdf");
+  const changeLabel = type === "catalogs" || isPdf ? "تغییر فایل" : "تغییر تصویر";
 
   return (
     <div>
@@ -98,12 +100,23 @@ export default function UploadDropzone({
         </div>
       )}
 
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(event) => {
+          upload(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+
       {value ? (
         <div
           className="relative rounded-xl overflow-hidden group"
           style={{ border: "1px solid rgba(26, 29, 33, 0.15)", background: "#F1F3F5" }}
         >
-          {type === "catalogs" || value.endsWith(".pdf") ? (
+          {type === "catalogs" || isPdf ? (
             <div className="aspect-video grid place-items-center">
               <div className="text-center">
                 <div
@@ -123,15 +136,29 @@ export default function UploadDropzone({
             <img src={value} alt="" className="w-full max-h-56 object-contain" />
           )}
 
-          <button
-            type="button"
-            onClick={clear}
-            className="absolute top-2 left-2 w-8 h-8 rounded-lg grid place-items-center opacity-0 group-hover:opacity-100 transition"
-            style={{ background: "rgba(220, 38, 38, 0.9)", color: "white" }}
-            aria-label="حذف"
-          >
-            <X size={14} />
-          </button>
+          <div className="absolute top-2 left-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-bold disabled:opacity-60"
+              style={{ background: "rgba(201, 149, 13, 0.95)", color: "white" }}
+            >
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+              {uploading ? "در حال بارگذاری..." : changeLabel}
+            </button>
+            <button
+              type="button"
+              onClick={clear}
+              disabled={uploading}
+              className="w-9 h-9 rounded-lg grid place-items-center disabled:opacity-60"
+              style={{ background: "rgba(220, 38, 38, 0.9)", color: "white" }}
+              aria-label="حذف تصویر"
+              title="حذف تصویر"
+            >
+              <X size={14} />
+            </button>
+          </div>
 
           <div
             className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur text-white text-[10px] px-3 py-1.5 flex items-center gap-1.5"
@@ -145,7 +172,7 @@ export default function UploadDropzone({
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => { if (!uploading) inputRef.current?.click(); }}
           className="rounded-xl p-6 text-center cursor-pointer transition"
           style={{
             background: dragging ? "#FEF9E7" : "#F8F9FA",
@@ -153,14 +180,6 @@ export default function UploadDropzone({
             minHeight: "140px"
           }}
         >
-          <input
-            ref={inputRef}
-            type="file"
-            accept={accept}
-            className="hidden"
-            onChange={(e) => upload(e.target.files?.[0])}
-          />
-
           {uploading ? (
             <div>
               <Loader2 size={32} className="mx-auto mb-2 animate-spin" style={{ color: "#C9950D" }} />

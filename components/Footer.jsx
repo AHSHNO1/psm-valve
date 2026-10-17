@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useDictionary } from "./Providers";
-import { COMPANY } from "@/lib/company-info";
 import { MapPin, Phone, Smartphone, Mail, Printer, Clock, Check } from "lucide-react";
 
 // ============================================================
@@ -77,9 +76,28 @@ function BrandLogo({ src }) {
 // ============================================================
 // MAIN FOOTER
 // ============================================================
-export default function Footer({ logo }) {
+export default function Footer({ logo, company, socialLinks = {}, chrome = {} }) {
   const { locale, t } = useDictionary();
   const isFa = locale === "fa";
+  const L = t.footer;
+  const footerSettings = {
+    layout: "balanced",
+    showBrand: true,
+    showLinks: true,
+    showContact: true,
+    showSocial: true,
+    showBottom: true,
+    ...chrome.footer
+  };
+  const visibleColumnCount = [
+    footerSettings.showBrand,
+    footerSettings.showLinks,
+    footerSettings.showContact,
+    footerSettings.showSocial
+  ].filter(Boolean).length;
+  const footerColumns = footerSettings.layout === "brand-focus" && footerSettings.showBrand && visibleColumnCount > 1
+    ? `1.6fr repeat(${visibleColumnCount - 1}, 1fr)`
+    : `repeat(${Math.max(visibleColumnCount, 1)}, 1fr)`;
 
   const links = [
     { h: "/" + locale + "/products", l: t.nav.products },
@@ -91,100 +109,25 @@ export default function Footer({ logo }) {
   ];
 
   const intlSocials = [
-    { name: "Instagram", Icon: IconInstagram, url: COMPANY.social.instagram, color: "#E4405F" },
-    { name: "WhatsApp", Icon: IconWhatsapp, url: COMPANY.social.whatsapp, color: "#25D366" },
-    { name: "Aparat", Icon: IconAparat, url: COMPANY.social.aparat, color: "#ED145B" }
+    { name: "Instagram", Icon: IconInstagram, url: socialLinks.instagram || company.social.instagram, color: "#E4405F" },
+    { name: "WhatsApp", Icon: IconWhatsapp, url: socialLinks.whatsapp || company.social.whatsapp, color: "#25D366" },
+    { name: "Aparat", Icon: IconAparat, url: socialLinks.aparat || company.social.aparat, color: "#ED145B" }
   ];
 
   const iranianSocials = [
-    { name: isFa ? "بله" : "Bale", url: "https://ble.ir/psm_commercial", color: "#00A650", Icon: IconBale },
-    { name: isFa ? "روبیکا" : "Rubika", url: "https://rubika.ir/Psm_commercial", color: "#7B2CBF", Icon: IconRubika },
-    { name: isFa ? "ایتا" : "Eitaa", url: "https://eitaa.com/Psm_commercial", color: "#F5A623", Icon: IconEitaa }
+    { name: isFa ? "بله" : "Bale", url: socialLinks.bale || "https://ble.ir/psm_commercial", color: "#00A650", Icon: IconBale },
+    { name: isFa ? "روبیکا" : "Rubika", url: socialLinks.rubika || "https://rubika.ir/Psm_commercial", color: "#7B2CBF", Icon: IconRubika },
+    { name: isFa ? "ایتا" : "Eitaa", url: socialLinks.eitaa || "https://eitaa.com/Psm_commercial", color: "#F5A623", Icon: IconEitaa }
   ];
 
-  const L = {
-    fa: {
-      office: "دفتر مرکزی",
-      phone: "تلفن",
-      mobile: "همراه",
-      fax: "فکس",
-      email: "ایمیل",
-      hours: "ساعات کاری",
-      hoursValue: "شنبه – پنجشنبه: ۷ تا ۱۵",
-      hoursClosed: "جمعه: تعطیل",
-      postal: "کدپستی",
-      socialIntl: "بین‌المللی",
-      socialIran: "پیام‌رسان‌های ایرانی",
-      socialTitle: "ما را دنبال کنید",
-      slogan: "آمده‌ایم ملی بسازیم تا بمانیم",
-      knowledge: "دانش‌بنیان",
-      knowledgeType: "تولیدی نوع یک",
-      copyright: "تمامی حقوق محفوظ است"
-    },
-    en: {
-      office: "Head Office",
-      phone: "Phone",
-      mobile: "Mobile",
-      fax: "Fax",
-      email: "Email",
-      hours: "Hours",
-      hoursValue: "Sat – Thu: 7:00 – 15:00",
-      hoursClosed: "Friday: Closed",
-      postal: "Postal",
-      socialIntl: "International",
-      socialIran: "Iranian Messengers",
-      socialTitle: "Follow Us",
-      slogan: "We build for our nation and build to last",
-      knowledge: "Knowledge-Based",
-      knowledgeType: "Production Type I",
-      copyright: "All rights reserved"
-    },
-    ar: {
-      office: "المكتب الرئيسي",
-      phone: "هاتف",
-      mobile: "جوال",
-      fax: "فاكس",
-      email: "بريد",
-      hours: "ساعات العمل",
-      hoursValue: "السبت – الخميس: ٧ – ١٥",
-      hoursClosed: "الجمعة: مغلق",
-      postal: "الرمز البريدي",
-      socialIntl: "دولي",
-      socialIran: "تطبيقات المراسلة الإيرانية",
-      socialTitle: "تابعنا",
-      slogan: "نبني من أجل وطننا ونبني لنبقى",
-      knowledge: "قائمة على المعرفة",
-      knowledgeType: "إنتاج من النوع الأول",
-      copyright: "جميع الحقوق محفوظة"
-    },
-    ru: {
-      office: "Офис",
-      phone: "Телефон",
-      mobile: "Мобильный",
-      fax: "Факс",
-      email: "Email",
-      hours: "Часы",
-      hoursValue: "Сб – Чт: 7:00 – 15:00",
-      hoursClosed: "Пятница: закрыто",
-      postal: "Индекс",
-      socialIntl: "Международные",
-      socialIran: "Иранские мессенджеры",
-      socialTitle: "Подписаться",
-      slogan: "Строим для страны, чтобы оставить наследие",
-      knowledge: "Наукоёмкое производство",
-      knowledgeType: "Тип I",
-      copyright: "Все права защищены"
-    }
-  }[locale] || {};
-
   return (
-    <footer className="footer-root">
+    <footer className={"footer-root footer-layout-" + footerSettings.layout} style={{ "--footer-columns": footerColumns }}>
       <div className="container-x">
         {/* ============ MAIN GRID ============ */}
         <div className="footer-grid">
 
           {/* ========== Column 1: Brand ========== */}
-          <div className="footer-brand-col">
+          {footerSettings.showBrand && <div className="footer-brand-col">
             <div className="footer-brand-head">
               <BrandLogo src={logo} />
               <div className="footer-brand-text">
@@ -194,10 +137,7 @@ export default function Footer({ logo }) {
             </div>
 
             <div className="footer-slogans">
-              <p className="footer-slogan footer-slogan-primary">{L.slogan}</p>
-              <p className="footer-slogan footer-slogan-secondary">
-                {COMPANY.slogan[locale] || COMPANY.slogan.en}
-              </p>
+              <p className="footer-slogan footer-slogan-primary">{L.desc}</p>
             </div>
 
             <div className="footer-knowledge-badge">
@@ -209,10 +149,10 @@ export default function Footer({ logo }) {
                 <div className="footer-knowledge-type">{L.knowledgeType}</div>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* ========== Column 2: Quick Links ========== */}
-          <div>
+          {footerSettings.showLinks && <div>
             <h4 className="footer-heading">{t.footer.quickLinks}</h4>
             <ul className="footer-links">
               {links.map(function (l) {
@@ -225,19 +165,19 @@ export default function Footer({ logo }) {
                 );
               })}
             </ul>
-          </div>
+          </div>}
 
           {/* ========== Column 3: Contact (Compact) ========== */}
-          <div className="footer-contact-col">
+          {footerSettings.showContact && <div className="footer-contact-col">
             <h4 className="footer-heading">{t.footer.contact}</h4>
 
             {/* Address */}
             <div className="fc-row fc-address">
               <MapPin size={13} className="fc-icon" />
               <div className="fc-text">
-                <div>{COMPANY.address.office[locale] || COMPANY.address.office.en}</div>
+                <div>{company.address.office[locale] || company.address.office.en}</div>
                 <div className="fc-muted">
-                  {L.postal}: {COMPANY.address.postalCode}
+                  {L.postal}: {company.address.postalCode}
                 </div>
               </div>
             </div>
@@ -247,13 +187,12 @@ export default function Footer({ logo }) {
               <Phone size={13} className="fc-icon" />
               <div className="fc-text fc-inline">
                 <span className="fc-label">{L.phone}:</span>
-                <a href="tel:+988634131533" className="fc-link" style={{ direction: "ltr" }}>
-                  +98 86 3413 1533
-                </a>
-                <span className="fc-sep">·</span>
-                <a href="tel:+988634131918" className="fc-link" style={{ direction: "ltr" }}>
-                  +98 86 3413 1918
-                </a>
+                {[...new Set([company.phone.office, company.phone.factory].filter(Boolean))].map((phone, index) => (
+                  <span key={phone}>
+                    {index > 0 && <span className="fc-sep">·</span>}
+                    <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link" style={{ direction: "ltr" }}>{phone}</a>
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -262,13 +201,12 @@ export default function Footer({ logo }) {
               <Smartphone size={13} className="fc-icon" />
               <div className="fc-text fc-inline">
                 <span className="fc-label">{L.mobile}:</span>
-                <a href="tel:+989128616063" className="fc-link" style={{ direction: "ltr" }}>
-                  +98 912 861 6063
-                </a>
-                <span className="fc-sep">·</span>
-                <a href="tel:+989188939209" className="fc-link" style={{ direction: "ltr" }}>
-                  +98 918 893 9209
-                </a>
+                {company.phone.mobile.filter(Boolean).map((phone, index) => (
+                  <span key={phone}>
+                    {index > 0 && <span className="fc-sep">·</span>}
+                    <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link" style={{ direction: "ltr" }}>{phone}</a>
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -277,39 +215,39 @@ export default function Footer({ logo }) {
               <Mail size={13} className="fc-icon" />
               <div className="fc-text fc-inline">
                 <span className="fc-label">{L.email}:</span>
-                <a href={"mailto:" + COMPANY.email.primary} className="fc-link" style={{ direction: "ltr" }}>
-                  {COMPANY.email.primary}
-                </a>
-                <span className="fc-sep">·</span>
-                <a href={"mailto:" + COMPANY.email.secondary} className="fc-link" style={{ direction: "ltr" }}>
-                  {COMPANY.email.secondary}
-                </a>
+                {[company.email.primary, company.email.secondary].filter(Boolean).map((email, index) => (
+                  <span key={email}>
+                    {index > 0 && <span className="fc-sep">·</span>}
+                    <a href={"mailto:" + email} className="fc-link" style={{ direction: "ltr" }}>{email}</a>
+                  </span>
+                ))}
               </div>
             </div>
 
-            {/* Fax + Hours */}
-            <div className="fc-row fc-two-col">
-              <div className="fc-half">
-                <Printer size={13} className="fc-icon" />
-                <div className="fc-text fc-inline">
-                  <span className="fc-label">{L.fax}:</span>
-                  <span className="fc-link" style={{ direction: "ltr" }}>
-                    {COMPANY.fax.office}
-                  </span>
-                </div>
-              </div>
-              <div className="fc-half">
-                <Clock size={13} className="fc-icon" />
-                <div className="fc-text fc-inline">
-                  <span className="fc-label">{L.hours}:</span>
-                  <span className="fc-link">{L.hoursValue}</span>
-                </div>
+            {/* Fax */}
+            <div className="fc-row">
+              <Printer size={13} className="fc-icon" />
+              <div className="fc-text fc-inline">
+                <span className="fc-label">{L.fax}:</span>
+                <span className="fc-link" style={{ direction: "ltr" }}>
+                  {company.fax.office}
+                </span>
               </div>
             </div>
-          </div>
+
+            {/* Working hours */}
+            <div className="fc-row">
+              <Clock size={13} className="fc-icon" />
+              <div className="fc-text fc-hours">
+                <span className="fc-label">{L.hours}</span>
+                <span className="fc-link">{L.hoursValue}</span>
+                <span className="fc-hours-closed">{L.hoursClosed}</span>
+              </div>
+            </div>
+          </div>}
 
           {/* ========== Column 4: Social ========== */}
-          <div>
+          {footerSettings.showSocial && <div>
             <h4 className="footer-heading">{L.socialTitle}</h4>
 
             <div className="footer-social-block">
@@ -357,27 +295,29 @@ export default function Footer({ logo }) {
                 })}
               </div>
             </div>
-          </div>
+          </div>}
 
         </div>
       </div>
 
       {/* ============ BOTTOM BAR ============ */}
+      {footerSettings.showBottom && (
       <div className="footer-bottom">
         <div className="container-x footer-bottom-inner">
           <div className="footer-bottom-text">
-            <span dir="ltr" lang="en">
-              Designed by <span className="footer-bottom-it">IT Department ahshno</span>
+            <span>
+              {L.designCredit} <span className="footer-bottom-it">{L.itDepartment}</span>
             </span>
             <span className="footer-bottom-sep">|</span>
-            {L.copyright} ©{new Date().getFullYear()}
+            {L.rights} ©{new Date().getFullYear()}
           </div>
-          <a href="mailto:it@psmvalve.com" className="footer-bottom-email">
+          <a href={"mailto:" + L.itEmail} className="footer-bottom-email">
             <Mail size={12} />
-            <span>it@psmvalve.com</span>
+            <span>{L.itEmail}</span>
           </a>
         </div>
       </div>
+      )}
 
       {/* ============================================================
           STYLES
@@ -391,11 +331,16 @@ export default function Footer({ logo }) {
 
         .footer-grid {
           display: grid;
-          grid-template-columns: 1.15fr 0.9fr 1.8fr 1fr;
+          grid-template-columns: var(--footer-columns);
           align-items: start;
           gap: clamp(20px, 3vw, 36px);
           padding: 40px 0 32px;
         }
+        .footer-layout-compact .footer-grid {
+          gap: clamp(14px, 2vw, 24px);
+          padding: 26px 0 20px;
+        }
+        .footer-layout-compact .footer-brand-col { gap: 10px; }
         .footer-grid > div { min-width: 0; }
         .footer-grid > div:not(.footer-brand-col):not(.footer-contact-col) {
           display: flex;
@@ -594,32 +539,22 @@ export default function Footer({ logo }) {
           margin: 0 2px;
         }
         .fc-muted {
-          font-size: 10px;
-          color: var(--text-muted);
-          font-weight: 600;
-          margin-top: 2px;
+          font-size: 11.5px;
+          color: var(--text-soft);
+          font-weight: 700;
+          margin-top: 4px;
           font-family: monospace;
-          direction: ltr;
-          text-align: start;
+        }
+        .fc-hours {
+          display: grid;
+          gap: 3px;
+        }
+        .fc-hours-closed {
+          color: var(--text-soft);
+          font-size: 11px;
+          font-weight: 600;
         }
         .fc-address .fc-text { font-weight: 600; }
-
-        .fc-two-col {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        @media (max-width: 1280px) {
-          .fc-two-col { grid-template-columns: 1fr; }
-        }
-        .fc-half {
-          display: flex;
-          align-items: flex-start;
-          gap: 9px;
-          font-size: 12px;
-          line-height: 1.55;
-          color: var(--text-soft);
-        }
 
         .footer-social-block {
           margin-bottom: 16px;

@@ -1,68 +1,49 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { createProduct, getProducts } from "@/lib/product-store";
+import { isProductCategory } from "@/lib/categories";
 
-function readProducts() {
-  const filePath = path.join(process.cwd(), "lib", "products.js");
-  const content = fs.readFileSync(filePath, "utf8");
-  const match = content.match(/export const products = (\[[\s\S]*?\]);/);
-  if (!match) return [];
-  try {
-    return JSON.parse(match[1]);
-  } catch {
-    return [];
-  }
-}
-
-function writeProducts(products) {
-  const filePath = path.join(process.cwd(), "lib", "products.js");
-  const content = `// Auto-generated products database
-// Edited via admin panel
-
-export const products = ${JSON.stringify(products, null, 2)};
-
-export function getProduct(slug) {
-  return products.find((p) => p.slug === slug);
-}
-
-export function getProductsByCategory(categoryId) {
-  return products.filter((p) => p.categoryId === categoryId);
-}
-
-export function getAllProducts() {
-  return products;
-}
-`;
-  fs.writeFileSync(filePath, content, "utf8");
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
-  return NextResponse.json({ ok: true, products: readProducts() });
+
+  try {
+    return NextResponse.json({ ok: true, products: getProducts() });
+  } catch (error) {
+    console.error("Unable to load products:", error);
+    return NextResponse.json({ ok: false, error: "بارگذاری محصولات ناموفق بود." }, { status: 500 });
+  }
 }
 
 export async function POST(request) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
 
+  let product;
   try {
-    const product = await request.json();
+    product = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "درخواست نامعتبر است." }, { status: 400 });
+  }
 
-    if (!product.slug || !product.series || !product.name?.fa) {
-      return NextResponse.json({ ok: false, error: "فیلدهای الزامی خالی است" }, { status: 400 });
+  if (!product || typeof product !== "object" || Array.isArray(product) ||
+      typeof product.slug !== "string" || !/^[a-z0-9-]+$/.test(product.slug) ||
+      typeof product.series !== "string" || !product.series.trim() ||
+      !isProductCategory(product.categoryId) ||
+      !product.name || typeof product.name.fa !== "string" || !product.name.fa.trim()) {
+    return NextResponse.json({ ok: false, error: "فیلدهای الزامی محصول معتبر نیست." }, { status: 400 });
+  }
+
+  try {
+    if (!createProduct(product)) {
+      return NextResponse.json({ ok: false, error: "این نامک قبلاً استفاده شده." }, { status: 409 });
     }
-
-    const list = readProducts();
-    if (list.find((x) => x.slug === product.slug)) {
-      return NextResponse.json({ ok: false, error: "این نامک قبلاً استفاده شده" }, { status: 400 });
-    }
-
-    list.push(product);
-    writeProducts(list);
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+    return NextResponse.json({ ok: true }, { status: 201 });
+  } catch (error) {
+    console.error("Unable to create product:", error);
+    return NextResponse.json({ ok: false, error: "ذخیره محصول ناموفق بود." }, { status: 500 });
   }
 }

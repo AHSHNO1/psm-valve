@@ -10,6 +10,82 @@ function pick(obj, locale) {
   return obj[locale] || obj.en || obj.fa || "";
 }
 
+const MEDIA_COPY = {
+  fa: {
+    news: "تازه‌ترین خبرها و اطلاعیه‌های پتروسازه میهن را در این بخش دنبال کنید.",
+    article: "مطالب تخصصی و آموزشی برای آشنایی بیشتر با محصولات و مهندسی شیرآلات.",
+    video: "ویدئو را پخش کنید تا با محصولات، فرایندها و فعالیت‌های شرکت بیشتر آشنا شوید.",
+    catalog: "برای مشاهده اطلاعات تکمیلی، کاتالوگ PDF را باز کنید یا آن را دانلود کنید.",
+    gallery: "تصاویری از محصولات، امکانات و فعالیت‌های پتروسازه میهن.",
+    newsEmpty: "خبر تازه‌ای منتشر نشده است. خبرها پس از انتشار در این بخش نمایش داده می‌شوند.",
+    articleEmpty: "مقاله‌ای برای نمایش موجود نیست. مطالب آموزشی جدید در همین بخش قرار می‌گیرند.",
+    videoEmpty: "ویدئویی در این بخش موجود نیست. ویدئوهای تازه پس از انتشار نمایش داده می‌شوند.",
+    catalogEmpty: "کاتالوگی برای نمایش موجود نیست. کاتالوگ‌های منتشرشده از اینجا در دسترس خواهند بود.",
+    galleryEmpty: "تصویری در گالری موجود نیست. تصاویر تازه پس از بارگذاری در این بخش نمایش داده می‌شوند.",
+    view: "مشاهده",
+    galleryTitle: "تصویر گالری"
+  },
+  en: {
+    news: "Follow the latest news and announcements from Petro Sazeh Mihan.",
+    article: "Technical and educational resources about our products and valve engineering.",
+    video: "Play the video to learn more about our products, processes, and activities.",
+    catalog: "Open or download the PDF catalog for additional product information.",
+    gallery: "Images of Petro Sazeh Mihan products, facilities, and activities.",
+    newsEmpty: "There is no recent news to display. New announcements will appear here.",
+    articleEmpty: "There are no articles to display. New educational resources will appear here.",
+    videoEmpty: "There are no videos to display. New videos will appear here when available.",
+    catalogEmpty: "There are no catalogs to display. Published catalogs will be available here.",
+    galleryEmpty: "The gallery is empty. New images will appear here after they are uploaded.",
+    view: "View",
+    galleryTitle: "Gallery image"
+  },
+  ar: {
+    news: "تابعوا أحدث أخبار وإعلانات شركة بترو سازه ميهن.",
+    article: "مواد فنية وتعليمية للتعرف على منتجاتنا وهندسة الصمامات.",
+    video: "شغّل الفيديو للتعرف أكثر على منتجاتنا وعملياتنا وأنشطتنا.",
+    catalog: "افتح كتالوج PDF أو نزّله للاطلاع على معلومات إضافية عن المنتجات.",
+    gallery: "صور منتجات ومرافق وأنشطة شركة بترو سازه ميهن.",
+    newsEmpty: "لا توجد أخبار حديثة للعرض. ستظهر الإعلانات الجديدة هنا.",
+    articleEmpty: "لا توجد مقالات للعرض. ستتوفر المواد التعليمية الجديدة هنا.",
+    videoEmpty: "لا توجد فيديوهات للعرض. ستظهر الفيديوهات الجديدة عند توفرها.",
+    catalogEmpty: "لا توجد كتالوجات للعرض. ستكون الكتالوجات المنشورة متاحة هنا.",
+    galleryEmpty: "المعرض فارغ. ستظهر الصور الجديدة هنا بعد رفعها.",
+    view: "عرض",
+    galleryTitle: "صورة من المعرض"
+  },
+  ru: {
+    news: "Следите за последними новостями и объявлениями Petro Sazeh Mihan.",
+    article: "Технические и образовательные материалы о продукции и арматуре.",
+    video: "Посмотрите видео, чтобы узнать больше о продукции, процессах и работе компании.",
+    catalog: "Откройте или скачайте PDF-каталог для получения дополнительной информации.",
+    gallery: "Фотографии продукции, объектов и деятельности Petro Sazeh Mihan.",
+    newsEmpty: "Свежих новостей пока нет. Новые объявления появятся здесь.",
+    articleEmpty: "Статей пока нет. Новые обучающие материалы будут опубликованы здесь.",
+    videoEmpty: "Видео пока нет. Новые ролики появятся здесь после публикации.",
+    catalogEmpty: "Каталогов пока нет. Опубликованные каталоги будут доступны здесь.",
+    galleryEmpty: "Галерея пуста. Новые изображения появятся здесь после загрузки.",
+    view: "Открыть",
+    galleryTitle: "Изображение галереи"
+  }
+};
+
+function fallbackText(locale, key) {
+  return MEDIA_COPY[locale]?.[key] || MEDIA_COPY.en[key];
+}
+
+function MediaCover({ src, title, fallback }) {
+  return (
+    <div className="aspect-video overflow-hidden bg-[var(--bg-soft)]">
+      <img
+        src={src || fallback}
+        alt={title}
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
 export default function MediaTabsSimple({ media, news, articles, locale, dict, initialTab }) {
   const validTabs = ["news", "articles", "videos", "catalogs", "gallery"];
   const [tab, setTab] = useState(validTabs.includes(initialTab) ? initialTab : "news");
@@ -90,17 +166,16 @@ export default function MediaTabsSimple({ media, news, articles, locale, dict, i
   );
 }
 
-function EmptyState({ text, Icon }) {
+function EmptyState({ text, description, Icon, image }) {
   const I = Icon || Newspaper;
   return (
-    <div
-      className="rounded-2xl p-16 text-center"
-      style={{ background: "var(--bg-card)", border: "2px dashed var(--border-strong)" }}
-    >
-      <I size={48} style={{ color: "var(--text-muted)", margin: "0 auto 16px" }} />
-      <p className="text-sm font-bold" style={{ color: "var(--text-muted)" }}>
-        {text}
-      </p>
+    <div className="card-glass mx-auto max-w-2xl overflow-hidden rounded-2xl">
+      <MediaCover src={image} title={text} fallback="/images/media/article-cover.svg" />
+      <div className="p-6 text-center sm:p-8">
+        <I size={28} style={{ color: "var(--gold)", margin: "0 auto 12px" }} aria-hidden="true" />
+        <p className="text-sm font-bold" style={{ color: "var(--text)" }}>{text}</p>
+        <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-soft">{description}</p>
+      </div>
     </div>
   );
 }
@@ -108,27 +183,22 @@ function EmptyState({ text, Icon }) {
 function NewsGrid({ items, locale, dict }) {
   const active = items.filter(function(n) { return n.active !== false; });
   if (active.length === 0) {
-    return <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Newspaper} />;
+    return <EmptyState text={fallbackText(locale, "newsEmpty")} description={fallbackText(locale, "news")} Icon={Newspaper} image="/images/media/news-cover.svg" />;
   }
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {active.map(function(n) {
+        const title = pick(n.title, locale) || fallbackText(locale, "newsEmpty");
         return (
-          <div key={n.id} className="card-glass overflow-hidden hover:border-gold-500/40 transition flex flex-col">
-            {n.image && (
-              <div className="aspect-video overflow-hidden" style={{ background: "var(--bg-soft)" }}>
-                <img src={n.image} alt="" className="w-full h-full object-cover" />
+          <article key={n.id} className="card-glass group flex h-full flex-col overflow-hidden transition hover:border-gold-500/40">
+            <MediaCover src={n.image} title={title} fallback="/images/media/news-cover.svg" />
+            <div className="flex flex-1 flex-col p-5">
+              <div className="mb-2 min-h-4 text-xs font-bold" style={{ color: "var(--gold)" }}>
+                {pick(n.category, locale) || fallbackText(locale, "news").split(".")[0]}
               </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col">
-              <div className="text-xs font-bold mb-3" style={{ color: "var(--gold)" }}>
-                {pick(n.category, locale)}
-              </div>
-              <h3 className="font-bold text-base leading-7 mb-3" style={{ color: "var(--text)" }}>
-                {pick(n.title, locale)}
-              </h3>
-              <p className="text-sm leading-6 flex-1" style={{ color: "var(--text-soft)" }}>
-                {pick(n.excerpt, locale)}
+              <h3 className="mb-2 font-bold text-base leading-7" style={{ color: "var(--text)" }}>{title}</h3>
+              <p className="flex-1 text-sm leading-6 text-soft">
+                {pick(n.excerpt, locale) || fallbackText(locale, "news")}
               </p>
               <div className="mt-5 flex items-center justify-between text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="flex items-center gap-1">
@@ -139,7 +209,7 @@ function NewsGrid({ items, locale, dict }) {
                 </span>
               </div>
             </div>
-          </div>
+          </article>
         );
       })}
     </div>
@@ -147,10 +217,11 @@ function NewsGrid({ items, locale, dict }) {
 }
 
 function ArticlesGrid({ items, locale, dict }) {
-  if (!items.length) return <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={FileText} />;
+  if (!items.length) return <EmptyState text={fallbackText(locale, "articleEmpty")} description={fallbackText(locale, "article")} Icon={FileText} image="/images/media/article-cover.svg" />;
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {items.map(function(a) {
+        const title = pick(a.title, locale) || fallbackText(locale, "articleEmpty");
         const readTime = a.readMinutes
           ? `${new Intl.NumberFormat(locale).format(a.readMinutes)} ${dict.articles.readTime}`
           : a.readTime;
@@ -158,21 +229,23 @@ function ArticlesGrid({ items, locale, dict }) {
           <Link
             key={a.slug}
             href={"/" + locale + "/articles/" + a.slug}
-            className="card-glass p-6 hover:border-gold-500/40 transition-all group"
+            className="card-glass group flex h-full flex-col overflow-hidden transition hover:border-gold-500/40"
           >
-            <div className="text-xs font-bold" style={{ color: "var(--gold)" }}>
-              {pick(a.category, locale)}
-            </div>
-            <h3 className="mt-3 font-bold text-base leading-7 transition group-hover:text-gold-500"
-              style={{ color: "var(--text)" }}>
-              {pick(a.title, locale)}
-            </h3>
-            <p className="mt-3 text-sm leading-6" style={{ color: "var(--text-soft)" }}>
-              {pick(a.excerpt, locale)}
-            </p>
-            <div className="mt-5 flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
-              <span>{pick(a.date, locale)}</span>
-              <span>{readTime}</span>
+            <MediaCover src={a.image || a.cover || a.thumbnail} title={title} fallback="/images/media/article-cover.svg" />
+            <div className="flex flex-1 flex-col p-5">
+              <div className="mb-2 min-h-4 text-xs font-bold" style={{ color: "var(--gold)" }}>
+                {pick(a.category, locale) || fallbackText(locale, "article").split(".")[0]}
+              </div>
+              <h3 className="font-bold text-base leading-7 transition group-hover:text-gold-500" style={{ color: "var(--text)" }}>
+                {title}
+              </h3>
+              <p className="mt-2 flex-1 text-sm leading-6 text-soft">
+                {pick(a.excerpt, locale) || fallbackText(locale, "article")}
+              </p>
+              <div className="mt-5 flex justify-between text-xs" style={{ color: "var(--text-muted)" }}>
+                <span>{pick(a.date, locale)}</span>
+                <span>{readTime}</span>
+              </div>
             </div>
           </Link>
         );
@@ -199,16 +272,19 @@ function VideosGrid({ videos, locale, dict, aparatUnavailable }) {
         </p>
       )}
       {!videos.length ? (
-        <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Film} />
+        <EmptyState text={fallbackText(locale, "videoEmpty")} description={fallbackText(locale, "video")} Icon={Film} image="/images/media/video-cover.svg" />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {videos.map(function(v) {
             const title = (v.title && (v.title[locale] || v.title.fa || v.title.en)) || "Video";
             return (
-              <div key={v.id} className="card-glass overflow-hidden">
-                <VideoEmbed url={v.url} title={title} poster={v.poster} />
-                <div className="p-4">
-                  <h3 className="font-bold text-sm" style={{ color: "var(--text)" }}>{title}</h3>
+              <div key={v.id} className="card-glass group flex h-full flex-col overflow-hidden">
+                <VideoEmbed url={v.url} title={title} poster={v.poster || "/images/media/video-cover.svg"} />
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="font-bold text-base leading-7" style={{ color: "var(--text)" }}>{title}</h3>
+                  <p className="mt-2 flex-1 text-sm leading-6 text-soft">
+                    {pick(v.description, locale) || fallbackText(locale, "video")}
+                  </p>
                 </div>
               </div>
             );
@@ -220,30 +296,25 @@ function VideosGrid({ videos, locale, dict, aparatUnavailable }) {
 }
 
 function CatalogsGrid({ catalogs, dict, locale }) {
-  if (!catalogs.length) return <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Library} />;
+  if (!catalogs.length) return <EmptyState text={fallbackText(locale, "catalogEmpty")} description={fallbackText(locale, "catalog")} Icon={Library} image="/images/media/catalog-cover.svg" />;
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {catalogs.map(function(c) {
+        const title = pick(c.title, locale) || "Catalog";
         return (
-          <div key={c.id} className="card-glass p-6 group hover:border-gold-500/50 transition flex flex-col">
-            <div className="w-14 h-14 rounded-xl grid place-items-center mb-4"
-              style={{ background: "var(--glow)", color: "var(--gold)" }}>
-              <FileText size={26} />
-            </div>
-            <h3 className="font-bold text-sm mb-2" style={{ color: "var(--text)" }}>
-              {pick(c.title, locale) || "Catalog"}
-            </h3>
-            {c.description && (
-              <p className="text-xs leading-5 flex-1" style={{ color: "var(--text-soft)" }}>
-                {c.description}
+          <article key={c.id} className="card-glass group flex h-full flex-col overflow-hidden transition hover:border-gold-500/50">
+            <MediaCover src={c.cover} title={title} fallback="/images/media/catalog-cover.svg" />
+            <div className="flex flex-1 flex-col p-5">
+              <h3 className="font-bold text-base leading-7" style={{ color: "var(--text)" }}>{title}</h3>
+              <p className="mt-2 flex-1 text-sm leading-6 text-soft">
+                {pick(c.description, locale) || fallbackText(locale, "catalog")}
               </p>
-            )}
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-3">
               <a href={c.url} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-bold"
-                style={{ color: "var(--text-soft)" }}>
+                style={{ color: "var(--text-soft)" }} aria-label={`${fallbackText(locale, "view")} ${title}`}>
                 <FileText size={14} />
-                {locale === "fa" ? "مشاهده" : locale === "ar" ? "عرض" : locale === "ru" ? "Просмотр" : "View"}
+                {fallbackText(locale, "view")}
               </a>
               <a href={c.url} download
                 className="inline-flex items-center gap-2 text-sm font-bold"
@@ -251,34 +322,34 @@ function CatalogsGrid({ catalogs, dict, locale }) {
                 <Download size={14} />
                 {(dict.media && dict.media.downloadCatalog) || "دانلود"}
               </a>
+              </div>
             </div>
-          </div>
+          </article>
         );
       })}
     </div>
   );
 }
 
-function GalleryGrid({ items, dict }) {
-  if (!items.length) return <EmptyState text={(dict.media && dict.media.empty) || "به‌زودی"} Icon={Camera} />;
+function GalleryGrid({ items, dict, locale }) {
+  if (!items.length) return <EmptyState text={fallbackText(locale, "galleryEmpty")} description={fallbackText(locale, "gallery")} Icon={Camera} image="/images/media/article-cover.svg" />;
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {items.map(function(img) {
+        const title = pick(img.title, locale) || fallbackText(locale, "galleryTitle");
         return (
           <a
             key={img.id}
             href={img.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative aspect-square rounded-xl overflow-hidden group"
-            style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}
+            className="card-glass group flex h-full flex-col overflow-hidden"
           >
-            <img
-              src={img.url}
-              alt={img.title || "Gallery"}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-              loading="lazy"
-            />
+            <MediaCover src={img.url} title={title} fallback="/images/media/article-cover.svg" />
+            <div className="flex flex-1 flex-col p-5">
+              <h3 className="font-bold text-base" style={{ color: "var(--text)" }}>{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-soft">{fallbackText(locale, "gallery")}</p>
+            </div>
           </a>
         );
       })}

@@ -206,9 +206,9 @@ export default function ExplodedButterflyValve() {
     : ({ fa: "بازکردن کامل", en: "Explode view", ar: "تفكيك كامل", ru: "Разнести детали" }[locale] || "Explode view");
 
   return (
-    <div className="relative h-[390px] sm:h-[450px]">
-      <Canvas camera={{ position: [3.8, 3, 6.4], fov: 40 }} dpr={[1, 1.5]}>
-        <group position={[0, -0.18, 0]} scale={0.92}>
+    <div className="relative h-[440px] sm:h-[520px]">
+      <Canvas camera={{ position: [3.8, 3, 6.4], fov: 38 }} dpr={[1, 1.5]}>
+        <group position={[0, -0.18, 0]} scale={1.02}>
           <ButterflyModel explode={explode} openAngle={openAngle} locale={locale} />
         </group>
         <OrbitControls

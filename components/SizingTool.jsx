@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useId } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,7 +30,7 @@ import SizingReportModal from "./SizingReportModal";
 import MaterialGuide from "./MaterialGuide";
 import FluidPicker from "./FluidPicker";
 import { suggestProducts } from "@/data/psm-products-preview";
-import { SYSTEMS, formToSI, formFromSI } from "@/lib/unit-system";
+import { SYSTEMS, formToSI, formFromSI, tempToC } from "@/lib/unit-system";
 import { track } from "@/lib/analytics";
 
 const DEFAULT_FORM = {
@@ -47,37 +47,55 @@ function getRecommendedCharacteristic(fluid, openingPercent) {
   return "equal";
 }
 
-function validateForm(form, fluid, locale) {
+function validateForm(form, fluid, locale, unitSystem) {
   const errors = {};
   const isFa = locale === "fa";
+  const invalidPositive = (value) =>
+    !Number.isFinite(value) || value <= 0;
+  const optionalInvalidPositive = (value) =>
+    value != null && invalidPositive(value);
 
   if (fluid === "steam") {
-    if (form.W == null || form.W <= 0) errors.W = isFa ? "دبی بخار باید بزرگتر از صفر باشد" : "Steam flow must be > 0";
+    if (invalidPositive(form.W)) errors.W = isFa ? "دبی بخار باید عددی بزرگتر از صفر باشد" : "Steam flow must be a number greater than 0";
   } else {
-    if (form.Q == null || form.Q <= 0) errors.Q = isFa ? "دبی باید بزرگتر از صفر باشد" : "Flow must be > 0";
+    if (invalidPositive(form.Q)) errors.Q = isFa ? "دبی باید عددی بزرگتر از صفر باشد" : "Flow must be a number greater than 0";
   }
 
-  if (form.P1 == null || form.P1 <= 0) errors.P1 = isFa ? "فشار ورودی باید مثبت باشد" : "P1 must be > 0";
-  if (form.P2 == null || form.P2 < 0) errors.P2 = isFa ? "فشار خروجی نمی‌تواند منفی باشد" : "P2 cannot be negative";
-  if (form.P1 != null && form.P2 != null && form.P1 <= form.P2) {
+  if (invalidPositive(form.P1)) errors.P1 = isFa ? "فشار ورودی باید عددی مثبت باشد" : "P1 must be a positive number";
+  if (!Number.isFinite(form.P2) || form.P2 < 0) errors.P2 = isFa ? "فشار خروجی باید عددی نامنفی باشد" : "P2 must be a non-negative number";
+  if (Number.isFinite(form.P1) && Number.isFinite(form.P2) && form.P1 <= form.P2) {
     errors.P2 = isFa ? "فشار ورودی باید بیشتر از خروجی باشد" : "P1 must be > P2";
   }
 
   if (fluid === "liquid") {
-    if (form.Gf == null || form.Gf <= 0) errors.Gf = isFa ? "چگالی نسبی باید مثبت باشد" : "Gf must be > 0";
-    if (form.Pv != null && form.Pv < 0) errors.Pv = isFa ? "فشار بخار نمی‌تواند منفی باشد" : "Pv cannot be negative";
-    if (form.Pv != null && form.P1 != null && form.Pv >= form.P1) {
+    if (invalidPositive(form.Gf)) errors.Gf = isFa ? "چگالی نسبی باید عددی مثبت باشد" : "Gf must be a positive number";
+    if (form.Pv != null && (!Number.isFinite(form.Pv) || form.Pv < 0)) {
+      errors.Pv = isFa ? "فشار بخار باید عددی نامنفی باشد" : "Pv must be a non-negative number";
+    }
+    if (Number.isFinite(form.Pv) && Number.isFinite(form.P1) && form.Pv >= form.P1) {
       errors.Pv = isFa ? "فشار بخار باید کمتر از P1 باشد" : "Pv must be < P1";
+    }
+    if (optionalInvalidPositive(form.Pc)) errors.Pc = isFa ? "فشار بحرانی باید عددی مثبت باشد" : "Pc must be a positive number";
+    if (form.FL != null && (!Number.isFinite(form.FL) || form.FL <= 0 || form.FL > 1)) {
+      errors.FL = isFa ? "ضریب FL باید بیشتر از صفر و حداکثر ۱ باشد" : "FL must be greater than 0 and at most 1";
     }
   }
 
   if (fluid === "gas") {
-    if (form.Gg == null || form.Gg <= 0) errors.Gg = isFa ? "چگالی گاز باید مثبت باشد" : "Gg must be > 0";
+    if (invalidPositive(form.Gg)) errors.Gg = isFa ? "چگالی گاز باید عددی مثبت باشد" : "Gg must be a positive number";
+    if (invalidPositive(form.Z)) errors.Z = isFa ? "ضریب Z باید عددی مثبت باشد" : "Z must be a positive number";
+    if (invalidPositive(form.k)) errors.k = isFa ? "نسبت گرمای ویژه باید عددی مثبت باشد" : "k must be a positive number";
+    if (invalidPositive(form.xT)) errors.xT = isFa ? "ضریب xT باید عددی مثبت باشد" : "xT must be a positive number";
   }
 
   if (fluid !== "liquid") {
-    if (form.T == null || form.T < -200 || form.T > 800) {
-      errors.T = isFa ? "دما باید بین ۲۰۰- و ۸۰۰ درجه باشد" : "T must be between -200 and 800 °C";
+    const temperatureC = Number.isFinite(form.T)
+      ? tempToC(form.T, unitSystem === "IMPERIAL" ? "°F" : "°C")
+      : null;
+    if (temperatureC == null || temperatureC < -200 || temperatureC > 800) {
+      errors.T = isFa
+        ? "دما باید بین ۲۰۰- و ۸۰۰ درجهٔ سلسیوس باشد"
+        : "T must be between -200 and 800 °C";
     }
   }
 
@@ -121,12 +139,14 @@ const FIELD_HELP = {
 
 function Field({ label, unit, value, onChange, step, help, error, placeholder }) {
   const [showHelp, setShowHelp] = useState(false);
+  const inputId = useId();
+  const errorId = useId();
   const isError = !!error;
   return (
     <div style={{ position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ fontSize: 10.5, fontWeight: 900, color: isError ? "#E81123" : "var(--text-muted)" }}>{label}</span>
+          <label htmlFor={inputId} style={{ fontSize: 10.5, fontWeight: 900, color: isError ? "#E81123" : "var(--text-muted)" }}>{label}</label>
           {help && (
             <button
               type="button"
@@ -153,11 +173,14 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder })
         )}
       </div>
       <input
+        id={inputId}
         type="number"
         step={step || 1}
         value={value == null ? "" : value}
         placeholder={placeholder || ""}
         onChange={onChange}
+        aria-invalid={isError}
+        aria-describedby={isError ? errorId : undefined}
         style={{
           width: "100%", padding: "10px 12px", borderRadius: 9,
           border: "1.5px solid " + (isError ? "#E81123" : "var(--border)"),
@@ -182,7 +205,7 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder })
         }}
       />
       {isError && (
-        <div style={{
+        <div id={errorId} role="alert" style={{
           display: "flex", alignItems: "center", gap: 4,
           marginTop: 4, fontSize: 10, fontWeight: 800, color: "#E81123"
         }}>
@@ -241,7 +264,7 @@ export default function SizingTool() {
   const sys = SYSTEMS[unitSystem];
   const isFa = locale === "fa";
 
-  const errors = useMemo(() => validateForm(form, fluid, locale), [form, fluid, locale]);
+  const errors = useMemo(() => validateForm(form, fluid, locale, unitSystem), [form, fluid, locale, unitSystem]);
   const hasErrors = Object.keys(errors).length > 0;
 
   const topProduct = useMemo(() => {
@@ -298,7 +321,7 @@ export default function SizingTool() {
 
   function runCalculation() {
     if (hasErrors) return;
-    const siForm = formToSI(form, unitSystem);
+    const siForm = formToSI(form, unitSystem, fluid);
     let r;
     if (fluid === "liquid") {
       r = calcLiquidCv({ Q: siForm.Q, Gf: siForm.Gf, P1: siForm.P1, P2: siForm.P2, Pv: siForm.Pv, Pc: siForm.Pc, FL: siForm.FL });
@@ -309,7 +332,7 @@ export default function SizingTool() {
     }
     if (r.error) { setResult({ error: r.error }); return; }
     const openingPercent = Math.min(100, Math.round((r.Cv / r.size.cv) * 100));
-    const warnings = getRecommendation(openingPercent, r.choked, r.cavitationRisk);
+    const warnings = getRecommendation(openingPercent, r.choked, r.cavitationRisk, r.capacityExceeded);
     const recCharacteristic = getRecommendedCharacteristic(fluid, openingPercent);
     setResult(Object.assign({}, r, {
       openingPercent, warnings, fluidType: fluid,
@@ -378,8 +401,8 @@ export default function SizingTool() {
 
   function switchUnitSystem(newSys) {
     if (newSys === unitSystem) return;
-    const siForm = formToSI(form, unitSystem);
-    const newForm = formFromSI(siForm, newSys);
+    const siForm = formToSI(form, unitSystem, fluid);
+    const newForm = formFromSI(siForm, newSys, fluid);
     setForm(newForm);
     setUnitSystem(newSys);
     setResult(null);
@@ -469,7 +492,9 @@ export default function SizingTool() {
   const L = {
     fa: {
       title: "سایزینگ شیر کنترلی",
-      subtitle: "محاسبه دقیق Cv/Kv بر اساس IEC 60534",
+      subtitle: "برآورد اولیه Cv/Kv",
+      engineeringDisclaimer: "این نتیجه برآورد اولیه است، نه محاسبه تأییدشده IEC 60534؛ انتخاب نهایی را با مهندس شیر کنترل یا سازنده بررسی کنید.",
+      capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ برای انتخاب سایز با مهندس شیر کنترل مشورت کنید.",
       liquid: "مایع", gas: "گاز", steam: "بخار",
       presets: "سناریوهای آماده", presetsHint: "با یک کلیک، فرم پر می‌شود",
       operatingPoint: "نقطه کاری", advanced: "تنظیمات پیشرفته",
@@ -510,7 +535,9 @@ export default function SizingTool() {
     },
     en: {
       title: "Control Valve Sizing",
-      subtitle: "Accurate Cv/Kv calculation per IEC 60534",
+      subtitle: "Preliminary Cv/Kv estimate",
+      engineeringDisclaimer: "This is a preliminary estimate, not a validated IEC 60534 calculation. Confirm final valve selection with a control-valve engineer or manufacturer.",
+      capacityExceeded: "Required Cv exceeds the largest listed valve size. Consult a control-valve engineer for selection.",
       liquid: "Liquid", gas: "Gas", steam: "Steam",
       presets: "Preset Scenarios", presetsHint: "One click to fill the form",
       operatingPoint: "Operating Point", advanced: "Advanced Settings",
@@ -547,7 +574,9 @@ export default function SizingTool() {
       config: "Settings"
     },
     ar: {
-      title: "تحديد حجم الصمام", subtitle: "حساب Cv/Kv وفقًا لـ IEC 60534",
+      title: "تحديد حجم الصمام", subtitle: "تقدير أولي لـ Cv/Kv",
+      engineeringDisclaimer: "هذا تقدير أولي وليس حسابًا معتمدًا وفق IEC 60534. يجب تأكيد الاختيار النهائي مع مهندس صمامات التحكم أو الشركة المصنّعة.",
+      capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ استشر مهندس صمامات التحكم لاختيار الحجم المناسب.",
       liquid: "سائل", gas: "غاز", steam: "بخار",
       presets: "سيناريوهات", presetsHint: "بنقرة واحدة",
       operatingPoint: "نقطة التشغيل", advanced: "متقدم",
@@ -574,7 +603,9 @@ export default function SizingTool() {
       lastCalc: "آخر حساب", config: "إعدادات"
     },
     ru: {
-      title: "Подбор клапана", subtitle: "Расчет Cv/Kv по IEC 60534",
+      title: "Подбор клапана", subtitle: "Предварительная оценка Cv/Kv",
+      engineeringDisclaimer: "Это предварительная оценка, а не подтвержденный расчет по IEC 60534. Окончательный выбор следует согласовать с инженером по регулирующим клапанам или производителем.",
+      capacityExceeded: "Требуемый Cv превышает максимальную пропускную способность в списке. Обратитесь к инженеру для подбора.",
       liquid: "Жидкость", gas: "Газ", steam: "Пар",
       presets: "Сценарии", presetsHint: "Один клик",
       operatingPoint: "Рабочая точка", advanced: "Дополнительно",
@@ -784,7 +815,7 @@ export default function SizingTool() {
               <Field label="P2" unit={sys.pressure} value={form.P2} onChange={update("P2")} step={0.1} help={help.P2} error={errors.P2} placeholder="6" />
               {fluid === "liquid" && <Field label="Pv" unit={sys.pressure} value={form.Pv} onChange={update("Pv")} step={0.01} help={help.Pv} error={errors.Pv} placeholder="0.5" />}
               {fluid !== "liquid" && <Field label="T" unit={sys.temp} value={form.T} onChange={update("T")} help={help.T} error={errors.T} placeholder="25" />}
-              {fluid === "gas" && <Field label="Z" unit="—" value={form.Z} onChange={update("Z")} step={0.01} help={help.Z} placeholder="1.0" />}
+              {fluid === "gas" && <Field label="Z" unit="—" value={form.Z} onChange={update("Z")} step={0.01} help={help.Z} error={errors.Z} placeholder="1.0" />}
             </div>
 
             {dP > 0 && (
@@ -805,14 +836,14 @@ export default function SizingTool() {
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {fluid === "liquid" && (
                   <>
-                    <Field label="Pc" unit={sys.pressure} value={form.Pc} onChange={update("Pc")} help={help.Pc} />
-                    <Field label="FL" unit="—" value={form.FL} onChange={update("FL")} step={0.01} help={help.FL} />
+                    <Field label="Pc" unit={sys.pressure} value={form.Pc} onChange={update("Pc")} help={help.Pc} error={errors.Pc} />
+                    <Field label="FL" unit="—" value={form.FL} onChange={update("FL")} step={0.01} help={help.FL} error={errors.FL} />
                   </>
                 )}
                 {fluid === "gas" && (
                   <>
-                    <Field label="k" unit="—" value={form.k} onChange={update("k")} step={0.01} help={help.k} />
-                    <Field label="xT" unit="—" value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} />
+                    <Field label="k" unit="—" value={form.k} onChange={update("k")} step={0.01} help={help.k} error={errors.k} />
+                    <Field label="xT" unit="—" value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} error={errors.xT} />
                   </>
                 )}
               </div>
@@ -907,6 +938,24 @@ export default function SizingTool() {
             </div>
           ) : (
             <>
+              <div
+                role="note"
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: 8,
+                  marginBottom: 10, padding: "10px 12px", borderRadius: 10,
+                  background: "rgba(201, 149, 13, 0.08)",
+                  border: "1px solid var(--border)", color: "var(--text-soft)"
+                }}
+              >
+                <Info size={14} style={{ flexShrink: 0, marginTop: 2, color: "var(--gold)" }} />
+                <span style={{ fontSize: 11, lineHeight: 1.7 }}>{L.engineeringDisclaimer}</span>
+              </div>
+              {result.capacityExceeded && (
+                <div role="alert" className="error-box" style={{ marginBottom: 10 }}>
+                  <AlertTriangle size={14} color="#E81123" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, lineHeight: 1.7 }}>{L.capacityExceeded}</span>
+                </div>
+              )}
               <motion.div
                 key={result.timestamp}
                 initial={{ opacity: 0, y: 4 }}

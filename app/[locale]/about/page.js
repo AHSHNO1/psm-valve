@@ -8,50 +8,10 @@ export default async function AboutPage({ params }) {
   const content = getContent();
   const ceo = content.ceo || {};
   const companyHistory = content.companyHistory || {};
+  const aboutStats = content.aboutStats || {};
   const certificates = getCertificates();
-
-  const L = {
-    fa: {
-      badge: "درباره ما",
-      subtitle: "راهکارهای مهندسی، طراحی و ساخت شیرآلات صنعتی با تکیه بر دانش فنی و نیروی متخصص",
-      knowledgeType: "دانش‌بنیان تولیدی نوع یک",
-      valuesTitle: "ارزش‌های ما",
-      statsFounded: "سال آغاز فعالیت",
-      statsDepartments: "دپارتمان تخصصی",
-      statsCoating: "توانمندی پوشش‌دهی",
-      statsType: "رده دانش‌بنیان"
-    },
-    en: {
-      badge: "About Us",
-      subtitle: "Engineering solutions, design and manufacturing of industrial valves, backed by technical expertise and specialist teams",
-      knowledgeType: "Knowledge-Based Production Type I",
-      valuesTitle: "Our Values",
-      statsFounded: "Established",
-      statsDepartments: "Specialist departments",
-      statsCoating: "Coating capability",
-      statsType: "Knowledge-based classification"
-    },
-    ar: {
-      badge: "من نحن",
-      subtitle: "حلول هندسية وتصميم وتصنيع الصمامات الصناعية بالاعتماد على الخبرة الفنية والكوادر المتخصصة",
-      knowledgeType: "شركة إنتاجية قائمة على المعرفة - النوع الأول",
-      valuesTitle: "قيمنا",
-      statsFounded: "سنة التأسيس",
-      statsDepartments: "أقسام متخصصة",
-      statsCoating: "قدرة الطلاء",
-      statsType: "تصنيف الشركة"
-    },
-    ru: {
-      badge: "О нас",
-      subtitle: "Инженерные решения, проектирование и производство промышленной арматуры на основе технических знаний и опыта специалистов",
-      knowledgeType: "Наукоемкое производство, тип I",
-      valuesTitle: "Наши ценности",
-      statsFounded: "Год основания",
-      statsDepartments: "Специализированных отделов",
-      statsCoating: "Возможности нанесения покрытий",
-      statsType: "Наукоемкая классификация"
-    }
-  }[locale] || {};
+  const L = dict.about;
+  const statValue = (value) => value?.[locale] || value?.en || value?.fa || "";
 
   const values = [
     {
@@ -78,12 +38,12 @@ export default async function AboutPage({ params }) {
     <div>
       {/* Hero section */}
       <section style={{
-        background: "linear-gradient(135deg, #0F1114 0%, #1F2124 50%, #3A3D42 100%)",
+        background: "linear-gradient(135deg, #F7F9FC 0%, #EEF2F6 55%, #E8EEF5 100%)",
         padding: "70px 0 90px",
         position: "relative",
         overflow: "hidden"
       }}>
-        <div className="grid-pattern" style={{ position: "absolute", inset: 0, opacity: 0.25 }} />
+        <div className="grid-pattern" style={{ position: "absolute", inset: 0, opacity: 0.07 }} />
         <div style={{
           position: "absolute",
           top: "-80px",
@@ -91,7 +51,7 @@ export default async function AboutPage({ params }) {
           width: 300,
           height: 300,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(245, 197, 24, 0.15), transparent 70%)",
+          background: "radial-gradient(circle, rgba(245, 197, 24, 0.20), transparent 70%)",
           filter: "blur(60px)"
         }} />
         <div style={{
@@ -101,24 +61,24 @@ export default async function AboutPage({ params }) {
           width: 260,
           height: 260,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0, 120, 212, 0.12), transparent 70%)",
+          background: "radial-gradient(circle, rgba(0, 120, 212, 0.10), transparent 70%)",
           filter: "blur(60px)"
         }} />
 
         <div className="container-x" style={{ position: "relative", zIndex: 1 }}>
           <div className="max-w-3xl mx-auto text-center">
             <span className="chip" style={{
-              background: "rgba(255, 255, 255, 0.1)",
+              background: "rgba(255, 255, 255, 0.8)",
               borderColor: "rgba(245, 197, 24, 0.4)",
-              color: "#F5C518"
+              color: "#76580A"
             }}>
               {L.badge}
             </span>
-            <h1 className="section-title mt-4" style={{ color: "#FFFFFF" }}>
+            <h1 className="section-title mt-4" style={{ color: "var(--text)" }}>
               <span className="heading-grad">{dict.about.title1}</span>{" "}
               <span className="heading-gold">{dict.about.title2}</span>
             </h1>
-            <p className="mt-5 text-base leading-8" style={{ color: "rgba(241, 243, 245, 0.75)" }}>
+            <p className="mt-5 text-base leading-8" style={{ color: "var(--text-soft)" }}>
               {L.subtitle}
             </p>
 
@@ -130,11 +90,11 @@ export default async function AboutPage({ params }) {
               marginTop: 22,
               padding: "8px 16px",
               borderRadius: 999,
-              background: "rgba(245, 197, 24, 0.12)",
+              background: "rgba(245, 197, 24, 0.16)",
               border: "1px solid rgba(245, 197, 24, 0.35)"
             }}>
               <span style={{ fontSize: 14 }}>🧪</span>
-              <span style={{ fontSize: 12, fontWeight: 900, color: "#F5C518" }}>
+              <span style={{ fontSize: 12, fontWeight: 900, color: "#76580A" }}>
                 {L.knowledgeType}
               </span>
             </div>
@@ -145,10 +105,10 @@ export default async function AboutPage({ params }) {
       {/* Stats row */}
       <section className="container-x" style={{ marginTop: -50, position: "relative", zIndex: 2 }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard value={locale === "fa" ? "۱۳۹۰" : "1390"} label={L.statsFounded} color="#C9950D" />
-          <StatCard value="6" label={L.statsDepartments} color="#0078D4" />
-          <StatCard value="HVOF" label={L.statsCoating} color="#107C10" />
-          <StatCard value={locale === "fa" ? "نوع یک" : "Type I"} label={L.statsType} color="#8764B8" />
+          <StatCard value={statValue(aboutStats.foundedYear)} label={L.statsFounded} color="#C9950D" />
+          <StatCard value={statValue(aboutStats.departments)} label={L.statsDepartments} color="#0078D4" />
+          <StatCard value={statValue(aboutStats.coating)} label={L.statsCoating} color="#107C10" />
+          <StatCard value={statValue(aboutStats.classification)} label={L.statsType} color="#8764B8" />
         </div>
       </section>
 
@@ -225,7 +185,7 @@ export default async function AboutPage({ params }) {
         <section className="container-x pb-16">
           <div className="text-center max-w-3xl mx-auto mb-10">
             <span className="chip">
-              {locale === "fa" ? "مسیر رشد" : locale === "ar" ? "مسيرة التطور" : locale === "ru" ? "Путь развития" : "Our Journey"}
+              {L.journey}
             </span>
             <h2 className="section-title mt-3">
               <span className="heading-grad">{companyHistory.title[locale] || companyHistory.title.en}</span>
@@ -289,7 +249,7 @@ export default async function AboutPage({ params }) {
       )}
 
       {/* CEO Section */}
-      <CeoSection ceo={ceo} locale={locale} certificates={certificates} content={content} />
+      <CeoSection ceo={ceo} locale={locale} certificates={certificates} labels={L.ceo} />
     </div>
   );
 }

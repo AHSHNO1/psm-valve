@@ -1,9 +1,10 @@
-import { products } from "@/lib/products";
+import { getProducts } from "@/lib/product-store";
 import { getArticles } from "@/lib/articles";
 import { getServices } from "@/lib/content";
 import { locales } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // ============================================================
 // SITEMAP — همهٔ مسیرهای عمومی در چهار زبان
@@ -33,6 +34,7 @@ const STATIC_ROUTES = [
 export default function sitemap() {
   const entries = [];
   const now = new Date();
+  const products = getProducts();
   const articles = getArticles().filter((article) => article.active !== false);
   const services = getServices() || [];
 

@@ -4,13 +4,15 @@
 
 /* ===== LIGHT THEME (WCAG AA Compliant) ===== */
 :root, .light {
-  --bg: #E8EAED;
-  --bg-soft: #F1F3F5;
+  --bg: #F7F9FC;
+  --bg-soft: #EEF2F6;
   --bg-card: #FFFFFF;
   --bg-card-hover: #FAFAFA;
-  --text: #1A1D21;           /* Contrast 15.8:1 on #E8EAED */
-  --text-soft: #3D4451;      /* Contrast 7.2:1 on #E8EAED */
-  --text-muted: #5C6370;     /* Contrast 4.6:1 on #E8EAED - meets AA */
+  --surface-glass: rgba(255, 255, 255, 0.92);
+  --header-surface: rgba(255, 255, 255, 0.94);
+  --text: #1A1D21;
+  --text-soft: #3D4451;
+  --text-muted: #5C6370;
   --text-inverse: #FFFFFF;
   --border: rgba(26, 29, 33, 0.15);
   --border-strong: rgba(26, 29, 33, 0.25);
@@ -27,26 +29,28 @@
 }
 
 .dark {
-  --bg: #0F1114;
-  --bg-soft: #1A1C20;
-  --bg-card: #1F2124;
-  --bg-card-hover: #252830;
-  --text: #F1F3F5;
-  --text-soft: #B0B8C4;
-  --text-muted: #8A929E;
-  --text-inverse: #0F1114;
-  --border: rgba(192, 192, 192, 0.18);
-  --border-strong: rgba(192, 192, 192, 0.30);
-  --gold: #FFD700;
-  --gold-bg: #FFD700;
-  --gold-light: #F5C518;
-  --silver: #C0C0C0;
-  --silver-light: #E5E7EB;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
-  --glow: rgba(255, 215, 0, 0.25);
-  --card-shadow-hover: 0 12px 40px rgba(255, 215, 0, 0.10);
+  --bg: #171B22;
+  --bg-soft: #202631;
+  --bg-card: #282F39;
+  --bg-card-hover: #313A46;
+  --surface-glass: rgba(40, 47, 57, 0.86);
+  --header-surface: rgba(24, 29, 37, 0.92);
+  --text: #F1F4F8;
+  --text-soft: #C9CDD3;
+  --text-muted: #A3A9B2;
+  --text-inverse: #171B22;
+  --border: rgba(220, 224, 230, 0.13);
+  --border-strong: rgba(220, 224, 230, 0.22);
+  --gold: #E1C276;
+  --gold-bg: #D4AA52;
+  --gold-light: #EBD28F;
+  --silver: #AAB6C5;
+  --silver-light: #D5DDE7;
+  --shadow-sm: 0 2px 8px rgba(4, 10, 18, 0.18);
+  --shadow-md: 0 8px 24px rgba(4, 10, 18, 0.24);
+  --shadow-lg: 0 16px 44px rgba(4, 10, 18, 0.32);
+  --glow: rgba(225, 194, 118, 0.16);
+  --card-shadow-hover: 0 14px 34px rgba(4, 10, 18, 0.30);
 }
 
 * { box-sizing: border-box; }
@@ -83,6 +87,13 @@ html, body {
   overflow-x: hidden;
   transition: background-color 0.35s ease, color 0.35s ease;
   -webkit-font-smoothing: antialiased;
+}
+
+html.dark body {
+  background-image:
+    radial-gradient(ellipse at 12% 0%, rgba(42, 57, 79, 0.20), transparent 42%),
+    radial-gradient(ellipse at 94% 38%, rgba(34, 45, 62, 0.13), transparent 38%);
+  background-attachment: fixed;
 }
 
 body::-webkit-scrollbar { width: 8px; }
@@ -135,9 +146,11 @@ body::-webkit-scrollbar-thumb {
 
   .card-glass {
     @apply rounded-2xl transition-all duration-300;
-    background: var(--bg-card);
+    background: var(--surface-glass);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(12px) saturate(1.08);
+    -webkit-backdrop-filter: blur(12px) saturate(1.08);
   }
   .card-glass:hover {
     box-shadow: var(--shadow-md);
@@ -188,9 +201,11 @@ body::-webkit-scrollbar-thumb {
 
   .product-card-masonelian {
     @apply rounded-2xl overflow-hidden transition-all duration-300;
-    background: var(--bg-card);
+    background: var(--surface-glass);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px) saturate(1.06);
+    -webkit-backdrop-filter: blur(10px) saturate(1.06);
   }
   .product-card-masonelian:hover {
     box-shadow: var(--card-shadow-hover);
@@ -330,7 +345,7 @@ body::-webkit-scrollbar-thumb {
 .hero-slide-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to left, rgba(15, 17, 20, 0.88), rgba(15, 17, 20, 0.55));
+  background: linear-gradient(to left, rgba(17, 26, 39, 0.88), rgba(17, 26, 39, 0.55));
 }
 .hero-slide-content {
   position: relative;

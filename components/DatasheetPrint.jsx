@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { Printer, X } from "lucide-react";
+import { SPEC_FIELDS } from "@/lib/spec-fields";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -15,12 +16,18 @@ function pickArray(obj, locale) {
 export default function DatasheetPrint({ product, locale, dict }) {
   const p = product;
   const name = pick(p.name, locale);
-  const short = pick(p.short, locale);
+  const description = pick(p.description, locale) || pick(p.short, locale);
   const features = pickArray(p.features, locale);
-  const specs = (p.specs || []).map((s) => ({
-    key: pick(s.key, locale),
-    value: pick(s.value, locale)
-  }));
+  const options = pickArray(p.options, locale);
+  const applications = pickArray(p.applications, locale);
+  const clients = pickArray(p.clients, locale);
+  const specs = Array.isArray(p.specifications)
+    ? p.specifications.map((row) => ({ key: pick(row.label, locale), value: pick(row.value, locale) }))
+    : SPEC_FIELDS.map((field) => ({
+      key: pick(field.label, locale),
+      value: pick(p.spec?.[field.id], locale)
+    }));
+  const visibleSpecs = specs.filter((row) => row.key && row.value);
 
   useEffect(() => {
     document.documentElement.setAttribute("dir", locale === "fa" || locale === "ar" ? "rtl" : "ltr");
@@ -84,7 +91,7 @@ export default function DatasheetPrint({ product, locale, dict }) {
               {p.series}
             </div>
             <h2 className="text-3xl font-black mb-3">{name}</h2>
-            <p className="text-gray-600 leading-7">{short}</p>
+            <p className="text-gray-600 leading-7 whitespace-pre-line">{description}</p>
           </div>
 
           {/* Features */}
@@ -107,15 +114,42 @@ export default function DatasheetPrint({ product, locale, dict }) {
             </div>
           )}
 
+          {options.length > 0 && (
+            <div className="mb-8">
+              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>آپشن‌ها</h3>
+              <ul className="space-y-2">
+                {options.map((option, index) => <li key={index} className="text-sm">• {option}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {applications.length > 0 && (
+            <div className="mb-8">
+              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>کاربردها</h3>
+              <ul className="space-y-2">
+                {applications.map((application, index) => <li key={index} className="text-sm">• {application}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {clients.length > 0 && (
+            <div className="mb-8">
+              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>برخی از مشتریان ما</h3>
+              <ul className="space-y-2">
+                {clients.map((client, index) => <li key={index} className="text-sm">• {client}</li>)}
+              </ul>
+            </div>
+          )}
+
           {/* Specs table */}
-          {specs.length > 0 && (
+          {visibleSpecs.length > 0 && (
             <div className="mb-8">
               <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>
                 مشخصات فنی
               </h3>
               <table className="w-full text-sm border-collapse">
                 <tbody>
-                  {specs.map((s, i) => (
+                  {visibleSpecs.map((s, i) => (
                     <tr key={i} style={{ background: i % 2 === 0 ? "#F9FAFB" : "transparent" }}>
                       <td className="py-2.5 px-3 font-semibold text-gray-600 w-2/5 border-b border-gray-100">
                         {s.key}

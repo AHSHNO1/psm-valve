@@ -1,139 +1,28 @@
 "use client";
 import React, { useState } from "react";
 import ContactForm from "./ContactForm";
-import { COMPANY } from "@/lib/company-info";
 
-export default function ContactClient({ dict, settings, locale }) {
+export default function ContactClient({ dict, locale, company, branding, content }) {
   const isFa = locale === "fa";
 
-  // ===== Data (fallback to COMPANY) =====
-  const phoneOffice = COMPANY.phone.office;
-  const phoneFactory = COMPANY.phone.factory;
-  const mobile = COMPANY.phone.mobile;
-  const fax = COMPANY.fax.office;
-  const emailPrimary = COMPANY.email.primary;
-  const emailSecondary = COMPANY.email.secondary;
-  const addressOffice = COMPANY.address.office[locale] || COMPANY.address.office.en;
-  const addressFactory = COMPANY.address.factory[locale] || COMPANY.address.factory.en;
-  const configuredLat = settings && settings.mapLat;
-  const configuredLng = settings && settings.mapLng;
-  const mapLat = typeof configuredLat === "string" ? configuredLat.trim() : configuredLat;
-  const mapLng = typeof configuredLng === "string" ? configuredLng.trim() : configuredLng;
-  const hasMapCoordinates =
-    mapLat !== undefined &&
-    mapLat !== null &&
-    mapLng !== undefined &&
-    mapLng !== null &&
-    mapLat !== "" &&
-    mapLng !== "" &&
-    Number.isFinite(Number(mapLat)) &&
-    Number.isFinite(Number(mapLng)) &&
-    Number(mapLat) >= -90 &&
-    Number(mapLat) <= 90 &&
-    Number(mapLng) >= -180 &&
-    Number(mapLng) <= 180;
-  const factoryCoordinates = COMPANY.address.factoryCoordinates;
-  const mapQuery = hasMapCoordinates
-    ? mapLat + "," + mapLng
-    : factoryCoordinates.latitude + "," + factoryCoordinates.longitude;
+  const phoneOffice = company.phone.office;
+  const phoneFactory = company.phone.factory;
+  const mobile = company.phone.mobile;
+  const fax = company.fax.office;
+  const emailPrimary = company.email.primary;
+  const emailSecondary = company.email.secondary;
+  const addressOffice = company.address.office[locale] || company.address.office.en;
+  const addressFactory = company.address.factory[locale] || company.address.factory.en;
+  const factoryCoordinates = company.address.factoryCoordinates;
+  const mapQuery = factoryCoordinates.latitude + "," + factoryCoordinates.longitude;
   const mapEmbedUrl = "https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery) +
     "&z=17&output=embed&hl=" + encodeURIComponent(locale);
   const mapLinkUrl = "https://www.google.com/maps?q=" + encodeURIComponent(mapQuery);
   const officeMapLinkUrl = "https://www.google.com/maps?q=" + encodeURIComponent(addressOffice);
-  const postalCode = COMPANY.address.postalCode;
-  const messengers = COMPANY.messengers;
-
-  // ===== Labels =====
-  const L = {
-    fa: {
-      badge: "ارتباط با ما",
-      title1: "تماس با",
-      title2: "پتروسازه میهن",
-      subtitle: "تیم فنی و مهندسی ما آماده پاسخگویی به سوالات تخصصی و ارائه مشاوره است",
-      formTitle: "ارسال پیام",
-      formSubtitle: "پیام خود را بفرستید و در اسرع وقت پاسخ می‌دهیم",
-      mapTitle: "موقعیت کارخانه",
-      mapSubtitle: "مسیریابی",
-      infoTitle: "اطلاعات تماس",
-      office: "دفتر مرکزی",
-      factory: "کارخانه",
-      phoneLabel: "تلفن",
-      mobileLabel: "همراه",
-      faxLabel: "فکس",
-      emailLabel: "ایمیل",
-      addressLabel: "آدرس",
-      postalLabel: "کدپستی",
-      socialTitle: "ما را دنبال کنید",
-      iranianSocial: "پیام‌رسان‌های ایرانی",
-      websiteLabel: "وب‌سایت"
-    },
-    en: {
-      badge: "Contact Us",
-      title1: "Contact",
-      title2: "Petro Sazeh Mihan",
-      subtitle: "Our engineering team is ready to answer technical questions and provide consultation",
-      formTitle: "Send Message",
-      formSubtitle: "Send us a message and we'll respond as soon as possible",
-      mapTitle: "Factory Location",
-      mapSubtitle: "Get Directions",
-      infoTitle: "Contact Information",
-      office: "Head Office",
-      factory: "Factory",
-      phoneLabel: "Phone",
-      mobileLabel: "Mobile",
-      faxLabel: "Fax",
-      emailLabel: "Email",
-      addressLabel: "Address",
-      postalLabel: "Postal Code",
-      socialTitle: "Follow Us",
-      iranianSocial: "Iranian Messengers",
-      websiteLabel: "Website"
-    },
-    ar: {
-      badge: "اتصل بنا",
-      title1: "اتصل بـ",
-      title2: "بترو سازه ميهان",
-      subtitle: "فريقنا الهندسي جاهز للإجابة على أسئلتك",
-      formTitle: "إرسال رسالة",
-      formSubtitle: "أرسل رسالة وسنرد في أقرب وقت",
-      mapTitle: "موقع المصنع",
-      mapSubtitle: "الاتجاهات",
-      infoTitle: "معلومات الاتصال",
-      office: "المكتب الرئيسي",
-      factory: "المصنع",
-      phoneLabel: "هاتف",
-      mobileLabel: "جوال",
-      faxLabel: "فاكس",
-      emailLabel: "بريد",
-      addressLabel: "العنوان",
-      postalLabel: "الرمز البريدي",
-      socialTitle: "تابعنا",
-      iranianSocial: "الرسائل الإيرانية",
-      websiteLabel: "الموقع"
-    },
-    ru: {
-      badge: "Контакты",
-      title1: "Контакты",
-      title2: "Petro Sazeh Mihan",
-      subtitle: "Наша инженерная команда готова ответить на технические вопросы",
-      formTitle: "Отправить сообщение",
-      formSubtitle: "Отправьте сообщение, и мы скоро ответим",
-      mapTitle: "Расположение завода",
-      mapSubtitle: "Маршрут",
-      infoTitle: "Контактная информация",
-      office: "Офис",
-      factory: "Завод",
-      phoneLabel: "Телефон",
-      mobileLabel: "Мобильный",
-      faxLabel: "Факс",
-      emailLabel: "Эл. почта",
-      addressLabel: "Адрес",
-      postalLabel: "Индекс",
-      socialTitle: "Подписывайтесь",
-      iranianSocial: "Иранские мессенджеры",
-      websiteLabel: "Сайт"
-    }
-  }[locale] || {};
+  const postalCode = company.address.postalCode;
+  const messengers = company.messengers;
+  const L = dict.contact;
+  const guide = L.guide;
 
   // ===== Rows for info card =====
   const rows = [];
@@ -221,21 +110,21 @@ export default function ContactClient({ dict, settings, locale }) {
   const socialLinks = [
     {
       name: "Instagram",
-      url: COMPANY.social.instagram,
-      handle: COMPANY.social.instagramHandle,
+      url: branding.socialLinks?.instagram || company.social.instagram,
+      handle: company.social.instagramHandle,
       color: "#E4405F",
       svg: "instagram"
     },
     {
       name: "WhatsApp",
-      url: COMPANY.social.whatsapp,
-      handle: "+98 918 893 9209",
+      url: branding.socialLinks?.whatsapp || company.social.whatsapp,
+      handle: company.phone.mobile[1] || company.phone.mobile[0] || "",
       color: "#25D366",
       svg: "whatsapp"
     },
     {
       name: "Aparat",
-      url: COMPANY.social.aparat,
+      url: branding.socialLinks?.aparat || company.social.aparat,
       handle: "@petrosazehmihan",
       color: "#ED145B",
       svg: "aparat"
@@ -245,21 +134,21 @@ export default function ContactClient({ dict, settings, locale }) {
   const iranianSocial = [
     {
       name: isFa ? "بله" : "Bale",
-      url: "https://ble.ir/psm_commercial",
+      url: branding.socialLinks?.bale || "https://ble.ir/psm_commercial",
       handle: messengers.bale,
       color: "#00A650",
       svg: "bale"
     },
     {
       name: isFa ? "روبیکا" : "Rubika",
-      url: "https://rubika.ir/Psm_commercial",
+      url: branding.socialLinks?.rubika || "https://rubika.ir/Psm_commercial",
       handle: messengers.rubika,
       color: "#7B2CBF",
       svg: "rubika"
     },
     {
       name: isFa ? "ایتا" : "Eitaa",
-      url: "https://eitaa.com/Psm_commercial",
+      url: branding.socialLinks?.eitaa || "https://eitaa.com/Psm_commercial",
       handle: messengers.eita,
       color: "#F5A623",
       svg: "eitaa"
@@ -270,12 +159,12 @@ export default function ContactClient({ dict, settings, locale }) {
     <div style={{ background: "var(--bg)" }}>
       {/* ============ Hero ============ */}
       <section style={{
-        background: "linear-gradient(135deg, #0F1114 0%, #1F2124 50%, #3A3D42 100%)",
+        background: "linear-gradient(135deg, #F7F9FC 0%, #EEF2F6 55%, #E8EEF5 100%)",
         padding: "60px 0 80px",
         position: "relative",
         overflow: "hidden"
       }}>
-        <div className="grid-pattern" style={{ position: "absolute", inset: 0, opacity: 0.25 }} />
+        <div className="grid-pattern" style={{ position: "absolute", inset: 0, opacity: 0.07 }} />
         <div style={{
           position: "absolute",
           top: "-100px",
@@ -283,24 +172,24 @@ export default function ContactClient({ dict, settings, locale }) {
           width: 320,
           height: 320,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(245, 197, 24, 0.15), transparent 70%)",
+          background: "radial-gradient(circle, rgba(245, 197, 24, 0.18), transparent 70%)",
           filter: "blur(60px)"
         }} />
 
         <div className="container-x" style={{ position: "relative", zIndex: 1 }}>
           <div className="text-center max-w-3xl mx-auto">
             <span className="chip" style={{
-              background: "rgba(255, 255, 255, 0.1)",
+              background: "rgba(255, 255, 255, 0.8)",
               borderColor: "rgba(245, 197, 24, 0.4)",
-              color: "#F5C518"
+              color: "#76580A"
             }}>
               {L.badge}
             </span>
-            <h1 className="section-title mt-4" style={{ color: "#FFFFFF" }}>
+            <h1 className="section-title mt-4" style={{ color: "var(--text)" }}>
               <span className="heading-gold">{L.title1} {L.title2}</span>
             </h1>
             <p className="mt-5 text-base leading-8 max-w-2xl mx-auto"
-              style={{ color: "rgba(241, 243, 245, 0.75)" }}>
+              style={{ color: "var(--text-soft)" }}>
               {L.subtitle}
             </p>
           </div>
@@ -312,7 +201,7 @@ export default function ContactClient({ dict, settings, locale }) {
         <div className="grid lg:grid-cols-5 gap-8">
           {/* Form */}
           <div className="lg:col-span-3">
-            <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
+            <div id="contact-form" className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{
                 padding: "24px 28px",
                 borderBottom: "1px solid var(--border)",
@@ -350,186 +239,69 @@ export default function ContactClient({ dict, settings, locale }) {
             </div>
           </div>
 
-          {/* Info sidebar */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Info card */}
-            <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{
-                padding: "16px 20px",
-                borderBottom: "1px solid var(--border)",
-                background: "linear-gradient(135deg, rgba(201, 149, 13, 0.06), transparent)",
-                display: "flex",
-                alignItems: "center",
-                gap: 10
-              }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: 10,
-                  display: "grid", placeItems: "center",
-                  background: "rgba(201, 149, 13, 0.15)",
-                  color: "#C9950D"
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text)" }}>
-                  {L.infoTitle}
+          <aside className="lg:col-span-2">
+            <div className="card-glass overflow-hidden">
+              <div className="relative h-48 sm:h-56">
+                <img
+                  src={content.contactGuide.photo}
+                  alt={guide.imageAlt}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
+                <div className="absolute inset-x-5 bottom-4 text-white">
+                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">PSM VALVE</span>
+                  <h2 className="mt-1 text-xl font-black leading-relaxed">{guide.title}</h2>
                 </div>
               </div>
+              <div className="p-5 sm:p-6">
+                <p className="text-sm leading-7 text-soft">{guide.description}</p>
 
-              <div>
-                {rows.map(function(r, i) {
-                  const inner = (
-                    <div style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 12,
-                      padding: "13px 18px",
-                      borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none",
-                      transition: "background 0.15s"
-                    }}>
-                      <div style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        display: "grid",
-                        placeItems: "center",
-                        background: r.color + "15",
-                        color: r.color,
-                        flexShrink: 0
-                      }}>
-                        <InfoIcon name={r.icon} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: 10,
-                          fontWeight: 800,
-                          color: "var(--text-muted)",
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
-                          marginBottom: 3
-                        }}>
-                          {r.label}
-                        </div>
-                        <div style={{
-                          fontSize: 13,
-                          fontWeight: 800,
-                          color: "var(--text)",
-                          lineHeight: 1.5,
-                          wordBreak: "break-word",
-                          direction: (r.icon === "phone" || r.icon === "mobile" || r.icon === "fax" || r.icon === "mail") ? "ltr" : "inherit",
-                          textAlign: (r.icon === "phone" || r.icon === "mobile" || r.icon === "fax" || r.icon === "mail") ? (isFa ? "right" : "left") : "inherit"
-                        }}>
-                          {r.value}
-                        </div>
-                        {r.subvalue && (
-                          <div style={{
-                            fontSize: 10.5,
-                            fontWeight: 600,
-                            color: "var(--text-muted)",
-                            marginTop: 3,
-                            fontFamily: "monospace",
-                            direction: "ltr",
-                            textAlign: isFa ? "right" : "left"
-                          }}>
-                            {r.subvalue}
-                          </div>
-                        )}
-                      </div>
-                      {r.link && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 10 }}>
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      )}
-                    </div>
-                  );
-
-                  if (r.link) {
+                <h3 className="mt-6 text-sm font-black" style={{ color: "var(--text)" }}>
+                  {guide.expertiseTitle}
+                </h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {guide.expertise.map(function(item) {
                     return (
-                      <a key={i} href={r.link}
-                        target={r.link.startsWith("http") ? "_blank" : undefined}
-                        rel={r.link.startsWith("http") ? "noopener noreferrer" : undefined}
-                        style={{ textDecoration: "none", display: "block" }}
-                        onMouseEnter={function(e) {
-                          e.currentTarget.firstChild.style.background = r.color + "08";
-                        }}
-                        onMouseLeave={function(e) {
-                          e.currentTarget.firstChild.style.background = "transparent";
-                        }}
+                      <span
+                        key={item}
+                        className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                        style={{ borderColor: "var(--border)", background: "var(--bg-card)", color: "var(--text-soft)" }}
                       >
-                        {inner}
-                      </a>
+                        {item}
+                      </span>
                     );
-                  }
-                  return <div key={i}>{inner}</div>;
-                })}
-              </div>
-            </div>
+                  })}
+                </div>
 
-            {/* Social card */}
-            <div className="card-glass" style={{ padding: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text)", marginBottom: 12 }}>
-                {L.socialTitle}
-              </div>
+                <h3 className="mt-6 text-sm font-black" style={{ color: "var(--text)" }}>
+                  {guide.stepsTitle}
+                </h3>
+                <ol className="mt-3 space-y-3">
+                  {guide.steps.map(function(step, index) {
+                    return (
+                      <li key={step[0]} className="flex items-start gap-3">
+                        <span
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-black"
+                          style={{ background: "var(--glow)", color: "var(--gold)" }}
+                        >
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <span className="text-xs leading-6" style={{ color: "var(--text-soft)" }}>
+                          <strong className="block font-black" style={{ color: "var(--text)" }}>{step[0]}</strong>
+                          {step[1]}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                {socialLinks.map(function(s) {
-                  return <SocialIcon key={s.name} {...s} />;
-                })}
-              </div>
-
-              {iranianSocial.length > 0 && (
-                <>
-                  <div style={{
-                    fontSize: 10,
-                    fontWeight: 900,
-                    color: "var(--text-muted)",
-                    letterSpacing: "0.06em",
-                    marginBottom: 8,
-                    textTransform: "uppercase"
-                  }}>
-                    {L.iranianSocial}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {iranianSocial.map(function(s) {
-                      return <IranianSocial key={s.name} {...s} />;
-                    })}
-                  </div>
-                </>
-              )}
-
-              {/* Website link */}
-              <div style={{
-                marginTop: 16,
-                paddingTop: 14,
-                borderTop: "1px dashed var(--border)",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "var(--text-muted)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10
-              }}>
-                <span>{L.websiteLabel}</span>
-                <a
-                  href={COMPANY.social.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "#C9950D",
-                    fontFamily: "monospace",
-                    direction: "ltr",
-                    textDecoration: "none",
-                    fontWeight: 900
-                  }}
-                >
-                  www.psm-valve.com
+                <a href="#contact-form" className="btn-gold mt-6 w-full">
+                  {guide.action}
                 </a>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
 
