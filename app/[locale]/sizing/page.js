@@ -3,6 +3,8 @@ import { Target, Calculator, Sparkles, BookOpen } from "lucide-react";
 import SizingTool from "@/components/SizingTool";
 import EngineeringCalculator from "@/components/EngineeringCalculator";
 import StandardsTable from "@/components/StandardsTable";
+import { getProducts } from "@/lib/product-store";
+import { buildSizingCatalog } from "@/lib/valve-catalog";
 import "./sizing-hub.css";
 
 const SITE_URL = "https://www.psm-valve.com";
@@ -10,23 +12,23 @@ const SITE_URL = "https://www.psm-valve.com";
 const META = {
   fa: {
     title: "نرم‌افزار سایزینگ شیر کنترلی | محاسبه آنلاین Cv + ماشین‌حساب مهندسی",
-    description: "ابزار آنلاین و رایگان سایزینگ شیر کنترلی طبق استاندارد IEC 60534 — محاسبه دقیق Cv/Kv برای مایع، گاز و بخار، انتخاب سایز، نمودار مشخصه، PDF گزارش + ماشین‌حساب مهندسی کامل.",
-    keywords: ["سایزینگ شیر کنترلی", "محاسبه Cv", "شیر کنترلی", "IEC 60534", "Cv Kv", "نرم‌افزار سایزینگ", "PSM Valve", "شیر صنعتی"]
+    description: "ابزار آنلاین و رایگان سایزینگ شیر کنترلی طبق استاندارد ISA-75.01.01 (IEC 60534-2-1) — محاسبه دقیق Cv/Kv برای مایع، گاز و بخار، انتخاب سایز، نمودار مشخصه، PDF گزارش + ماشین‌حساب مهندسی کامل.",
+    keywords: ["سایزینگ شیر کنترلی", "محاسبه Cv", "شیر کنترلی", "ISA-75.01.01 (IEC 60534-2-1)", "Cv Kv", "نرم‌افزار سایزینگ", "PSM Valve", "شیر صنعتی"]
   },
   en: {
     title: "Control Valve Sizing Calculator | Cv/Kv Online Tool + Engineering Calculator",
-    description: "Free online control valve sizing tool per IEC 60534 — accurate Cv/Kv calculation for liquid, gas and steam, size selection, valve characteristic charts, PDF report + full engineering calculator.",
-    keywords: ["control valve sizing", "Cv calculator", "Kv calculator", "IEC 60534", "valve sizing software", "PSM Valve", "industrial valve"]
+    description: "Free online control valve sizing tool per ISA-75.01.01 (IEC 60534-2-1) — accurate Cv/Kv calculation for liquid, gas and steam, size selection, valve characteristic charts, PDF report + full engineering calculator.",
+    keywords: ["control valve sizing", "Cv calculator", "Kv calculator", "ISA-75.01.01 (IEC 60534-2-1)", "valve sizing software", "PSM Valve", "industrial valve"]
   },
   ar: {
     title: "حاسبة تحديد حجم الصمام | أداة حساب Cv/Kv عبر الإنترنت",
-    description: "أداة مجانية لتحديد حجم صمام التحكم وفقًا لـ IEC 60534 — حساب Cv/Kv للسوائل والغازات والبخار، اختيار الحجم، مخططات الخصائص، تقرير PDF + حاسبة هندسية.",
-    keywords: ["تحديد حجم الصمام", "حساب Cv", "صمام التحكم", "IEC 60534", "PSM Valve"]
+    description: "أداة مجانية لتحديد حجم صمام التحكم وفقًا لـ ISA-75.01.01 (IEC 60534-2-1) — حساب Cv/Kv للسوائل والغازات والبخار، اختيار الحجم، مخططات الخصائص، تقرير PDF + حاسبة هندسية.",
+    keywords: ["تحديد حجم الصمام", "حساب Cv", "صمام التحكم", "ISA-75.01.01 (IEC 60534-2-1)", "PSM Valve"]
   },
   ru: {
     title: "Калькулятор подбора клапана | Онлайн-расчет Cv/Kv",
-    description: "Бесплатный онлайн-инструмент подбора регулирующего клапана по IEC 60534 — точный расчет Cv/Kv для жидкости, газа и пара, подбор размера, графики, PDF-отчет + инженерный калькулятор.",
-    keywords: ["подбор клапана", "расчет Cv", "регулирующий клапан", "IEC 60534", "PSM Valve"]
+    description: "Бесплатный онлайн-инструмент подбора регулирующего клапана по ISA-75.01.01 (IEC 60534-2-1) — точный расчет Cv/Kv для жидкости, газа и пара, подбор размера, графики, PDF-отчет + инженерный калькулятор.",
+    keywords: ["подбор клапана", "расчет Cv", "регулирующий клапан", "ISA-75.01.01 (IEC 60534-2-1)", "PSM Valve"]
   }
 };
 
@@ -85,7 +87,7 @@ export async function generateMetadata({ params }) {
 
 const TABS = [
   {
-    id: "sizing", icon: Target, accent: "#E0A81A", badge: "IEC 60534",
+    id: "sizing", icon: Target, accent: "#E0A81A", badge: "ISA 75.01.01",
     title: { fa: "سایزینگ شیر کنترلی", en: "Valve Sizing", ar: "تحديد حجم الصمام", ru: "Подбор клапана" },
     desc: {
       fa: "محاسبه Cv/Kv، انتخاب سایز، نمودار مشخصه و راهنمای متریال",
@@ -169,6 +171,7 @@ export default function SizingPage({ params, searchParams }) {
     : "sizing";
   const isRTL = locale === "fa" || locale === "ar";
   const H = HUB[locale] || HUB.en;
+  const catalog = buildSizingCatalog(getProducts());
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -261,7 +264,7 @@ export default function SizingPage({ params, searchParams }) {
 
       {/* ===== Tool Content ===== */}
       <div className="hub-content-wrapper">
-        {tool === "sizing" && <SizingTool />}
+        {tool === "sizing" && <SizingTool catalog={catalog} />}
 
         {tool === "calculator" && (
           <section className="container-x py-6">
@@ -269,7 +272,9 @@ export default function SizingPage({ params, searchParams }) {
           </section>
         )}
 
-        {tool === "standards" && <StandardsTable locale={locale} />}
+        {tool === "standards" && (
+          <StandardsTable locale={locale} initialTab={searchParams?.tab} />
+        )}
       </div>
     </div>
   );

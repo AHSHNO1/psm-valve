@@ -29,7 +29,7 @@ import SizingCompare from "./SizingCompare";
 import SizingReportModal from "./SizingReportModal";
 import MaterialGuide from "./MaterialGuide";
 import FluidPicker from "./FluidPicker";
-import { suggestProducts } from "@/data/psm-products-preview";
+import { suggestValves } from "@/lib/valve-catalog";
 import { SYSTEMS, formToSI, formFromSI, tempToC } from "@/lib/unit-system";
 import { track } from "@/lib/analytics";
 
@@ -137,50 +137,63 @@ const FIELD_HELP = {
   ru: { Q: "Расход", W: "Расход пара", Gf: "Плотность", Gg: "Плотность газа", P1: "Вход", P2: "Выход", Pv: "Давление паров", Pc: "Крит. давление", FL: "Коэффициент", T: "Температура", Z: "Сжимаемость", k: "Показатель", xT: "Запирание" }
 };
 
-function Field({ label, unit, value, onChange, step, help, error, placeholder }) {
+function Field({ label, unit, value, onChange, step, help, error, placeholder, required }) {
   const [showHelp, setShowHelp] = useState(false);
   const inputId = useId();
   const errorId = useId();
+  const helpId = useId();
   const isError = !!error;
   return (
     <div style={{ position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <label htmlFor={inputId} style={{ fontSize: 10.5, fontWeight: 900, color: isError ? "#E81123" : "var(--text-muted)" }}>{label}</label>
+          <label htmlFor={inputId} style={{ fontSize: 11, fontWeight: 900, color: isError ? "#E81123" : "var(--text-muted)" }}>
+            {label}
+            {required && <span aria-hidden="true" style={{ color: "#E0A81A", marginInlineStart: 3 }}>*</span>}
+          </label>
           {help && (
             <button
               type="button"
               onClick={() => setShowHelp(!showHelp)}
               onMouseEnter={() => setShowHelp(true)}
               onMouseLeave={() => setShowHelp(false)}
+              onFocus={() => setShowHelp(true)}
+              onBlur={() => setShowHelp(false)}
+              aria-label={label + " — " + help}
+              aria-expanded={showHelp}
+              aria-controls={helpId}
               style={{
-                width: 14, height: 14, borderRadius: "50%",
-                border: "none", cursor: "help",
+                width: 16, height: 16, borderRadius: "50%",
+                border: "1px solid var(--border)", cursor: "help",
                 background: "var(--bg-soft)", color: "var(--text-muted)",
                 display: "grid", placeItems: "center", padding: 0
               }}
             >
-              <HelpCircle size={10} />
+              <HelpCircle size={11} />
             </button>
           )}
         </div>
         {unit && (
           <span style={{
-            fontSize: 9, color: isError ? "#E81123" : "var(--text-muted)", fontFamily: "monospace",
-            fontWeight: 700, padding: "2px 6px", borderRadius: 5,
-            background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)"
+            fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace",
+            fontWeight: 800, padding: "2px 7px", borderRadius: 5,
+            background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)",
+            border: "1px solid var(--border)", whiteSpace: "nowrap"
           }}>{unit}</span>
         )}
       </div>
       <input
         id={inputId}
         type="number"
+        inputMode="decimal"
         step={step || 1}
         value={value == null ? "" : value}
         placeholder={placeholder || ""}
         onChange={onChange}
         aria-invalid={isError}
-        aria-describedby={isError ? errorId : undefined}
+        aria-required={required || undefined}
+        required={required || undefined}
+        aria-describedby={[isError ? errorId : null, showHelp && help ? helpId : null].filter(Boolean).join(" ") || undefined}
         style={{
           width: "100%", padding: "10px 12px", borderRadius: 9,
           border: "1.5px solid " + (isError ? "#E81123" : "var(--border)"),
@@ -215,6 +228,8 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder })
       <AnimatePresence>
         {showHelp && help && !isError && (
           <motion.div
+            id={helpId}
+            role="note"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -235,7 +250,7 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder })
   );
 }
 
-export default function SizingTool() {
+export default function SizingTool({ catalog = [] }) {
   const { locale } = useDictionary();
   const [fluid, setFluid] = useState("liquid");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -261,6 +276,8 @@ export default function SizingTool() {
   const [showUndo, setShowUndo] = useState(false);
 
   const help = FIELD_HELP[locale] || FIELD_HELP.en;
+  // فیلدهای بی‌بعد مثل Gf، Z، FL و xT واحد فیزیکی ندارند؛ برچسب «نسبت» گویاتر از «—» است.
+  const ratioUnit = { fa: "نسبت", en: "ratio", ar: "نسبة", ru: "отн." }[locale] || "ratio";
   const sys = SYSTEMS[unitSystem];
   const isFa = locale === "fa";
 
@@ -268,10 +285,16 @@ export default function SizingTool() {
   const hasErrors = Object.keys(errors).length > 0;
 
   const topProduct = useMemo(() => {
-    if (!result || !result.Cv) return null;
-    const s = suggestProducts(result.Cv, form, locale);
-    return s[0] || null;
-  }, [result, form, locale]);
+    if (!result || !result.Cv || !result.size) return null;
+    const sizeIn = parseFloat(String(result.size.size).replace(/[^0-9.]/g, ""));
+    const match = suggestValves(catalog, sizeIn, { limit: 1 })[0];
+    if (!match) return null;
+    return {
+      product: match,
+      matchedSize: result.size,
+      openingPercent: result.openingPercent
+    };
+  }, [result, catalog]);
 
   useEffect(() => { setSaved(loadScenarios()); }, []);
 
@@ -493,7 +516,7 @@ export default function SizingTool() {
     fa: {
       title: "سایزینگ شیر کنترلی",
       subtitle: "برآورد اولیه Cv/Kv",
-      engineeringDisclaimer: "این نتیجه برآورد اولیه است، نه محاسبه تأییدشده IEC 60534؛ انتخاب نهایی را با مهندس شیر کنترل یا سازنده بررسی کنید.",
+      engineeringDisclaimer: "این نتیجه برآورد اولیه است، نه محاسبه تأییدشده ISA-75.01.01 (IEC 60534-2-1)؛ انتخاب نهایی را با مهندس شیر کنترل یا سازنده بررسی کنید.",
       capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ برای انتخاب سایز با مهندس شیر کنترل مشورت کنید.",
       liquid: "مایع", gas: "گاز", steam: "بخار",
       presets: "سناریوهای آماده", presetsHint: "با یک کلیک، فرم پر می‌شود",
@@ -523,6 +546,7 @@ export default function SizingTool() {
       resultEmptyDesc: "فرم را پر کنید تا نتیجه زنده نمایش داده شود",
       resultEmptyHint: "یا از سناریوهای آماده استفاده کنید",
       product: "محصول پیشنهادی PSM",
+      productDataNote: "نام و سری از کاتالوگ PSM انتخاب شده است. Cv این سایز از جدول عمومی محاسبه شده؛ Cv کاتالوگی هر سری در حال تکمیل است و انتخاب نهایی باید با مهندسی PSM تأیید شود.",
       productHint: "بر اساس Cv محاسبه‌شده",
       noProduct: "محصولی برای این Cv یافت نشد",
       viewProduct: "مشاهده محصولات",
@@ -536,7 +560,7 @@ export default function SizingTool() {
     en: {
       title: "Control Valve Sizing",
       subtitle: "Preliminary Cv/Kv estimate",
-      engineeringDisclaimer: "This is a preliminary estimate, not a validated IEC 60534 calculation. Confirm final valve selection with a control-valve engineer or manufacturer.",
+      engineeringDisclaimer: "This is a preliminary estimate, not a validated ISA-75.01.01 (IEC 60534-2-1) calculation. Confirm final valve selection with a control-valve engineer or manufacturer.",
       capacityExceeded: "Required Cv exceeds the largest listed valve size. Consult a control-valve engineer for selection.",
       liquid: "Liquid", gas: "Gas", steam: "Steam",
       presets: "Preset Scenarios", presetsHint: "One click to fill the form",
@@ -563,6 +587,7 @@ export default function SizingTool() {
       resultEmptyDesc: "Fill the form to see live results",
       resultEmptyHint: "or use a preset scenario",
       product: "Suggested PSM Product",
+      productDataNote: "The name and series come from the PSM catalogue. The Cv belongs to the general size table; per-series catalogue Cv is still being completed, so the final selection must be confirmed with PSM engineering.",
       productHint: "Based on your calculated Cv",
       noProduct: "No matching product for this Cv",
       viewProduct: "View Products",
@@ -575,7 +600,7 @@ export default function SizingTool() {
     },
     ar: {
       title: "تحديد حجم الصمام", subtitle: "تقدير أولي لـ Cv/Kv",
-      engineeringDisclaimer: "هذا تقدير أولي وليس حسابًا معتمدًا وفق IEC 60534. يجب تأكيد الاختيار النهائي مع مهندس صمامات التحكم أو الشركة المصنّعة.",
+      engineeringDisclaimer: "هذا تقدير أولي وليس حسابًا معتمدًا وفق ISA-75.01.01 (IEC 60534-2-1). يجب تأكيد الاختيار النهائي مع مهندس صمامات التحكم أو الشركة المصنّعة.",
       capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ استشر مهندس صمامات التحكم لاختيار الحجم المناسب.",
       liquid: "سائل", gas: "غاز", steam: "بخار",
       presets: "سيناريوهات", presetsHint: "بنقرة واحدة",
@@ -597,6 +622,7 @@ export default function SizingTool() {
       resultEmptyTitle: "جاهز", resultEmptyDesc: "املأ النموذج",
       resultEmptyHint: "أو اختر سيناريو",
       product: "منتج مقترح", productHint: "بناءً على Cv",
+      productDataNote: "الاسم والسلسلة من كتالوج PSM. قيمة Cv من الجدول العام؛ جدول Cv الخاص بكل سلسلة قيد الإكمال ويجب تأكيد الاختيار النهائي مع مهندسي PSM.",
       noProduct: "لا يوجد", viewProduct: "عرض",
       refTitle: "المراجع", refStandards: "المعايير",
       refMaterial: "المواد", refCharts: "الرسوم",
@@ -604,7 +630,7 @@ export default function SizingTool() {
     },
     ru: {
       title: "Подбор клапана", subtitle: "Предварительная оценка Cv/Kv",
-      engineeringDisclaimer: "Это предварительная оценка, а не подтвержденный расчет по IEC 60534. Окончательный выбор следует согласовать с инженером по регулирующим клапанам или производителем.",
+      engineeringDisclaimer: "Это предварительная оценка, а не подтвержденный расчет по ISA-75.01.01 (IEC 60534-2-1). Окончательный выбор следует согласовать с инженером по регулирующим клапанам или производителем.",
       capacityExceeded: "Требуемый Cv превышает максимальную пропускную способность в списке. Обратитесь к инженеру для подбора.",
       liquid: "Жидкость", gas: "Газ", steam: "Пар",
       presets: "Сценарии", presetsHint: "Один клик",
@@ -626,6 +652,7 @@ export default function SizingTool() {
       resultEmptyTitle: "Готово", resultEmptyDesc: "Заполните форму",
       resultEmptyHint: "или выберите сценарий",
       product: "Продукт", productHint: "По Cv",
+      productDataNote: "Название и серия взяты из каталога PSM. Cv относится к общей таблице; каталожные Cv по сериям ещё заполняются, окончательный выбор подтверждает инженер PSM.",
       noProduct: "Нет", viewProduct: "Смотреть",
       refTitle: "Справочники", refStandards: "Стандарты",
       refMaterial: "Материалы", refCharts: "Графики",
@@ -805,17 +832,17 @@ export default function SizingTool() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {fluid === "steam" ? (
-                <Field label="W" unit={sys.flowSteam} value={form.W} onChange={update("W")} help={help.W} error={errors.W} placeholder="500" />
+                <Field label="W" unit={sys.flowSteam} value={form.W} onChange={update("W")} help={help.W} error={errors.W} placeholder="500" required />
               ) : (
-                <Field label="Q" unit={fluid === "liquid" ? sys.flowLiquid : sys.flowGas} value={form.Q} onChange={update("Q")} help={help.Q} error={errors.Q} placeholder="100" />
+                <Field label="Q" unit={fluid === "liquid" ? sys.flowLiquid : sys.flowGas} value={form.Q} onChange={update("Q")} help={help.Q} error={errors.Q} placeholder="100" required />
               )}
-              {fluid === "liquid" && <Field label="Gf" unit="—" value={form.Gf} onChange={update("Gf")} step={0.01} help={help.Gf} error={errors.Gf} placeholder="1.0" />}
-              {fluid === "gas" && <Field label="Gg" unit="—" value={form.Gg} onChange={update("Gg")} step={0.01} help={help.Gg} error={errors.Gg} placeholder="0.65" />}
-              <Field label="P1" unit={sys.pressure} value={form.P1} onChange={update("P1")} step={0.1} help={help.P1} error={errors.P1} placeholder="10" />
-              <Field label="P2" unit={sys.pressure} value={form.P2} onChange={update("P2")} step={0.1} help={help.P2} error={errors.P2} placeholder="6" />
+              {fluid === "liquid" && <Field label="Gf" unit={ratioUnit} value={form.Gf} onChange={update("Gf")} step={0.01} help={help.Gf} error={errors.Gf} placeholder="1.0" />}
+              {fluid === "gas" && <Field label="Gg" unit={ratioUnit} value={form.Gg} onChange={update("Gg")} step={0.01} help={help.Gg} error={errors.Gg} placeholder="0.65" />}
+              <Field label="P1" unit={sys.pressure} value={form.P1} onChange={update("P1")} step={0.1} help={help.P1} error={errors.P1} placeholder="10" required />
+              <Field label="P2" unit={sys.pressure} value={form.P2} onChange={update("P2")} step={0.1} help={help.P2} error={errors.P2} placeholder="6" required />
               {fluid === "liquid" && <Field label="Pv" unit={sys.pressure} value={form.Pv} onChange={update("Pv")} step={0.01} help={help.Pv} error={errors.Pv} placeholder="0.5" />}
               {fluid !== "liquid" && <Field label="T" unit={sys.temp} value={form.T} onChange={update("T")} help={help.T} error={errors.T} placeholder="25" />}
-              {fluid === "gas" && <Field label="Z" unit="—" value={form.Z} onChange={update("Z")} step={0.01} help={help.Z} error={errors.Z} placeholder="1.0" />}
+              {fluid === "gas" && <Field label="Z" unit={ratioUnit} value={form.Z} onChange={update("Z")} step={0.01} help={help.Z} error={errors.Z} placeholder="1.0" />}
             </div>
 
             {dP > 0 && (
@@ -837,13 +864,13 @@ export default function SizingTool() {
                 {fluid === "liquid" && (
                   <>
                     <Field label="Pc" unit={sys.pressure} value={form.Pc} onChange={update("Pc")} help={help.Pc} error={errors.Pc} />
-                    <Field label="FL" unit="—" value={form.FL} onChange={update("FL")} step={0.01} help={help.FL} error={errors.FL} />
+                    <Field label="FL" unit={ratioUnit} value={form.FL} onChange={update("FL")} step={0.01} help={help.FL} error={errors.FL} />
                   </>
                 )}
                 {fluid === "gas" && (
                   <>
-                    <Field label="k" unit="—" value={form.k} onChange={update("k")} step={0.01} help={help.k} error={errors.k} />
-                    <Field label="xT" unit="—" value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} error={errors.xT} />
+                    <Field label="k" unit={ratioUnit} value={form.k} onChange={update("k")} step={0.01} help={help.k} error={errors.k} />
+                    <Field label="xT" unit={ratioUnit} value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} error={errors.xT} />
                   </>
                 )}
               </div>
@@ -1035,41 +1062,40 @@ export default function SizingTool() {
 
               {topProduct && (
                 <div className="result-product-card" style={{
-                  background: `linear-gradient(135deg, ${topProduct.product.color}18, ${topProduct.product.color}06)`,
-                  border: `1.5px solid ${topProduct.product.color}50`
+                  background: "var(--bg-card)",
+                  border: "1.5px solid var(--border-strong)"
                 }}>
                   <div className="product-card-head">
-                    <Package size={14} color={topProduct.product.color} />
+                    <Package size={14} color="var(--gold)" />
                     <span style={{ fontSize: 11.5, fontWeight: 900, color: "var(--text)" }}>
                       {L.product}
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 10 }}>
-                    <div className="product-icon-sm" style={{
-                      background: topProduct.product.color + "25"
-                    }}>⚙️</div>
+                    <div className="product-icon-sm" style={{ background: "var(--bg-soft)" }}>⚙️</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 900, color: topProduct.product.color, fontFamily: "monospace", direction: "ltr" }}>
-                          {topProduct.product.series}
-                        </span>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-soft)" }}>
-                          · {topProduct.matchedSize.dn}
-                        </span>
+                      <div style={{ fontSize: 12.5, fontWeight: 900, color: "var(--text)", lineHeight: 1.5 }}>
+                        {topProduct.product.name?.[locale] || topProduct.product.name?.en}
                       </div>
-                      <div style={{ fontSize: 10.5, color: "var(--text-muted)", fontWeight: 600 }}>
-                        Cv {topProduct.matchedSize.cv} · {L.opening} {topProduct.openingPercent}%
+                      <div style={{
+                        fontSize: 10.5, color: "var(--text-muted)", fontWeight: 700,
+                        marginTop: 3, fontFamily: "monospace", direction: "ltr"
+                      }}>
+                        {topProduct.matchedSize.dn} · Cv {topProduct.matchedSize.cv} · {L.opening} {topProduct.openingPercent}%
                       </div>
                     </div>
                   </div>
+                  <div style={{ fontSize: 9.5, color: "var(--text-soft)", marginTop: 8, lineHeight: 1.7, fontWeight: 600 }}>
+                    {L.productDataNote}
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10 }}>
-                    <Link href={"/" + locale + "/contact?product=" + topProduct.product.series}
+                    <Link href={"/" + locale + "/contact?product=" + encodeURIComponent(topProduct.product.series)}
                       onClick={() => track.quoteRequested({ product: topProduct.product.series, source: "result_card" })}
                       className="btn-gold justify-center"
                       style={{ padding: "8px", fontSize: 11 }}>
                       {L.reqQuote}
                     </Link>
-                    <Link href={"/" + locale + "/contact?product=" + topProduct.product.series}
+                    <Link href={"/" + locale + "/products/" + topProduct.product.slug}
                       onClick={() => track.productViewed({ product: topProduct.product.series })}
                       className="btn-secondary justify-center"
                       style={{ padding: "8px", fontSize: 11 }}>

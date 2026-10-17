@@ -53,6 +53,49 @@ const TEMP_DATA = [
   { c: 540,  f: 1004, k: 813 }
 ];
 
+// ---------------------------------------------------------------
+// ANSI/FCI 70-2-2006 — Control Valve Seat Leakage
+// ---------------------------------------------------------------
+const FCI_CLASSES = [
+  { id: "I",   malKey: "fciI",   mediumKey: "fciMediumNone", pressureKey: "fciPressureNone" },
+  { id: "II",  mal: "0.5%",      mediumKey: "fciMediumAW",   pressureKey: "fciPressureLow" },
+  { id: "III", mal: "0.1%",      mediumKey: "fciMediumAW",   pressureKey: "fciPressureLow" },
+  { id: "IV",  mal: "0.01%",     mediumKey: "fciMediumAW",   pressureKey: "fciPressureLow" },
+  { id: "V",   malKey: "fciV",   mediumKey: "fciMediumWater", pressureKey: "fciPressureMax" },
+  { id: "VI",  malKey: "fciVI",  mediumKey: "fciMediumAir",  pressureKey: "fciPressure50" }
+];
+
+// Class VI allowable leakage: nominal seat diameter → mL/min air at 50 psig.
+const FCI_CLASS_VI_DATA = [
+  { mm: "< 25", inch: '< 1"',   ml: "0.15", bubbles: 1 },
+  { mm: "38",   inch: '1.5"',   ml: "0.30", bubbles: 2 },
+  { mm: "51",   inch: '2"',     ml: "0.45", bubbles: 3 },
+  { mm: "64",   inch: '2.5"',   ml: "0.60", bubbles: 4 },
+  { mm: "76",   inch: '3"',     ml: "0.90", bubbles: 6 },
+  { mm: "102",  inch: '4"',     ml: "1.70", bubbles: 11 },
+  { mm: "152",  inch: '6"',     ml: "4.00", bubbles: 27 },
+  { mm: "203",  inch: '8"',     ml: "6.75", bubbles: 45 },
+  { mm: "250",  inch: '10"',    ml: "11.1", bubbles: "—" },
+  { mm: "300",  inch: '12"',    ml: "16.0", bubbles: "—" },
+  { mm: "350",  inch: '14"',    ml: "21.6", bubbles: "—" },
+  { mm: "400",  inch: '16"',    ml: "28.4", bubbles: "—" }
+];
+
+// ISA-75.01.01 symbols used by the sizing engine (harmonised with IEC 60534-2-1).
+const ISA_SYMBOLS = [
+  { sym: "Cv",     unit: "US gpm @ 1 psi",  fa: "ضریب جریان آمریکایی (مبنای محاسبه)", en: "US flow coefficient (calculation basis)" },
+  { sym: "Kv",     unit: "m³/h @ 1 bar",    fa: "ضریب جریان متریک؛ Kv ≈ Cv / 1.156", en: "Metric flow coefficient; Kv ≈ Cv / 1.156" },
+  { sym: "P1, P2", unit: "bar abs",         fa: "فشار مطلق ورودی و خروجی", en: "Absolute inlet and outlet pressure" },
+  { sym: "FL",     unit: "—",               fa: "ضریب بازیابی فشار شیر (۰.۸–۰.۹)", en: "Valve pressure recovery factor (0.8–0.9)" },
+  { sym: "Ff",     unit: "—",               fa: "ضریب فشار بحرانی مایع = 0.96 − 0.28√(Pv/Pc)", en: "Liquid critical pressure ratio = 0.96 − 0.28√(Pv/Pc)" },
+  { sym: "FF",     unit: "—",               fa: "نسبت فشار بحرانی ترم؛ مبنای تشخیص کاویتاسیون", en: "Critical pressure ratio factor; cavitation basis" },
+  { sym: "xT",     unit: "—",               fa: "ضریب افت فشار بحرانی گاز (۰.۶–۰.۸)", en: "Gas choked pressure drop ratio (0.6–0.8)" },
+  { sym: "Fk",     unit: "—",               fa: "نسبت گرمای ویژه = k / 1.4", en: "Specific heat ratio factor = k / 1.4" },
+  { sym: "Y",      unit: "—",               fa: "ضریب انبساط گاز = 1 − x/(3·Fk·xT)", en: "Gas expansion factor = 1 − x/(3·Fk·xT)" },
+  { sym: "Z",      unit: "—",               fa: "ضریب تراکم‌پذیری گاز (گاز ایده‌آل = ۱)", en: "Gas compressibility factor (ideal = 1)" },
+  { sym: "σ",      unit: "—",               fa: "شاخص کاویتاسیون = (P1 − Pv)/ΔP", en: "Cavitation index = (P1 − Pv)/ΔP" }
+];
+
 const TEST_PRESSURE_DATA = ANSI_PN_DATA
   .filter(function(d) { return d.ansi !== "400"; })
   .map(function(d) {
@@ -72,12 +115,12 @@ const MATERIAL_GROUP_DATA = [
   { group: "3.x" }
 ];
 
-function DataTable({ headers, rows, accent }) {
+function DataTable({ headers, rows, accent, wrap }) {
   return (
     <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid var(--border)" }}>
       <table style={{
         width: "100%",
-        minWidth: headers.length >= 5 ? 780 : headers.length === 3 ? 600 : 0,
+        minWidth: wrap ? 520 : headers.length >= 5 ? 780 : headers.length === 3 ? 600 : 0,
         borderCollapse: "collapse",
         fontSize: 12.5
       }}>
@@ -109,14 +152,15 @@ function DataTable({ headers, rows, accent }) {
                   return (
                     <td key={j} style={{
                       padding: "9px 14px",
-                      textAlign: "center",
+                      textAlign: wrap && j === row.length - 1 && row.length > 1 ? "start" : "center",
                       fontVariantNumeric: "tabular-nums",
-                      whiteSpace: "nowrap",
+                      whiteSpace: wrap ? "normal" : "nowrap",
+                      lineHeight: wrap ? 1.7 : 1.4,
                       fontWeight: j === 0 ? 900 : 700,
                       color: j === 0 ? accent : "var(--text)",
                       borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none",
                       fontSize: 12,
-                      direction: "ltr"
+                      direction: j === 1 ? "ltr" : undefined
                     }}>{cell}</td>
                   );
                 })}
@@ -129,8 +173,10 @@ function DataTable({ headers, rows, accent }) {
   );
 }
 
-export default function StandardsTable({ locale }) {
-  const [tab, setTab] = useState("dn");
+const VALID_TABS = ["dn", "pressure", "cv", "temp", "testPressure", "testDuration", "leakage", "fci", "material", "isa"];
+
+export default function StandardsTable({ locale, initialTab }) {
+  const [tab, setTab] = useState(VALID_TABS.includes(initialTab) ? initialTab : "dn");
 
   const L = {
     fa: {
@@ -163,7 +209,25 @@ export default function StandardsTable({ locale }) {
       pressureNote: "فشارهای تست از ضرایب حداقل API 598 و فشار نامی گروه 1.1 در ASME B16.34 در دمای 38°C محاسبه شده‌اند. فشار نامی با گروه متریال و دما تغییر می‌کند؛ پیش از تست، ویرایش استاندارد، سیال تست و روش سازنده را بررسی کنید.",
       durationNote: "مدت‌های حداقل API 598 برای مرجع سریع هستند. تست قابل اعمال و مدت آن به نوع شیر، سایز و مشخصات خرید بستگی دارد.",
       leakageNote: "حد مجاز نشتی در API 598 به طراحی شیر، سایز، سیال و روش تست وابسته است. مقادیر بالا برای نشتی سیت نرم و تست مایع سیت فلزی، مرجع سریع‌اند و جایگزین استاندارد جاری یا کلاس پذیرش مشخص‌شده نیستند.",
-      materialNote: "این‌ها مثال‌های گروه‌بندی خانواده‌ای هستند و فهرست کامل گروه‌های متریال ASME B16.34 نیستند. گروه/زیرگروه دقیق گرید ASTM/ASME، شکل محصول و ویرایش استاندارد را کنترل کنید؛ سپس ریتینگ فشار-دما و سازگاری خوردگی را بررسی کنید."
+      materialNote: "این‌ها مثال‌های گروه‌بندی خانواده‌ای هستند و فهرست کامل گروه‌های متریال ASME B16.34 نیستند. گروه/زیرگروه دقیق گرید ASTM/ASME، شکل محصول و ویرایش استاندارد را کنترل کنید؛ سپس ریتینگ فشار-دما و سازگاری خوردگی را بررسی کنید.",
+      fciTab: "نشتی شیر کنترل (FCI 70-2)",
+      isaTab: "مرجع سایزینگ (ISA-75.01.01)",
+      fciHeaders: ["کلاس", "حداکثر نشتی مجاز (MAL)", "سیال تست", "فشار تست"],
+      fciI: "تعیین نشده — بدون تست اجباری",
+      fciV: "۵×۱۰⁻⁴ ml/min آب به ازای هر اینچ قطر نشیمن و هر psi اختلاف فشار",
+      fciVI: "بر اساس قطر اسمی نشیمن — جدول زیر",
+      fciMediumNone: "—",
+      fciMediumAW: "هوا یا آب، ۱۰–۵۰ °C",
+      fciMediumWater: "آب، ۱۰–۵۰ °C",
+      fciMediumAir: "هوا، ۱۰–۵۰ °C",
+      fciPressureNone: "—",
+      fciPressureLow: "کمتر از ۴۵–۶۰ psig یا حداکثر اختلاف فشار کاری",
+      fciPressureMax: "حداکثر فشار کاری، نه بیش از ریتینگ ANSI",
+      fciPressure50: "کمتر از ۵۰ psig یا حداکثر فشار روی پلاگ",
+      fciClassVIHeaders: ["قطر اسمی نشیمن (mm)", "قطر (inch)", "حداکثر نشتی (ml/min)", "حباب در دقیقه"],
+      fciNote: "ANSI/FCI 70-2-2006 کلاس‌های نشتی شیر کنترل و روش تست را تعیین می‌کند. کلاس IV حد متعارف شیرهای کنترل فلزی و کلاس VI برای نشیمن الاستومری «حباب‌بند» است. انتخاب کلاس، تابع الزام فرآیند و مشخصات خرید است؛ این جدول مرجع سریع است و جایگزین نسخهٔ رسمی استاندارد نیست.",
+      isaHeaders: ["نماد", "واحد", "توضیح"],
+      isaNote: "سایزینگ این ابزار بر پایهٔ معادلات ISA-75.01.01 (هم‌راستا با IEC 60534-2-1) است: Cv = Q·√(Gf/ΔP) برای مایع با سقف ΔP بحرانی، و Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) برای گاز. اثر اتصالات (Fp)، عدد رینولدز (FR) و هندسهٔ مسیر در این نسخه لحاظ نشده و نتیجه تخمین مهندسی است."
     },
     en: {
       title: "Engineering Standards Tables",
@@ -195,7 +259,25 @@ export default function StandardsTable({ locale }) {
       pressureNote: "Test pressures are calculated from API 598 minimum multipliers and the ASME B16.34 Group 1.1 rating at 38°C. Ratings vary by material group and temperature; verify the applicable edition, test medium, and manufacturer procedure before testing.",
       durationNote: "API 598 minimum durations are quick-reference values. The applicable test and duration depend on valve type, size, and the governing purchase specification.",
       leakageNote: "API 598 leakage limits depend on valve design, size, test medium, and test method. The soft-seat and metal-seat liquid-test rates above are a quick reference, not a substitute for the current standard or specified acceptance class.",
-      materialNote: "These are family-level examples, not a complete ASME B16.34 material-group listing. Confirm the exact group/subgroup for the specified ASTM/ASME grade, product form, and edition, then check its pressure-temperature rating and corrosion compatibility."
+      materialNote: "These are family-level examples, not a complete ASME B16.34 material-group listing. Confirm the exact group/subgroup for the specified ASTM/ASME grade, product form, and edition, then check its pressure-temperature rating and corrosion compatibility.",
+      fciTab: "Control Valve Leakage (FCI 70-2)",
+      isaTab: "Sizing Reference (ISA-75.01.01)",
+      fciHeaders: ["Class", "Maximum allowable leakage (MAL)", "Test medium", "Test pressure"],
+      fciI: "Not specified — no test required",
+      fciV: "5×10⁻⁴ ml/min of water per inch of seat diameter per psi differential",
+      fciVI: "Based on nominal seat diameter — table below",
+      fciMediumNone: "—",
+      fciMediumAW: "Air or water, 10–50 °C",
+      fciMediumWater: "Water, 10–50 °C",
+      fciMediumAir: "Air, 10–50 °C",
+      fciPressureNone: "—",
+      fciPressureLow: "Lower of 45–60 psig or maximum operating differential",
+      fciPressureMax: "Maximum service pressure, not exceeding ANSI rating",
+      fciPressure50: "Lower of 50 psig or maximum pressure across the plug",
+      fciClassVIHeaders: ["Nominal seat diameter (mm)", "Diameter (inch)", "Max leakage (ml/min)", "Bubbles per minute"],
+      fciNote: "ANSI/FCI 70-2-2006 defines control valve leakage classes and test procedures. Class IV is the usual limit for metal-seated control valves and Class VI is bubble-tight for resilient seats. The required class comes from the process and the purchase specification; this table is a quick reference, not a substitute for the official standard.",
+      isaHeaders: ["Symbol", "Unit", "Meaning"],
+      isaNote: "This tool follows the ISA-75.01.01 equations (harmonised with IEC 60534-2-1): Cv = Q·√(Gf/ΔP) for liquids with the critical ΔP limit, and Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) for gases. Piping geometry (Fp), Reynolds number (FR) and trim geometry are not included, so results are an engineering estimate."
     },
     ar: {
       title: "جداول المعايير الهندسية",
@@ -227,7 +309,25 @@ export default function StandardsTable({ locale }) {
       pressureNote: "ضغوط الاختبار محسوبة من معاملات الحد الأدنى في API 598 وتصنيف مجموعة 1.1 في ASME B16.34 عند 38°C. يتغير التصنيف حسب مجموعة المواد ودرجة الحرارة؛ تحقق من الإصدار ووسط الاختبار وإجراء الشركة المصنعة قبل الاختبار.",
       durationNote: "المدد الدنيا وفق API 598 مرجع سريع. يعتمد الاختبار والمدة المطبقان على نوع الصمام والحجم ومواصفات الشراء.",
       leakageNote: "تعتمد حدود التسرب في API 598 على تصميم الصمام والحجم ووسط الاختبار وطريقته. القيم أعلاه للمقعد اللين واختبار السائل للمقعد المعدني مرجعية وليست بديلاً عن الإصدار الحالي أو فئة القبول المحددة.",
-      materialNote: "هذه أمثلة على مستوى عائلة المواد وليست قائمة كاملة لمجموعات ASME B16.34. تحقق من المجموعة/المجموعة الفرعية الدقيقة لدرجة ASTM/ASME وشكل المنتج والإصدار، ثم تحقق من تصنيف الضغط والحرارة والتوافق مع التآكل."
+      materialNote: "هذه أمثلة على مستوى عائلة المواد وليست قائمة كاملة لمجموعات ASME B16.34. تحقق من المجموعة/المجموعة الفرعية الدقيقة لدرجة ASTM/ASME وشكل المنتج والإصدار، ثم تحقق من تصنيف الضغط والحرارة والتوافق مع التآكل.",
+      fciTab: "تسرب صمام التحكم (FCI 70-2)",
+      isaTab: "مرجع تحديد الحجم (ISA-75.01.01)",
+      fciHeaders: ["الفئة", "أقصى تسرب مسموح (MAL)", "وسط الاختبار", "ضغط الاختبار"],
+      fciI: "غير محدد — لا اختبار إلزامي",
+      fciV: "٥×١٠⁻⁴ مل/دقيقة ماء لكل بوصة من قطر المقعد ولكل psi فرق ضغط",
+      fciVI: "حسب القطر الاسمي للمقعد — الجدول أدناه",
+      fciMediumNone: "—",
+      fciMediumAW: "هواء أو ماء، ١٠–٥٠ °م",
+      fciMediumWater: "ماء، ١٠–٥٠ °م",
+      fciMediumAir: "هواء، ١٠–٥٠ °م",
+      fciPressureNone: "—",
+      fciPressureLow: "الأقل بين ٤٥–٦٠ psig أو أقصى فرق ضغط تشغيلي",
+      fciPressureMax: "أقصى ضغط خدمة، دون تجاوز تصنيف ANSI",
+      fciPressure50: "الأقل بين ٥٠ psig أو أقصى ضغط على السدادة",
+      fciClassVIHeaders: ["القطر الاسمي (mm)", "القطر (inch)", "أقصى تسرب (ml/min)", "فقاعات/دقيقة"],
+      fciNote: "يحدد ANSI/FCI 70-2-2006 فئات تسرب صمام التحكم وإجراءات الاختبار. الفئة IV هي الحد المتعارف عليه للصمامات المعدنية والفئة VI للمقاعد المرنة. الفئة المطلوبة تأتي من العملية ومواصفات الشراء؛ هذا الجدول مرجع سريع وليس بديلاً عن النسخة الرسمية.",
+      isaHeaders: ["الرمز", "الوحدة", "المعنى"],
+      isaNote: "تعتمد الأداة معادلات ISA-75.01.01 (المتوافقة مع IEC 60534-2-1): Cv = Q·√(Gf/ΔP) للسوائل مع حد ΔP الحرج، وCv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) للغازات. لا تُؤخذ هندسة التوصيلات (Fp) ورقم رينولدز (FR) في الحساب؛ لذا النتيجة تقدير هندسي."
     },
     ru: {
       title: "Инженерные стандарты",
@@ -259,7 +359,25 @@ export default function StandardsTable({ locale }) {
       pressureNote: "Испытательные давления рассчитаны по минимальным коэффициентам API 598 и рейтингу группы 1.1 ASME B16.34 при 38°C. Рейтинг зависит от группы материала и температуры; перед испытанием проверьте применимую редакцию, среду и процедуру изготовителя.",
       durationNote: "Минимальная длительность по API 598 приведена для справки. Применимые испытания и время зависят от типа клапана, размера и спецификации закупки.",
       leakageNote: "Допустимая утечка по API 598 зависит от конструкции клапана, размера, среды и метода испытания. Значения для мягкого седла и испытания металлического седла жидкостью — справочные, не заменяют актуальный стандарт или заданный класс приемки.",
-      materialNote: "Это примеры на уровне семейства, а не полный перечень групп материалов ASME B16.34. Проверьте точную группу/подгруппу марки ASTM/ASME, форму изделия и редакцию, затем рейтинг давления-температуры и коррозионную совместимость."
+      materialNote: "Это примеры на уровне семейства, а не полный перечень групп материалов ASME B16.34. Проверьте точную группу/подгруппу марки ASTM/ASME, форму изделия и редакцию, затем рейтинг давления-температуры и коррозионную совместимость.",
+      fciTab: "Утечка клапана (FCI 70-2)",
+      isaTab: "Справочник подбора (ISA-75.01.01)",
+      fciHeaders: ["Класс", "Макс. допустимая утечка (MAL)", "Среда испытания", "Давление испытания"],
+      fciI: "Не задано — испытание не требуется",
+      fciV: "5×10⁻⁴ мл/мин воды на дюйм диаметра седла на psi перепада",
+      fciVI: "По номинальному диаметру седла — таблица ниже",
+      fciMediumNone: "—",
+      fciMediumAW: "Воздух или вода, 10–50 °C",
+      fciMediumWater: "Вода, 10–50 °C",
+      fciMediumAir: "Воздух, 10–50 °C",
+      fciPressureNone: "—",
+      fciPressureLow: "Меньшее из 45–60 psig или максимальный рабочий перепад",
+      fciPressureMax: "Максимальное рабочее давление, не выше рейтинга ANSI",
+      fciPressure50: "Меньшее из 50 psig или максимальное давление на затворе",
+      fciClassVIHeaders: ["Номинальный диаметр (mm)", "Диаметр (inch)", "Макс. утечка (ml/min)", "Пузырьков/мин"],
+      fciNote: "ANSI/FCI 70-2-2006 определяет классы утечки регулирующих клапанов и методы испытаний. Класс IV — обычный предел для металлических седел, класс VI — для эластомерных. Требуемый класс задаётся процессом и спецификацией закупки; таблица справочная.",
+      isaHeaders: ["Символ", "Единица", "Значение"],
+      isaNote: "Инструмент использует уравнения ISA-75.01.01 (согласованы с IEC 60534-2-1): Cv = Q·√(Gf/ΔP) для жидкости с критическим ΔP и Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) для газа. Геометрия трубопровода (Fp), число Рейнольдса (FR) и геометрия затвора не учитываются — результат является инженерной оценкой."
     }
   }[locale] || {};
 
@@ -271,8 +389,18 @@ export default function StandardsTable({ locale }) {
     { id: "testPressure", label: L.testPressureTab, accent: "#DC2626" },
     { id: "testDuration", label: L.testDurationTab, accent: "#7C3AED" },
     { id: "leakage", label: L.leakageTab, accent: "#0891B2" },
-    { id: "material", label: L.materialTab, accent: "#059669" }
+    { id: "fci", label: L.fciTab, accent: "#B91C1C" },
+    { id: "material", label: L.materialTab, accent: "#059669" },
+    { id: "isa", label: L.isaTab, accent: "#0EA5E9" }
   ];
+
+  const RATED = {
+    fa: "از ظرفیت نامی",
+    en: "of rated capacity",
+    ar: "من السعة المقننة",
+    ru: "номинальной пропускной способности"
+  };
+  const ratedLabel = RATED[locale] || RATED.en;
 
   const currentTab = tabs.find(function(t) { return t.id === tab; }) || tabs[0];
 
@@ -353,6 +481,39 @@ export default function StandardsTable({ locale }) {
         <p className="standards-reference-note">{L.leakageNote}</p>
       </>
     );
+  } else if (tab === "fci") {
+    const classRows = FCI_CLASSES.map(function(c) {
+      return [
+        "Class " + c.id,
+        c.mal ? c.mal + " " + ratedLabel : L[c.malKey],
+        L[c.mediumKey],
+        L[c.pressureKey]
+      ];
+    });
+    tableContent = (
+      <>
+        <DataTable headers={L.fciHeaders} accent={currentTab.accent} rows={classRows} wrap />
+        <h3 className="standards-subtitle">ANSI/FCI 70-2 — Class VI ({L.fciClassVIHeaders[0]})</h3>
+        <DataTable
+          headers={L.fciClassVIHeaders}
+          accent={currentTab.accent}
+          rows={FCI_CLASS_VI_DATA.map(function(d) { return [d.mm, d.inch, d.ml, d.bubbles]; })}
+        />
+        <p className="standards-reference-note">{L.fciNote}</p>
+      </>
+    );
+  } else if (tab === "isa") {
+    tableContent = (
+      <>
+        <DataTable
+          headers={L.isaHeaders}
+          accent={currentTab.accent}
+          rows={ISA_SYMBOLS.map(function(s) { return [s.sym, s.unit, s[locale] || s.en]; })}
+          wrap
+        />
+        <p className="standards-reference-note">{L.isaNote}</p>
+      </>
+    );
   } else if (tab === "material") {
     tableContent = (
       <>
@@ -420,6 +581,13 @@ export default function StandardsTable({ locale }) {
           font-size: 11px;
           font-weight: 600;
           line-height: 1.8;
+        }
+        .standards-subtitle {
+          margin: 18px 2px 8px;
+          font-size: 12px;
+          font-weight: 900;
+          color: var(--text-soft);
+          letter-spacing: 0.01em;
         }
       `}</style>
     </section>
