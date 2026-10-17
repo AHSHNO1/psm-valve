@@ -60,3 +60,38 @@ test("imperial gas and liquid flow conversions round-trip with the correct units
   assert.ok(Math.abs(liquidSI.Q - 22.7125) < 1e-10);
   assert.ok(Math.abs(formFromSI(liquidSI, "IMPERIAL", "liquid").Q - 100) < 1e-10);
 });
+
+// ---------------------------------------------------------------
+// Benchmark cases: independent reference values, not derived from
+// the implementation. Regressions in the unit constants fail here.
+// ---------------------------------------------------------------
+test("liquid benchmark: water 100 m3/h at 2 bar drop needs Cv 81.74", () => {
+  const r = calcLiquidCv({ Q: 100, Gf: 1, P1: 10, P2: 8, Pv: 0.0234, Pc: 220.6, FL: 0.9 });
+  assert.ok(Math.abs(r.Cv - 81.74) < 0.1, `Cv was ${r.Cv}`);
+  assert.equal(r.choked, false);
+});
+
+test("gas benchmark: air 100 Nm3/h at 10 bar needs Cv ~1.37", () => {
+  // Reference: Fisher/IEC form Q = 1360·Cv·P1·Y·sqrt(x/(Gg·T·Z)) converted to
+  // Nm3/h and bar gives Cv = Q/(416.3·P1·Y)·sqrt(Gg·T·Z/x); Y = 1 - x/(3·Fk·xT).
+  const r = calcGasCv({ Q: 100, Gg: 1, T: 20, P1: 10, P2: 9, Z: 1, k: 1.4, xT: 0.7 });
+  assert.ok(Math.abs(r.Cv - 1.37) < 0.07, `Cv was ${r.Cv}`);
+  assert.ok(r.Y > 0.94 && r.Y < 0.96, `Y was ${r.Y}`);
+  assert.equal(r.choked, false);
+});
+
+test("steam benchmark: 1000 kg/h saturated steam at 10 bar needs Cv ~17.5", () => {
+  // Reference SI form of W = 2.1·Cv·sqrt(dP·(P1+P2)) [lb/h, psia]:
+  // W = 13.8·Cv·Y·sqrt(dP·(P1+P2)) [kg/h, bar].
+  const r = calcSteamCv({ W: 1000, P1: 10, P2: 9, T: 180 });
+  assert.ok(Math.abs(r.Cv - 17.5) < 0.9, `Cv was ${r.Cv}`);
+  assert.equal(r.choked, false);
+});
+
+test("steam sizing detects choked flow and stops increasing Cv", () => {
+  const mild = calcSteamCv({ W: 1000, P1: 10, P2: 9 });
+  const deep = calcSteamCv({ W: 1000, P1: 10, P2: 1 });
+  assert.equal(mild.choked, false);
+  assert.equal(deep.choked, true);
+  assert.ok(Math.abs(deep.Cv - calcSteamCv({ W: 1000, P1: 10, P2: 0.5 }).Cv) < 1e-9);
+});
