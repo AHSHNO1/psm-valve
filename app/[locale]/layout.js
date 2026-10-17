@@ -8,6 +8,7 @@ import BottomPopup from "@/components/BottomPopup";
 import BackToTop from "@/components/BackToTop";
 import ScrollProgress from "@/components/ScrollProgress";
 import SkipLink from "@/components/SkipLink";
+import PwaRegister from "@/components/PwaRegister";
 import { locales, isValidLocale, localeDirs, defaultLocale } from "@/lib/i18n";
 import { getBranding } from "@/lib/content";
 import { COMPANY, getCompanyInfo } from "@/lib/company-info";
@@ -116,6 +117,11 @@ export default async function LocaleLayout({ children, params }) {
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
+        <meta name="theme-color" content="#0F1114" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="PSM Valve" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light');}catch(e){document.documentElement.classList.add('light');}})();`
@@ -125,6 +131,7 @@ export default async function LocaleLayout({ children, params }) {
       <body className="antialiased">
         <Providers locale={locale} dict={dict}>
           <SkipLink />
+          <PwaRegister locale={locale} />
           <ScrollProgress />
           <SmoothScroll>
             <Navbar logo={branding.logo} logoIcon={branding.logoIcon} products={products} chrome={siteChrome} />
