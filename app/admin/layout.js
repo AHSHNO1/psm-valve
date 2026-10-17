@@ -1,4 +1,5 @@
 import "./admin.css";
+import "../fonts.css";
 import AdminShell from "@/components/admin/AdminShell";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -116,10 +117,6 @@ export default async function AdminLayout({ children }) {
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
-        />
         {branding && branding.favicon && (
           <link rel="icon" href={branding.favicon} />
         )}

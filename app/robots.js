@@ -7,7 +7,7 @@ export default function robots() {
         disallow: ["/admin", "/admin/", "/api/"]
       }
     ],
-    sitemap: "https://psmvalve.com/sitemap.xml",
-    host: "https://psmvalve.com"
+    sitemap: "https://www.psmvalve.com/sitemap.xml",
+    host: "https://www.psmvalve.com"
   };
 }

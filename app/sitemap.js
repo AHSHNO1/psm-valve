@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // SITEMAP — همهٔ مسیرهای عمومی در چهار زبان
 // ============================================================
 
-const BASE = "https://psmvalve.com";
+const BASE = "https://www.psmvalve.com";
 
 const STATIC_ROUTES = [
   { path: "", priority: 1.0, changeFrequency: "daily" },

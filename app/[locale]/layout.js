@@ -1,4 +1,5 @@
 import "../globals.css";
+import "../fonts.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }) {
       : messages.common.company + " — " + meta.suffix;
 
   return {
-    metadataBase: new URL("https://psmvalve.com"),
+    metadataBase: new URL("https://www.psmvalve.com"),
     title: {
       default: title,
       template: "%s | " + messages.common.company
@@ -63,7 +64,7 @@ export async function generateMetadata({ params }) {
     description: description,
     keywords: meta.keywords,
     applicationName: messages.common.tagline,
-    authors: [{ name: COMPANY.brandEn, url: "https://psmvalve.com" }],
+    authors: [{ name: COMPANY.brandEn, url: "https://www.psmvalve.com" }],
     creator: messages.common.company,
     publisher: messages.common.company,
     alternates: {
@@ -82,7 +83,7 @@ export async function generateMetadata({ params }) {
       siteName: messages.common.company,
       title: title,
       description: description,
-      url: "https://psmvalve.com/" + safeLocale,
+      url: "https://www.psmvalve.com/" + safeLocale,
       images: [{ url: "/og/og-default.jpg", width: 1200, height: 630, alt: messages.common.company }]
     },
     twitter: {
@@ -115,10 +116,6 @@ export default async function LocaleLayout({ children, params }) {
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light');}catch(e){document.documentElement.classList.add('light');}})();`

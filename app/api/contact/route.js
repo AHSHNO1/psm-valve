@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { addMessage } from "@/lib/db";
 import { verifyContactChallenge } from "@/lib/contact-challenge";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { sendContactNotification } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request) {
   const rate = consumeRateLimit(request, "contact-submit", 5, 10 * 60 * 1000);
@@ -56,7 +58,10 @@ export async function POST(request) {
 
   try {
     const saved = addMessage({ name, email, phone, message });
-    return NextResponse.json({ ok: true, id: saved.id });
+    // پیام همیشه در پنل ذخیره می‌شود؛ ایمیل فقط اطلاع‌رسانی است و
+    // خطای SMTP نباید ارسال فرم را خراب کند.
+    const mailed = await sendContactNotification(saved);
+    return NextResponse.json({ ok: true, id: saved.id, mailed: mailed.sent });
   } catch (error) {
     console.error("Unable to store contact message:", error);
     return NextResponse.json({ ok: false, error: "ذخیرهٔ پیام با خطا مواجه شد." }, { status: 500 });

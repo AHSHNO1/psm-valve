@@ -8,7 +8,7 @@ import { getCvTables } from "@/lib/valve-cv";
 import { buildSizingCatalog } from "@/lib/valve-catalog";
 import "./sizing-hub.css";
 
-const SITE_URL = "https://www.psm-valve.com";
+const SITE_URL = "https://www.psmvalve.com";
 
 const META = {
   fa: {

@@ -17,7 +17,7 @@
 | نقشهٔ داده | ۱) `data/` دادهٔ زندهٔ JSON و SQLite · ۲) `public/uploads/**` فایلهای آپلودشده از پنل · ۳) `lib/products.js` فقط دادهٔ اولیهٔ seed محصولات |
 | ناسازگار با | Vercel، Netlify، Render Static، Cloudflare Pages، هر PaaS با دیسک موقت (فایل نوشتهشده با هر دیپلوی/ریاستارت پاک میشود) |
 | سازگار با | VPS لینوکسی (توصیهشده)، کانتینر با Volume پایدار، سرور اختصاصی، PaaS با دیسک پایدار (مثل Liara با دیسک، یا Dokploy/Coolify روی VPS) |
-| دامنهٔ canonical | `https://psmvalve.com` — در `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` **هاردکد** شده است |
+| دامنهٔ canonical | `https://www.psmvalve.com` — در `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` **هاردکد** شده است |
 | ⚠️ ناهمخوانی موجود | `data/settings.json` → `https://www.psm-valve.com` نوشته شده. قبل از انتشار یکی را انتخاب و همهجا یکسان کن (توصیه: همان `psmvalve.com` بدون `www` و ریدایرکت ۳۰۱ از `www`). |
 
 ---
@@ -232,7 +232,7 @@ curl -I http://127.0.0.1:3000/fa           # باید 200 بدهد
 
 این اسکریپت: بکاپ دادهٔ زنده → `git reset --hard origin/main` → برگرداندن دادهٔ زنده → `npm ci` → `npm run build` → `pm2 reload`.
 
-بعد از هر انتشار، چک کن: `git log -1 --oneline`، `pm2 status`، `curl -I https://psmvalve.com/fa`.
+بعد از هر انتشار، چک کن: `git log -1 --oneline`، `pm2 status`، `curl -I https://www.psmvalve.com/fa`.
 
 ## ۴) Nginx — ریورسپروکسی، SSL و کارایی
 
@@ -260,7 +260,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d psmvalve.com -d www.psmvalve.com --redirect -m info@psmvalve.com --agree-tos
+sudo certbot --nginx -d www.psmvalve.com -d psmvalve.com --redirect -m info@psmvalve.com --agree-tos
 sudo systemctl status certbot.timer    # تمدید خودکار
 ```
 
@@ -393,11 +393,11 @@ git push origin main
 1. **تصویر OG**: فایل `1200×630` را در `public/og/og-default.jpg` بگذار (اکنون `app/[locale]/layout.js` به این مسیر اشاره میکند و فایل وجود ندارد → پیشنمایش شبکههای اجتماعی بدون عکس).
 2. **لوگو**: `data/branding.json` خالی است؛ لوگو را در `public/logo/` بگذار و مسیر را در پنل (تنظیمات ← برندینگ) تنظیم کن.
 3. **دامنه**: یک دامنه را canonical کن (`psmvalve.com`) و `data/settings.json` را هم با آن یکسان کن (`www.psm-valve.com` فعلی ناهمخوان است).
-4. **Google Search Console**: دامنه را ثبت کن و `https://psmvalve.com/sitemap.xml` را ثبت کن.
+4. **Google Search Console**: دامنه را ثبت کن و `https://www.psmvalve.com/sitemap.xml` را ثبت کن.
 5. **Analytics**: اتصال GA4 (فعلاً `lib/analytics.js` رویدادها را فقط log میکند).
 6. **ایمیل فرم تماس**: پیامها فقط در `data/messages.json` ذخیره میشوند؛ SMTP/وبهوک اضافه کن تا لیدها از دست نروند.
 7. **محتوای نهایی**: PDF دیتاشیت محصولات، تأیید فنی مشخصات (`lib/products.js` هشدار «تأییدنشده» دارد)، متنهای چهار زبان.
-8. **مانیتورینگ**: یک سرویس uptime (مثل UptimeRobot) روی `https://psmvalve.com/fa` + هشدار دیسک پر.
+8. **مانیتورینگ**: یک سرویس uptime (مثل UptimeRobot) روی `https://www.psmvalve.com/fa` + هشدار دیسک پر.
 9. **تست بازیابی بکاپ**: یکبار روی سرور تست، بکاپ را برگردان و مطمئن شو سایت بالا میآید.
 
 ---
@@ -423,7 +423,7 @@ git push origin main
 
 | دوره | کار |
 | --- | --- |
-| هر انتشار | `deploy/deploy.sh` + چک `pm2 status` و `curl -I https://psmvalve.com/fa` |
+| هر انتشار | `deploy/deploy.sh` + چک `pm2 status` و `curl -I https://www.psmvalve.com/fa` |
 | هفتگی | بررسی `logs/`, `pm2 logs`, فضای دیسک (`df -h`)، سایز `public/uploads` |
 | ماهانه | `sudo apt update && sudo apt upgrade`، بررسی نسخهٔ Node و پکیجها (`npm audit`)، تست بازیابی بکاپ |
 | هر ۳ ماه | بازبینی رمز مدیر و `JWT_SECRET` (چرخش کلید = خروج خودکار همهٔ نشستها) |

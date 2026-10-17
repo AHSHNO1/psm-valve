@@ -45,12 +45,13 @@ node scripts/rotate-admin-password.mjs
 - پاک‌سازی تاریخچه با `git filter-repo --path data/admin.json --invert-paths` و سپس force-push
 - تا وقتی این کار انجام نشده، فرض کنید رمز قدیمی سوخته است.
 
-### ۳. تصمیم دامنه (۵ دقیقه)
-در کد دو دامنه هست:
-- `https://psmvalve.com` در `lib/seo.js`، `sitemap.js`، `robots.js`
-- `https://www.psm-valve.com` در `data/settings.json` و `lib/company-info.js`
+### ۳. دامنه (انجام شد)
+دامنهٔ نهایی: **`https://www.psmvalve.com`** (canonical). کد و تنظیمات یکسان شدند:
+- `lib/seo.js`، `sitemap.js`، `robots.js`، متادیتای `layout.js`
+- `data/settings.json` و `lib/company-info.js`
+- کانفیگ Nginx: بدون www با ۳۰۱ به www می‌رود
 
-**پیشنهاد: `psmvalve.com`** (بدون www، مطابق canonical فعلی). سپس سایت را در پنل ادمین → تنظیمات/شرکت به همان دامنه تغییر دهید.
+تنها کار باقی‌مانده: در پنل ادمین (تنظیمات/شرکت) دامنه را بازبینی کنید تا اگر مقدار قدیمی مانده، همان www باشد.
 
 ### ۴. متغیرهای محیطی تولید
 روی سرور فایل `.env.production` بسازید:
@@ -60,11 +61,31 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=<هش bcrypt>
 ADMIN_ALLOW_INSECURE_DEV_CREDENTIALS=
 CONTACT_CHALLENGE_SECRET=$(openssl rand -base64 32)
+
+# ایمیل فرم تماس
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=psmvalve@gmail.com
+SMTP_PASS=<App Password جیمیل>
+CONTACT_TO=psmvalve@gmail.com
 ```
 هش bcrypt:
 ```bash
 node -e "console.log(require('bcryptjs').hashSync('رمز-قوی-شما', 12))"
 ```
+
+#### راه‌اندازی ایمیل فرم تماس (Gmail)
+1. در حساب `psmvalve@gmail.com` تأیید دو مرحله‌ای (2FA) را فعال کنید.
+2. Google Account → Security → **App passwords** → یک رمز ۱۶ کاراکتری بسازید.
+3. همان رمز را در `SMTP_PASS` بگذارید (نه رمز اصلی جیمیل).
+4. تست:
+```bash
+node scripts/test-email.mjs
+```
+5. از فرم تماس سایت یک پیام تست بفرستید؛ هم در `/admin/messages` و هم در صندوق جیمیل باید بیاید.
+
+> اگر ایمیل تنظیم نشود، فرم باز هم کار می‌کند و پیام در پنل ذخیره می‌شود؛ فقط اعلان ایمیلی ارسال نمی‌شود.
 
 ### ۵. بکاپ offsite
 `deploy/backup.sh` را در cron بگذارید و **مقصد خارجی** (rclone/rsync) را فعال کنید. بدون آن، فقط یک دیسک دارید.
@@ -104,7 +125,7 @@ node -e "console.log(require('bcryptjs').hashSync('رمز-قوی-شما', 12))"
 4. رکوردهای `MX` را اگر ایمیل سازمانی دارید دست نزنید.
 5. پس از اتصال، SSL با Let's Encrypt:
 ```bash
-sudo certbot --nginx -d psmvalve.com -d www.psmvalve.com
+sudo certbot --nginx -d www.psmvalve.com -d psmvalve.com
 ```
 
 ---
@@ -166,7 +187,7 @@ nginx -t && systemctl reload nginx
 
 ### گام ۸ — SSL
 ```bash
-certbot --nginx -d psmvalve.com -d www.psmvalve.com
+certbot --nginx -d www.psmvalve.com -d psmvalve.com
 ```
 
 ---
@@ -193,13 +214,13 @@ pm2 reload psm-valve --update-env
 ## ۷) تست بعد از انتشار
 
 ```bash
-curl -I https://psmvalve.com/            # 307 به /fa یا /en
-curl -I https://psmvalve.com/fa          # 200
-curl -I https://psmvalve.com/fa/sizing   # 200
-curl -I https://psmvalve.com/admin       # 307 به /admin/login
-curl -I https://psmvalve.com/api/cv-tables  # 401 بدون ورود
-curl -s https://psmvalve.com/robots.txt
-curl -s https://psmvalve.com/sitemap.xml | head
+curl -I https://www.psmvalve.com/            # 307 به /fa یا /en
+curl -I https://www.psmvalve.com/fa          # 200
+curl -I https://www.psmvalve.com/fa/sizing   # 200
+curl -I https://www.psmvalve.com/admin       # 307 به /admin/login
+curl -I https://www.psmvalve.com/api/cv-tables  # 401 بدون ورود
+curl -s https://www.psmvalve.com/robots.txt
+curl -s https://www.psmvalve.com/sitemap.xml | head
 ```
 
 بعد در مرورگر:
@@ -228,13 +249,13 @@ curl -s https://psmvalve.com/sitemap.xml | head
 
 | مورد | وضعیت فعلی | کار لازم |
 |---|---|---|
-| جدول Cv محصولات | خالی | ورود از `/admin/cv-tables` |
+| جدول Cv محصولات | آماده در پنل، داده خالی | ورود از `/admin/cv-tables` |
 | Google Analytics | اتصال ندارد | شناسهٔ GA4 در تنظیمات |
-| ایمیل فرم تماس | فقط در پنل ذخیره می‌شود | SMTP یا سرویس ایمیل |
+| ایمیل فرم تماس | کد آماده است | `SMTP_PASS` (App Password) + `node scripts/test-email.mjs` |
 | برخی مشخصات محصول | خالی (دمای کاری، ترم، استاندارد) | تکمیل از کاتالوگ |
 | زیرمجموعه‌های پوزیشنر/هوک‌آپ | بدون محصول | افزودن محصول |
 | تصاویر سنگین | چند فایل ۱۰–۲۰ MB | فشرده‌سازی |
-| CDN فونت | از jsDelivr | میزبانی محلی (اختیاری) |
+| فونت و آیکون‌ها | ✅ داخل پروژه (`public/fonts`، `public/icons`) | — |
 
 ---
 

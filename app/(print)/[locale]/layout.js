@@ -1,4 +1,5 @@
 import "../../globals.css";
+import "../../fonts.css";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,6 @@ export default function PrintLayout({ children, params }) {
   return (
     <html lang={locale} dir={dir}>
       <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css"
-        />
         <meta name="color-scheme" content="light" />
       </head>
       <body style={{ margin: 0, background: "#F5F6F8" }}>{children}</body>
