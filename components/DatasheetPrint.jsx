@@ -13,8 +13,87 @@ function pickArray(obj, locale) {
   return obj[locale] || obj.en || obj.fa || [];
 }
 
-export default function DatasheetPrint({ product, locale, dict }) {
+const TEXT = {
+  fa: {
+    print: "چاپ / ذخیره PDF",
+    features: "ویژگی‌ها و مزایا",
+    options: "آپشن‌ها",
+    applications: "کاربردها",
+    clients: "برخی از مشتریان ما",
+    specs: "مشخصات فنی",
+    date: "تاریخ",
+    code: "کد محصول",
+    address: "آدرس",
+    postal: "کد پستی",
+    phone: "تلفن",
+    mobile: "همراه",
+    fax: "فکس",
+    email: "ایمیل",
+    web: "وب‌سایت",
+    datasheet: "دیتاشیت محصول"
+  },
+  en: {
+    print: "Print / Save PDF",
+    features: "Features & Benefits",
+    options: "Options",
+    applications: "Applications",
+    clients: "Selected Customers",
+    specs: "Technical Specifications",
+    date: "Date",
+    code: "Product code",
+    address: "Address",
+    postal: "Postal code",
+    phone: "Tel",
+    mobile: "Mobile",
+    fax: "Fax",
+    email: "Email",
+    web: "Website",
+    datasheet: "Product Datasheet"
+  },
+  ar: {
+    print: "طباعة / حفظ PDF",
+    features: "الميزات والفوائد",
+    options: "الخيارات",
+    applications: "التطبيقات",
+    clients: "بعض عملائنا",
+    specs: "المواصفات الفنية",
+    date: "التاريخ",
+    code: "رمز المنتج",
+    address: "العنوان",
+    postal: "الرمز البريدي",
+    phone: "هاتف",
+    mobile: "جوال",
+    fax: "فاكس",
+    email: "البريد الإلكتروني",
+    web: "الموقع",
+    datasheet: "صحيفة بيانات المنتج"
+  },
+  ru: {
+    print: "Печать / PDF",
+    features: "Особенности и преимущества",
+    options: "Опции",
+    applications: "Применение",
+    clients: "Наши заказчики",
+    specs: "Технические характеристики",
+    date: "Дата",
+    code: "Код продукта",
+    address: "Адрес",
+    postal: "Индекс",
+    phone: "Тел",
+    mobile: "Моб",
+    fax: "Факс",
+    email: "E-mail",
+    web: "Сайт",
+    datasheet: "Паспорт изделия"
+  }
+};
+
+const DATE_LOCALES = { fa: "fa-IR", en: "en-GB", ar: "ar-EG", ru: "ru-RU" };
+
+export default function DatasheetPrint({ product, locale, dict, company }) {
   const p = product;
+  const t = TEXT[locale] || TEXT.en;
+  const info = company || {};
   const name = pick(p.name, locale);
   const description = pick(p.description, locale) || pick(p.short, locale);
   const features = pickArray(p.features, locale);
@@ -29,6 +108,21 @@ export default function DatasheetPrint({ product, locale, dict }) {
     }));
   const visibleSpecs = specs.filter((row) => row.key && row.value);
 
+  const companyName = pick(info.name, locale) || "پترو سازه میهن";
+  const brand = info.brandEn || "PETRO SAZEH MIHAN CO.";
+  const address = pick(info.address?.office, locale);
+  const postalCode = info.address?.postalCode || "";
+  const phoneOffice = info.phone?.office || "";
+  const mobiles = Array.isArray(info.phone?.mobile) ? info.phone.mobile : [];
+  const fax = info.fax?.office || "";
+  const email = info.email?.primary || "";
+  const emailAlt = info.email?.secondary || "";
+  const website = String(info.social?.website || "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+
+  const dateLocale = DATE_LOCALES[locale] || "en-GB";
+
   useEffect(() => {
     document.documentElement.setAttribute("dir", locale === "fa" || locale === "ar" ? "rtl" : "ltr");
   }, [locale]);
@@ -38,18 +132,19 @@ export default function DatasheetPrint({ product, locale, dict }) {
       {/* Toolbar */}
       <div className="sticky top-0 z-10 bg-white border-b shadow-sm print:hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <h1 className="font-bold text-sm sm:text-base">Datasheet — {name}</h1>
+          <h1 className="font-bold text-sm sm:text-base">{t.datasheet} — {name}</h1>
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.print()}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm"
               style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)", color: "#1A1D21" }}
             >
-              <Printer size={16} /> چاپ / ذخیره PDF
+              <Printer size={16} /> {t.print}
             </button>
             <button
               onClick={() => window.close()}
               className="p-2 rounded-lg border hover:bg-gray-100"
+              aria-label="Close"
             >
               <X size={16} />
             </button>
@@ -70,15 +165,15 @@ export default function DatasheetPrint({ product, locale, dict }) {
                 PSM
               </div>
               <div>
-                <div className="font-black text-lg">پترو سازه میهن</div>
+                <div className="font-black text-lg">{companyName}</div>
                 <div className="text-xs font-bold tracking-widest" style={{ color: "#B8860B" }}>
-                  PSM VALVE
+                  {brand}
                 </div>
               </div>
             </div>
             <div className="text-right text-xs text-gray-500">
-              <div>تاریخ: {new Date().toLocaleDateString("fa-IR")}</div>
-              <div className="mt-1">کد: {p.series}</div>
+              <div>{t.date}: {new Date().toLocaleDateString(dateLocale)}</div>
+              <div className="mt-1">{t.code}: {p.series}</div>
             </div>
           </div>
 
@@ -98,7 +193,7 @@ export default function DatasheetPrint({ product, locale, dict }) {
           {features.length > 0 && (
             <div className="mb-8">
               <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>
-                ویژگی‌ها و مزایا
+                {t.features}
               </h3>
               <ul className="space-y-2">
                 {features.map((f, i) => (
@@ -116,7 +211,7 @@ export default function DatasheetPrint({ product, locale, dict }) {
 
           {options.length > 0 && (
             <div className="mb-8">
-              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>آپشن‌ها</h3>
+              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>{t.options}</h3>
               <ul className="space-y-2">
                 {options.map((option, index) => <li key={index} className="text-sm">• {option}</li>)}
               </ul>
@@ -125,7 +220,7 @@ export default function DatasheetPrint({ product, locale, dict }) {
 
           {applications.length > 0 && (
             <div className="mb-8">
-              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>کاربردها</h3>
+              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>{t.applications}</h3>
               <ul className="space-y-2">
                 {applications.map((application, index) => <li key={index} className="text-sm">• {application}</li>)}
               </ul>
@@ -134,7 +229,7 @@ export default function DatasheetPrint({ product, locale, dict }) {
 
           {clients.length > 0 && (
             <div className="mb-8">
-              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>برخی از مشتریان ما</h3>
+              <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>{t.clients}</h3>
               <ul className="space-y-2">
                 {clients.map((client, index) => <li key={index} className="text-sm">• {client}</li>)}
               </ul>
@@ -145,7 +240,7 @@ export default function DatasheetPrint({ product, locale, dict }) {
           {visibleSpecs.length > 0 && (
             <div className="mb-8">
               <h3 className="font-black text-lg mb-3 pb-2 border-b" style={{ color: "#B8860B" }}>
-                مشخصات فنی
+                {t.specs}
               </h3>
               <table className="w-full text-sm border-collapse">
                 <tbody>
@@ -164,16 +259,55 @@ export default function DatasheetPrint({ product, locale, dict }) {
             </div>
           )}
 
-          {/* Footer */}
-          <div className="border-t pt-6 mt-8 text-xs text-gray-500 flex justify-between flex-wrap gap-3">
-            <div>
-              <div className="font-bold text-gray-700 mb-1">پترو سازه میهن</div>
-              <div>اراک، شهرک صنعتی، خیابان صنعت، پلاک ۱۲</div>
-            </div>
-            <div className="text-left">
-              <div>۰۸۶-۳۳۰۰۰۰۰۰</div>
-              <div>info@psmvalve.com</div>
-              <div>www.psmvalve.com</div>
+          {/* Footer — complete company contact */}
+          <div className="border-t pt-6 mt-8 text-xs text-gray-600">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <div className="font-black text-gray-800 mb-2">{companyName}</div>
+                <div className="leading-6">
+                  <span className="font-bold">{t.address}: </span>
+                  {address}
+                </div>
+                {postalCode && (
+                  <div className="leading-6">
+                    <span className="font-bold">{t.postal}: </span>
+                    <span dir="ltr">{postalCode}</span>
+                  </div>
+                )}
+              </div>
+              <div className="sm:text-left leading-6">
+                {phoneOffice && (
+                  <div>
+                    <span className="font-bold">{t.phone}: </span>
+                    <span dir="ltr">{phoneOffice}</span>
+                  </div>
+                )}
+                {mobiles.length > 0 && (
+                  <div>
+                    <span className="font-bold">{t.mobile}: </span>
+                    <span dir="ltr">{mobiles.join(" · ")}</span>
+                  </div>
+                )}
+                {fax && (
+                  <div>
+                    <span className="font-bold">{t.fax}: </span>
+                    <span dir="ltr">{fax}</span>
+                  </div>
+                )}
+                {email && (
+                  <div>
+                    <span className="font-bold">{t.email}: </span>
+                    <span dir="ltr">{email}</span>
+                    {emailAlt ? <span dir="ltr"> · {emailAlt}</span> : null}
+                  </div>
+                )}
+                {website && (
+                  <div>
+                    <span className="font-bold">{t.web}: </span>
+                    <span dir="ltr">{website}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

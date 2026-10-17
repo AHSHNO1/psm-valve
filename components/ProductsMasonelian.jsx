@@ -117,14 +117,15 @@ export default function ProductsMasonelian({ products = [] }) {
       products: products.filter((product) => product.categoryId === category.id)
     })), [products]);
 
-  const filterCategories = categories;
+  const filterCategories = categories.filter((category) => !category.parentId);
 
   const filtered = useMemo(() => catalogCategories
-    .filter((category) =>
-      activeCategory === "all" ||
-      category.id === activeCategory ||
-      category.parentId === activeCategory
-    )
+    .filter((category) => {
+      if (activeCategory === "all") return !category.parentId;
+      if (category.id === activeCategory) return true;
+      // نمای والد، زیرمجموعه‌ها را هم نشان می‌دهد
+      return category.parentId === activeCategory;
+    })
     .map((category) => ({
       ...category,
       products: category.products.filter((product) => {
@@ -281,7 +282,7 @@ export default function ProductsMasonelian({ products = [] }) {
                     </p>
                   )}
                   <h2 className="font-black text-lg sm:text-2xl" style={{ color: "var(--text)" }}>
-                    {getCategoryLabel(cat, locale)}
+                    {cat.parentId ? pickLocalized(cat.name, locale) : getCategoryLabel(cat, locale)}
                   </h2>
                   <p className="text-xs sm:text-sm mt-1 text-soft leading-relaxed">
                     {cat.desc[locale] || cat.desc.fa}
@@ -289,7 +290,40 @@ export default function ProductsMasonelian({ products = [] }) {
                 </div>
               </div>
 
-              {/* Child categories are rendered as their own sections below. */}
+              {/* زیرمجموعه‌ها */}
+              {cat.children && cat.children.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2 mb-6 sm:mb-8">
+                  {cat.children.map(function (childId) {
+                    const child = catalogCategories.find(function (item) { return item.id === childId; });
+                    if (!child) return null;
+                    const ChildIcon = ICONS[child.icon] || Package;
+                    return (
+                      <button
+                        key={childId}
+                        type="button"
+                        onClick={function () { setActiveCategory(childId); }}
+                        className="text-start flex items-start gap-3 rounded-xl p-4 transition-all hover:border-[var(--gold)]"
+                        style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+                      >
+                        <span className="w-9 h-9 rounded-lg grid place-items-center shrink-0"
+                          style={{ background: "var(--bg-soft)", color: "var(--gold)" }}>
+                          <ChildIcon size={17} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-black" style={{ color: "var(--text)" }}>
+                            {pickLocalized(child.name, locale)}
+                          </span>
+                          <span className="block text-xs mt-0.5 leading-5" style={{ color: "var(--text-muted)" }}>
+                            {pickLocalized(child.desc, locale)}
+                          </span>
+                        </span>
+                        <ArrowLeft size={14} style={{ color: "var(--gold)", marginTop: 4 }} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {cat.products.length > 0 ? (
               <div className="product-grid-masonelian">
                 {cat.products.map((p, i) => (
@@ -353,8 +387,15 @@ export default function ProductsMasonelian({ products = [] }) {
                 ))}
               </div>
               ) : (
-                <div className="card-glass rounded-2xl px-5 py-6 text-sm leading-7 text-soft" role="status">
-                  {cat.desc[locale] || cat.desc.fa}
+                <div className="card-glass rounded-2xl px-5 py-6 text-sm leading-7" style={{ color: "var(--text-soft)" }} role="status">
+                  <p>{pickLocalized(cat.desc, locale)}</p>
+                  {cat.parentId && (
+                    <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                      {locale === "fa"
+                        ? "محصولی در این زیرمجموعه ثبت نشده است؛ برای ثبت، از پنل مدیریت استفاده کنید."
+                        : "No products are listed in this subcategory yet."}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
