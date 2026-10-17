@@ -187,7 +187,7 @@ export default function Navbar({ logo, logoIcon, products = [], chrome = {} }) {
       <nav className={"container-x flex items-center justify-between gap-2 " + (headerSettings.layout === "compact" ? "h-14 lg:h-16" : "h-16 lg:h-20")}>
         <Link href={"/" + locale} className="flex items-center gap-2 shrink-0">
           <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl grid place-items-center shadow-md shrink-0 overflow-hidden"
-            style={{ background: "#FFFFFF", border: "1px solid var(--border)" }}>
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
             {(logoIcon || logo) && (
               <img
                 src={logoIcon || logo}

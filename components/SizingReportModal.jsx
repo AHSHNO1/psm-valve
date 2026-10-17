@@ -32,7 +32,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
   const L = {
     fa: {
       title: "گزارش برآورد اولیه سایزینگ شیر", subtitle: "نتیجه تأییدشده ISA-75.01.01 (IEC 60534-2-1) نیست",
-      engineeringDisclaimer: "این برآورد جایگزین محاسبه کامل ISA-75.01.01 (IEC 60534-2-1) یا تأیید سازنده نیست؛ انتخاب نهایی را با مهندس شیر کنترل بررسی کنید.",
+      engineeringDisclaimer: "این برآورد جایگزین محاسبه کامل ISA-75.01.01 (IEC 60534-2-1) یا تأیید سازنده نیست؛ برای انتخاب نهایی، با واحد مهندسی شرکت پتروسازه میهن بررسی کنید.",
       capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ انتخاب نهایی نیازمند بررسی مهندسی است.",
       reportRef: "شماره گزارش", date: "تاریخ",
       inputs: "پارامترهای ورودی", chart: "مشخصه جریان شیر",
@@ -49,7 +49,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
     },
     en: {
       title: "Preliminary Control Valve Sizing Estimate", subtitle: "Not a validated ISA-75.01.01 (IEC 60534-2-1) calculation",
-      engineeringDisclaimer: "This estimate is not a substitute for a complete ISA-75.01.01 (IEC 60534-2-1) calculation or manufacturer validation. Confirm final selection with a control-valve engineer.",
+      engineeringDisclaimer: "This estimate is not a substitute for a complete ISA-75.01.01 (IEC 60534-2-1) calculation or manufacturer validation. For the final selection, consult the Engineering Department of Petro Sazeh Mihan Co.",
       capacityExceeded: "Required Cv exceeds the largest listed valve size. Final selection requires engineering review.",
       reportRef: "Report No.", date: "Date",
       inputs: "Input Parameters", chart: "Valve Flow Characteristic",
@@ -66,7 +66,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
     },
     ar: {
       title: "تقدير أولي لحجم صمام التحكم", subtitle: "ليس حسابًا معتمدًا وفق ISA-75.01.01 (IEC 60534-2-1)",
-      engineeringDisclaimer: "هذا التقدير لا يغني عن حساب كامل وفق ISA-75.01.01 (IEC 60534-2-1) أو تأكيد الشركة المصنّعة. يجب مراجعة الاختيار النهائي مع مهندس صمامات التحكم.",
+      engineeringDisclaimer: "هذا التقدير لا يغني عن حساب كامل وفق ISA-75.01.01 (IEC 60534-2-1) أو تأكيد الشركة المصنّعة. يجب مراجعة الاختيار النهائي مع الإدارة الهندسية لشركة بترو سازه ميهان.",
       capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ يتطلب الاختيار النهائي مراجعة هندسية.",
       reportRef: "رقم التقرير", date: "التاريخ",
       inputs: "المدخلات", chart: "الرسم", candidates: "الأحجام المقترحة",
@@ -81,7 +81,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
     },
     ru: {
       title: "Предварительная оценка регулирующего клапана", subtitle: "Расчет не подтвержден по ISA-75.01.01 (IEC 60534-2-1)",
-      engineeringDisclaimer: "Эта оценка не заменяет полный расчет по ISA-75.01.01 (IEC 60534-2-1) или подтверждение производителя. Окончательный выбор согласуйте с инженером.",
+      engineeringDisclaimer: "Эта оценка не заменяет полный расчет по ISA-75.01.01 (IEC 60534-2-1) или подтверждение производителя. Окончательный выбор согласуйте с инженерным отделом компании Petro Sazeh Mihan.",
       capacityExceeded: "Требуемый Cv превышает максимальный размер в списке; необходима инженерная проверка.",
       reportRef: "№", date: "Дата", inputs: "Входные данные", chart: "График",
       candidates: "Размеры", candidateHint: "Три варианта", tips: "Рекомендации", exports: "Экспорт",

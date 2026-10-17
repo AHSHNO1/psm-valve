@@ -176,7 +176,7 @@ export default function SizingWizard({ locale = "fa", form, fluid, setForm, setF
                   {active && (
                     <div style={{
                       width: 20, height: 20, borderRadius: "50%",
-                      background: "#FFFFFF", color: f.color,
+                      background: "var(--bg-card)", color: f.color,
                       display: "grid", placeItems: "center"
                     }}>
                       <Check size={12} strokeWidth={3} />

@@ -59,7 +59,7 @@ export default async function ServiceDetailPage({ params }) {
       <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 items-start">
         <div className="card-glass p-4 sm:p-6">
           <div
-            className="rounded-xl overflow-hidden grid place-items-center min-h-[280px] bg-white"
+            className="rounded-xl overflow-hidden grid place-items-center min-h-[280px] bg-[var(--bg-soft)]"
             style={{ border: "1px solid var(--border)" }}
           >
             {s.image ? (

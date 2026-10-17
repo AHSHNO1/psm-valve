@@ -30,12 +30,12 @@ export default async function ArticlesPage({ params }) {
             href={`/${locale}/articles/${a.slug}`}
             className="card-glass p-6 hover:border-gold-500/40 transition-all group"
           >
-            <div className="text-xs text-gold-500 font-bold">{pick(a.category, locale)}</div>
-            <h2 className="mt-3 font-bold text-lg leading-7 text-silver-100 group-hover:text-gold-500 transition">
+            <div className="text-xs text-[var(--gold)] font-bold">{pick(a.category, locale)}</div>
+            <h2 className="mt-3 font-bold text-lg leading-7 text-[var(--text)] group-hover:text-[var(--gold)] transition">
               {pick(a.title, locale)}
             </h2>
-            <p className="mt-3 text-sm text-silver-400 leading-6">{pick(a.excerpt, locale)}</p>
-            <div className="mt-5 flex justify-between text-xs text-silver-500">
+            <p className="mt-3 text-sm text-[var(--text-soft)] leading-6">{pick(a.excerpt, locale)}</p>
+            <div className="mt-5 flex justify-between text-xs text-[var(--text-muted)]">
               <span>{pick(a.date, locale)}</span>
               <span>
                 {a.readMinutes

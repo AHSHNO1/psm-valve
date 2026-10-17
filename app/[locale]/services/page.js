@@ -31,7 +31,7 @@ export default async function ServicesPage({ params }) {
             <div key={s.slug} className="card-glass p-6 sm:p-8 group hover:border-gold-500/50 transition">
               {s.image ? (
                 <div
-                  className="rounded-xl overflow-hidden bg-white mb-5 aspect-[4/3] grid place-items-center"
+                  className="rounded-xl overflow-hidden bg-[var(--bg-soft)] mb-5 aspect-[4/3] grid place-items-center"
                   style={{ border: "1px solid var(--border)" }}
                 >
                   <img

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Cog, Gauge, Wrench, Circle, Flame, Truck, Package, Settings,
-  ArrowLeft, Sparkles, Crosshair, ShieldCheck, Zap
+  ArrowLeft, Sparkles, Crosshair, ShieldCheck, Zap, CheckCircle2
 } from "lucide-react";
 
 const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck, Package, Settings };
@@ -14,7 +14,7 @@ function pick(obj, locale) {
   return obj[locale] || obj.en || obj.fa || "";
 }
 
-const HIGHLIGHTED = ["hvf-coating", "lop-test"];
+const HIGHLIGHTED = ["hvf-coating", "lop-test", "lapped-ball-valves"];
 
 // Default features per service (اگر ادمین نداده باشد)
 const DEFAULT_FEATURES = {
@@ -53,6 +53,24 @@ const DEFAULT_FEATURES = {
       "No disassembly needed",
       "Per ISO 9001 standard"
     ]
+  },
+  "lapped-ball-valves": {
+    fa: [
+      "لپینگ دقیق توپی و سیت",
+      "دقت ابعادی میکرونی",
+      "بازسازی شیرهای فرسوده",
+      "کاهش نشتی داخلی",
+      "پرداخت سطح یکنواخت",
+      "تست نشتی پس از اجرا"
+    ],
+    en: [
+      "Precise ball and seat lapping",
+      "Micron-level dimensional accuracy",
+      "Restoration of worn valves",
+      "Lower internal leakage",
+      "Uniform surface finish",
+      "Leak test after lapping"
+    ]
   }
 };
 
@@ -73,7 +91,6 @@ export default function ServicesCombined({ services, locale }) {
   const all = (services || []).filter(function (s) { return s.active !== false; });
   const highlighted = all.filter(function (s) { return HIGHLIGHTED.indexOf(s.slug) !== -1; });
   const others = all.filter(function (s) { return HIGHLIGHTED.indexOf(s.slug) === -1; }).slice(0, 4);
-
   const labels = {
     fa: {
       badge: "خدمات تخصصی",
@@ -212,8 +229,8 @@ export default function ServicesCombined({ services, locale }) {
         }
         @media (min-width: 1024px) {
           .svc-featured-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
           }
         }
 
@@ -243,13 +260,30 @@ export default function ServicesCombined({ services, locale }) {
         .svc-fimage-wrap {
           position: relative;
           width: 100%;
-          aspect-ratio: 16 / 9;
+          aspect-ratio: 16 / 10;
           overflow: hidden;
           background: linear-gradient(
             135deg,
             color-mix(in srgb, var(--svc-color) 22%, transparent),
             color-mix(in srgb, var(--svc-color2) 15%, transparent)
           );
+        }
+
+        .svc-fnum {
+          position: absolute;
+          top: 12px;
+          inset-inline-start: 12px;
+          z-index: 2;
+          padding: 4px 9px;
+          border-radius: 8px;
+          background: rgba(15, 17, 20, 0.72);
+          color: #F5C518;
+          font-family: monospace;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          backdrop-filter: blur(6px);
+          border: 1px solid rgba(245, 197, 24, 0.35);
         }
 
         .svc-fimage {
@@ -376,6 +410,10 @@ export default function ServicesCombined({ services, locale }) {
           color: var(--text-soft);
           margin-bottom: 18px;
           font-weight: 600;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         /* ---- Features Grid ---- */
@@ -534,12 +572,15 @@ export default function ServicesCombined({ services, locale }) {
    FEATURED CARD COMPONENT
    ============================================================ */
 function FeaturedServiceCard({ service, locale, labels, index }) {
-  const Icon = ICONS[service.icon] || Flame;
-  const isHvof = service.slug === "hvf-coating";
+  const Icon = ICONS[service.icon] || Cog;
 
-  // Color scheme per service
-  const c1 = isHvof ? "#F7630C" : "#0078D4";
-  const c2 = isHvof ? "#CA5010" : "#005A9E";
+  // پالت یکپارچهٔ برند: سایه‌های طلایی روی تم مشکی/سفید
+  const GOLD_TINTS = [
+    ["#B8860B", "#8A6508"],
+    ["#C9971F", "#A67C0A"],
+    ["#8A6508", "#6B4E06"]
+  ];
+  const [c1, c2] = GOLD_TINTS[index % GOLD_TINTS.length];
 
   const features = getFeatures(service, locale);
   const title = pick(service.name, locale);
@@ -561,6 +602,7 @@ function FeaturedServiceCard({ service, locale, labels, index }) {
     >
       {/* Image / Placeholder */}
       <div className="svc-fimage-wrap">
+        <div className="svc-fnum">{String(index + 1).padStart(2, "0")}</div>
         {image ? (
           <>
             <img
@@ -598,8 +640,7 @@ function FeaturedServiceCard({ service, locale, labels, index }) {
         {/* Features */}
         {features.length > 0 && (
           <div className="svc-ffeatures">
-            {features.slice(0, 6).map(function (f, idx) {
-              const FeatureIcon = isHvof ? Flame : Crosshair;
+            {features.slice(0, 4).map(function (f, idx) {
               return (
                 <motion.div
                   key={idx}
@@ -610,7 +651,7 @@ function FeaturedServiceCard({ service, locale, labels, index }) {
                   className="svc-ffeature"
                 >
                   <span className="svc-ffeature-icon">
-                    <FeatureIcon size={11} strokeWidth={2.6} />
+                    <CheckCircle2 size={11} strokeWidth={2.6} />
                   </span>
                   <span>{f}</span>
                 </motion.div>

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./AdminIcons";
-import { EditBtn, ViewBtn } from "./Actions";
+import { EditBtn, ViewBtn, DeleteBtn } from "./Actions";
 import { getCategoryLabel } from "@/lib/categories";
 import ContentStudioNav from "./ContentStudioNav";
 
@@ -26,9 +26,12 @@ const COLORS = [
   ["#00A896", "#007A6D"], ["#6380F0", "#3B52C4"], ["#5D5A58", "#363A44"]
 ];
 
-export default function ProductsClient({ products, categories }) {
+export default function ProductsClient({ products: initialProducts, categories }) {
+  const [products, setProducts] = useState(initialProducts || []);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("all");
+  const [busySlug, setBusySlug] = useState(null);
+  const [notice, setNotice] = useState({ type: "", text: "" });
 
   const filtered = products.filter(function(p) {
     const q = search.trim().toLowerCase();
@@ -42,6 +45,27 @@ export default function ProductsClient({ products, categories }) {
       categories.some(function(category) { return category.id === p.categoryId && category.parentId === activeCat; });
     return matchSearch && matchCat;
   });
+
+  async function handleDelete(slug, label) {
+    if (!confirm("محصول «" + label + "» حذف شود؟ این عمل قابل بازگشت نیست.")) return;
+    setBusySlug(slug);
+    try {
+      const res = await fetch("/api/products/" + encodeURIComponent(slug), { method: "DELETE" });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) {
+        setNotice({ type: "error", text: data.error || "حذف محصول ناموفق بود." });
+        return;
+      }
+      setProducts(function (current) {
+        return current.filter(function (item) { return item.slug !== slug; });
+      });
+      setNotice({ type: "success", text: "محصول حذف شد." });
+    } catch {
+      setNotice({ type: "error", text: "خطای شبکه در حذف محصول." });
+    } finally {
+      setBusySlug(null);
+    }
+  }
 
   return (
     <div>
@@ -63,6 +87,18 @@ export default function ProductsClient({ products, categories }) {
           <Icon name="plus" /> افزودن محصول
         </Link>
       </div>
+
+      {notice.text && (
+        <div role="status" style={{
+          marginBottom: 12, padding: "9px 13px", borderRadius: 10,
+          background: notice.type === "error" ? "#FEF2F2" : "#ECFDF5",
+          border: "1px solid " + (notice.type === "error" ? "#FECACA" : "#A7F3D0"),
+          color: notice.type === "error" ? "#991B1B" : "#065F46",
+          fontSize: 11.5, fontWeight: 800
+        }}>
+          {notice.text}
+        </div>
+      )}
 
       {/* Search + filter row */}
       <div style={{
@@ -172,6 +208,12 @@ export default function ProductsClient({ products, categories }) {
                 <div className="card-item-foot">
                   <EditBtn href={"/admin/products/" + p.slug} />
                   <ViewBtn href={"/fa/products/" + p.slug} />
+                  <span style={{ opacity: busySlug === p.slug ? 0.4 : 1 }}>
+                    <DeleteBtn
+                      onClick={function () { handleDelete(p.slug, pick(p.name)); }}
+                      title="حذف محصول"
+                    />
+                  </span>
                 </div>
               </div>
             );

@@ -537,8 +537,8 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
     fa: {
       title: "سایزینگ شیر کنترلی",
       subtitle: "برآورد اولیه Cv/Kv",
-      engineeringDisclaimer: "این نتیجه برآورد اولیه است، نه محاسبه تأییدشده ISA-75.01.01 (IEC 60534-2-1)؛ انتخاب نهایی را با مهندس شیر کنترل یا سازنده بررسی کنید.",
-      capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ برای انتخاب سایز با مهندس شیر کنترل مشورت کنید.",
+      engineeringDisclaimer: "این نتیجه برآورد اولیه است، نه محاسبه تأییدشده ISA-75.01.01 (IEC 60534-2-1)؛ برای انتخاب نهایی، با واحد مهندسی شرکت پتروسازه میهن بررسی کنید.",
+      capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ برای انتخاب سایز با واحد مهندسی شرکت پتروسازه میهن مشورت کنید.",
       liquid: "مایع", gas: "گاز", steam: "بخار",
       presets: "سناریوهای آماده", presetsHint: "با یک کلیک، فرم پر می‌شود",
       operatingPoint: "نقطه کاری", advanced: "تنظیمات پیشرفته",
@@ -584,8 +584,8 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
     en: {
       title: "Control Valve Sizing",
       subtitle: "Preliminary Cv/Kv estimate",
-      engineeringDisclaimer: "This is a preliminary estimate, not a validated ISA-75.01.01 (IEC 60534-2-1) calculation. Confirm final valve selection with a control-valve engineer or manufacturer.",
-      capacityExceeded: "Required Cv exceeds the largest listed valve size. Consult a control-valve engineer for selection.",
+      engineeringDisclaimer: "This is a preliminary estimate, not a validated ISA-75.01.01 (IEC 60534-2-1) calculation. For the final selection, consult the Engineering Department of Petro Sazeh Mihan Co.",
+      capacityExceeded: "Required Cv exceeds the largest listed valve size. Consult the Engineering Department of Petro Sazeh Mihan Co. for selection.",
       liquid: "Liquid", gas: "Gas", steam: "Steam",
       presets: "Preset Scenarios", presetsHint: "One click to fill the form",
       operatingPoint: "Operating Point", advanced: "Advanced Settings",
@@ -627,8 +627,8 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
     },
     ar: {
       title: "تحديد حجم الصمام", subtitle: "تقدير أولي لـ Cv/Kv",
-      engineeringDisclaimer: "هذا تقدير أولي وليس حسابًا معتمدًا وفق ISA-75.01.01 (IEC 60534-2-1). يجب تأكيد الاختيار النهائي مع مهندس صمامات التحكم أو الشركة المصنّعة.",
-      capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ استشر مهندس صمامات التحكم لاختيار الحجم المناسب.",
+      engineeringDisclaimer: "هذا تقدير أولي وليس حسابًا معتمدًا وفق ISA-75.01.01 (IEC 60534-2-1). يجب مراجعة الاختيار النهائي مع الإدارة الهندسية لشركة بترو سازه ميهان.",
+      capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ استشر الإدارة الهندسية لشركة بترو سازه ميهان لاختيار الحجم المناسب.",
       liquid: "سائل", gas: "غاز", steam: "بخار",
       presets: "سيناريوهات", presetsHint: "بنقرة واحدة",
       operatingPoint: "نقطة التشغيل", advanced: "متقدم",
@@ -660,8 +660,8 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
     },
     ru: {
       title: "Подбор клапана", subtitle: "Предварительная оценка Cv/Kv",
-      engineeringDisclaimer: "Это предварительная оценка, а не подтвержденный расчет по ISA-75.01.01 (IEC 60534-2-1). Окончательный выбор следует согласовать с инженером по регулирующим клапанам или производителем.",
-      capacityExceeded: "Требуемый Cv превышает максимальную пропускную способность в списке. Обратитесь к инженеру для подбора.",
+      engineeringDisclaimer: "Это предварительная оценка, а не подтвержденный расчет по ISA-75.01.01 (IEC 60534-2-1). Окончательный выбор следует согласовать с инженерным отделом компании Petro Sazeh Mihan.",
+      capacityExceeded: "Требуемый Cv превышает максимальную пропускную способность в списке. Обратитесь в инженерный отдел Petro Sazeh Mihan для подбора.",
       liquid: "Жидкость", gas: "Газ", steam: "Пар",
       presets: "Сценарии", presetsHint: "Один клик",
       operatingPoint: "Рабочая точка", advanced: "Дополнительно",

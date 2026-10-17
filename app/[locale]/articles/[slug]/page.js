@@ -29,7 +29,7 @@ export default async function ArticlePage({ params }) {
       <h1 className="text-3xl md:text-5xl font-black mt-5 heading-grad leading-tight">
         {pick(a.title, locale)}
       </h1>
-      <div className="flex gap-5 text-xs text-silver-500 mt-6">
+      <div className="flex gap-5 text-xs text-[var(--text-muted)] mt-6">
         <span>{pick(a.date, locale)}</span>
         <span>
           {a.readMinutes
@@ -38,7 +38,7 @@ export default async function ArticlePage({ params }) {
         </span>
       </div>
 
-      <div className="mt-10 text-silver-200 leading-9 text-lg">
+      <div className="mt-10 text-[var(--text-soft)] leading-9 text-lg">
         <p>{pick(a.excerpt, locale)}</p>
         {pick(a.body, locale) && (
           <div className="mt-8 whitespace-pre-line text-base leading-8">
@@ -52,7 +52,7 @@ export default async function ArticlePage({ params }) {
             </a>
           </div>
         ) : !pick(a.body, locale) && (
-          <p className="text-silver-400 mt-6">
+          <p className="text-[var(--text-muted)] mt-6">
             {locale === "fa"
               ? "متن کامل این مقاله در این نسخه از سایت موجود نیست."
               : "The full text of this article is not available in this version of the site."}
@@ -60,7 +60,7 @@ export default async function ArticlePage({ params }) {
         )}
       </div>
       {a.pdfUrl && (
-        <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-white">
+        <div className="mt-10 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]">
           <iframe
             src={a.pdfUrl}
             title={pick(a.title, locale)}

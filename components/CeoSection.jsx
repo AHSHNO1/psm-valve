@@ -247,7 +247,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                       width: "100%",
                       height: "100%",
                       borderRadius: 10,
-                      background: "#FFFFFF",
+                      background: "var(--bg-card)",
                       display: "grid",
                       placeItems: "center",
                       padding: 12,

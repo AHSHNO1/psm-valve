@@ -198,7 +198,7 @@ export default function SizingQuickPanel({ locale }) {
                   style={{
                     padding: "10px 12px",
                     borderRadius: 10,
-                    background: "#FFFFFF",
+                    background: "var(--bg-card)",
                     border: "1px solid " + f.color + "40"
                   }}
                 >
@@ -262,7 +262,7 @@ function QuickCard({ href, label, icon, color }) {
       style={{
         padding: "14px 10px",
         borderRadius: 11,
-        background: "#FFFFFF",
+        background: "var(--bg-card)",
         border: "1.5px solid " + color + "30",
         textDecoration: "none",
         display: "flex",

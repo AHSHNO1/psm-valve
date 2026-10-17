@@ -9,7 +9,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     fa: {
       sizingBadge: "ابزار آنلاین",
       sizingTitle: "نرم‌افزار سایزینگ شیر",
-      sizingDesc: "برآورد اولیه Cv و سایز شیر؛ برای انتخاب نهایی با مهندس شیر کنترل مشورت کنید",
+      sizingDesc: "برآورد اولیه Cv و سایز شیر؛ برای انتخاب نهایی با واحد مهندسی شرکت پتروسازه میهن مشورت کنید",
       sizingFeatures: ["محاسبه Cv و Kv", "انتخاب سایز خودکار", "شناسایی کاویتاسیون", "دانلود دیتاشیت"],
       sizingCta: "امتحان کنید",
       videoBadge: "معرفی شرکت",
@@ -20,7 +20,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     en: {
       sizingBadge: "Online Tool",
       sizingTitle: "Valve Sizing Software",
-      sizingDesc: "Preliminary Cv and valve-size estimate; confirm final selection with a control-valve engineer",
+      sizingDesc: "Preliminary Cv and valve-size estimate; for the final selection, consult the Engineering Department of Petro Sazeh Mihan Co.",
       sizingFeatures: ["Cv & Kv calculation", "Auto size selection", "Cavitation detection", "Download datasheet"],
       sizingCta: "Try It Now",
       videoBadge: "Company Intro",
@@ -31,7 +31,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     ar: {
       sizingBadge: "أداة عبر الإنترنت",
       sizingTitle: "برنامج تحديد حجم الصمام",
-      sizingDesc: "تقدير أولي لـ Cv وحجم الصمام؛ أكّد الاختيار النهائي مع مهندس صمامات التحكم",
+      sizingDesc: "تقدير أولي لـ Cv وحجم الصمام؛ راجع الاختيار النهائي مع الإدارة الهندسية لشركة بترو سازه ميهان",
       sizingFeatures: ["حساب Cv و Kv", "اختيار تلقائي", "كشف التجويف", "تحميل صحيفة البيانات"],
       sizingCta: "جربه الآن",
       videoBadge: "تعريف بالشركة",
@@ -42,7 +42,7 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
     ru: {
       sizingBadge: "Онлайн-инструмент",
       sizingTitle: "Программа подбора клапана",
-      sizingDesc: "Предварительная оценка Cv и размера клапана; согласуйте окончательный выбор с инженером",
+      sizingDesc: "Предварительная оценка Cv и размера клапана; согласуйте окончательный выбор с инженерным отделом компании Petro Sazeh Mihan",
       sizingFeatures: ["Расчет Cv и Kv", "Авто-подбор размера", "Обнаружение кавитации", "Скачать техпаспорт"],
       sizingCta: "Попробовать",
       videoBadge: "О компании",

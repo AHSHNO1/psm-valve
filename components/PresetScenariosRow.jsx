@@ -38,7 +38,7 @@ export default function PresetScenariosRow({ presets, onSelect, locale }) {
               style={{
                 padding: "14px 12px",
                 borderRadius: 12,
-                background: "#FFFFFF",
+                background: "var(--bg-card)",
                 border: "1.5px solid var(--border)",
                 cursor: "pointer",
                 fontFamily: "inherit",

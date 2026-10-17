@@ -306,7 +306,7 @@ export default function ProductsMasonelian({ products = [] }) {
                     >
                       {p.image ? (
                         <div
-                          className="relative aspect-[4/3] rounded-xl mb-4 sm:mb-5 overflow-hidden bg-white"
+                          className="relative aspect-[4/3] rounded-xl mb-4 sm:mb-5 overflow-hidden bg-[var(--bg-soft)]"
                           style={{ border: "1px solid var(--border)" }}
                         >
                           <img
