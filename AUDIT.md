@@ -127,3 +127,22 @@
 3. **دامنهٔ نهایی:** `psmvalve.com` (در کد) یا `www.psm-valve.com` (در `data/settings.json`)؟
 4. **هاست:** VPS با دیسک پایدار (Vercel برای معماری فایلی مناسب نیست).
 5. **دارایی‌ها:** کاتالوگ PDF واقعی، عکس محصول/کارخانه، شناسهٔ GA4، سرور ایمیل.
+
+---
+
+## پیوست — بازبینی جریان محتوا و پنل ادمین (۲۰۲۶-۱۰-۱۷)
+
+منابع حقیقت امروز: محصولات در SQLite (seed یک‌باره از `lib/products.js`)، متن‌های UI در `messages/*.json` + بازنویسی در `data/translations.json` (۱۴۸ از ۲۶۱ کلید)، هویت شرکت در `lib/company-info.js` + `data/company-info.json` (فایل غایب)، و `data/settings.json` که ۱۶ فیلد تکراری و بدون مصرف‌کننده دارد.
+
+| ID | شدت | مشکل | شاهد |
+|---|---|---|---|
+| C1 | بحرانی | seed محصولات فقط وقتی جدول خالی است اجرا می‌شود؛ ۱۹ از ۲۰ رکورد با seed تفاوت دارند و deploy می‌تواند seed را روی DB برگرداند | `lib/product-store.js:33-46`، `deploy/deploy.sh:44` |
+| C2 | بحرانی | دو صفحهٔ ادمین کل آبجکت ۴ زبانه را PUT می‌کنند؛ آخرین ذخیره، ذخیرهٔ تب دیگر را پاک می‌کند | `SiteChromeClient.jsx:148`، `TranslationsClient.jsx:97` |
+| C3 | بالا | `/admin/company` به متادیتا، manifest و helperهای تماس نمی‌رسد (مقادیر hardcoded) | `lib/seo.js:63`، `app/manifest.js:8` |
+| C4 | بالا | رنگ‌های برند و شبکه‌های اجتماعی در پنل ذخیره می‌شوند ولی هیچ‌جا رندر نمی‌شوند | `lib/content.js:90`، `Footer.jsx:112` |
+| C5 | بالا | کش ۱ سالهٔ تصاویر: جایگزینی لوگو در همان مسیر دیده نمی‌شود | `next.config.mjs:35`، `nginx-psmvalve.conf:72` |
+| C6 | بالا | ۸ endpoint نوشتن، JSON دلخواه را بدون اعتبارسنجی ذخیره می‌کنند؛ `app/admin/error.js` هم وجود ندارد | `api/branding:15`، `api/settings:14` |
+| C7 | بالا | «لغو» در فرم‌های ادمین تغییرات را برنمی‌گرداند؛ هیچ `beforeunload` محافظتی نیست | `FaqClient.jsx:69`، `SliderClient.jsx:70` |
+| C8 | متوسط | ۱۳ کامپوننت ادمین orphan (۳٬۳۰۶ خط) برای همان storeها | `components/admin/*Manager.jsx` |
+
+i18n: ۴ زبان × ۲۶۱ کلید، **۰ کلید گمشده**، ۰ رشتهٔ خالی؛ اما پنل ادمین تک‌زبانه (فارسی) است.
