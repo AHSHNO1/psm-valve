@@ -31,8 +31,8 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
 
   const L = {
     fa: {
-      title: "گزارش برآورد اولیه سایزینگ شیر", subtitle: "نتیجه تأییدشده IEC 60534 نیست",
-      engineeringDisclaimer: "این برآورد جایگزین محاسبه کامل IEC 60534 یا تأیید سازنده نیست؛ انتخاب نهایی را با مهندس شیر کنترل بررسی کنید.",
+      title: "گزارش برآورد اولیه سایزینگ شیر", subtitle: "نتیجه تأییدشده ISA-75.01.01 (IEC 60534-2-1) نیست",
+      engineeringDisclaimer: "این برآورد جایگزین محاسبه کامل ISA-75.01.01 (IEC 60534-2-1) یا تأیید سازنده نیست؛ انتخاب نهایی را با مهندس شیر کنترل بررسی کنید.",
       capacityExceeded: "Cv موردنیاز از ظرفیت بزرگ‌ترین سایز فهرست‌شده بیشتر است؛ انتخاب نهایی نیازمند بررسی مهندسی است.",
       reportRef: "شماره گزارش", date: "تاریخ",
       inputs: "پارامترهای ورودی", chart: "مشخصه جریان شیر",
@@ -48,8 +48,8 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       recommended: "پیشنهاد", tooSmall: "خیلی کوچک", small: "کوچک", optimal: "بهینه", large: "بزرگ", tooLarge: "خیلی بزرگ"
     },
     en: {
-      title: "Preliminary Control Valve Sizing Estimate", subtitle: "Not a validated IEC 60534 calculation",
-      engineeringDisclaimer: "This estimate is not a substitute for a complete IEC 60534 calculation or manufacturer validation. Confirm final selection with a control-valve engineer.",
+      title: "Preliminary Control Valve Sizing Estimate", subtitle: "Not a validated ISA-75.01.01 (IEC 60534-2-1) calculation",
+      engineeringDisclaimer: "This estimate is not a substitute for a complete ISA-75.01.01 (IEC 60534-2-1) calculation or manufacturer validation. Confirm final selection with a control-valve engineer.",
       capacityExceeded: "Required Cv exceeds the largest listed valve size. Final selection requires engineering review.",
       reportRef: "Report No.", date: "Date",
       inputs: "Input Parameters", chart: "Valve Flow Characteristic",
@@ -65,8 +65,8 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       recommended: "Recommended", tooSmall: "Too Small", small: "Small", optimal: "Optimal", large: "Large", tooLarge: "Too Large"
     },
     ar: {
-      title: "تقدير أولي لحجم صمام التحكم", subtitle: "ليس حسابًا معتمدًا وفق IEC 60534",
-      engineeringDisclaimer: "هذا التقدير لا يغني عن حساب كامل وفق IEC 60534 أو تأكيد الشركة المصنّعة. يجب مراجعة الاختيار النهائي مع مهندس صمامات التحكم.",
+      title: "تقدير أولي لحجم صمام التحكم", subtitle: "ليس حسابًا معتمدًا وفق ISA-75.01.01 (IEC 60534-2-1)",
+      engineeringDisclaimer: "هذا التقدير لا يغني عن حساب كامل وفق ISA-75.01.01 (IEC 60534-2-1) أو تأكيد الشركة المصنّعة. يجب مراجعة الاختيار النهائي مع مهندس صمامات التحكم.",
       capacityExceeded: "يتجاوز Cv المطلوب أكبر حجم مدرج؛ يتطلب الاختيار النهائي مراجعة هندسية.",
       reportRef: "رقم التقرير", date: "التاريخ",
       inputs: "المدخلات", chart: "الرسم", candidates: "الأحجام المقترحة",
@@ -80,8 +80,8 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       recommended: "موصى به", tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل", large: "كبير", tooLarge: "كبير جدًا"
     },
     ru: {
-      title: "Предварительная оценка регулирующего клапана", subtitle: "Расчет не подтвержден по IEC 60534",
-      engineeringDisclaimer: "Эта оценка не заменяет полный расчет по IEC 60534 или подтверждение производителя. Окончательный выбор согласуйте с инженером.",
+      title: "Предварительная оценка регулирующего клапана", subtitle: "Расчет не подтвержден по ISA-75.01.01 (IEC 60534-2-1)",
+      engineeringDisclaimer: "Эта оценка не заменяет полный расчет по ISA-75.01.01 (IEC 60534-2-1) или подтверждение производителя. Окончательный выбор согласуйте с инженером.",
       capacityExceeded: "Требуемый Cv превышает максимальный размер в списке; необходима инженерная проверка.",
       reportRef: "№", date: "Дата", inputs: "Входные данные", chart: "График",
       candidates: "Размеры", candidateHint: "Три варианта", tips: "Рекомендации", exports: "Экспорт",
