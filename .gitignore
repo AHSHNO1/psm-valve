@@ -38,6 +38,7 @@ Thumbs.db
 data/*.bak
 data/*.backup
 data/*.backup-*.json
+data/*.tmp
 data/admin.json
 data/users.json
 data/messages.json

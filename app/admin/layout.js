@@ -1,6 +1,7 @@
 import "./admin.css";
 import AdminShell from "@/components/admin/AdminShell";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getMessages } from "@/lib/db";
 import { getMedia } from "@/lib/media";
@@ -92,6 +93,16 @@ function buildNotifications(messages, media, articles, news) {
 export default async function AdminLayout({ children }) {
   const session = await getSession({ cookies: cookies() }, { allowAuthor: true });
   const isAdmin = session && session.role === "admin";
+
+  // دفاع لایه‌ای: فقط middleware نباید نگهبان باشد. مسیر جاری را middleware
+  // در هدر می‌گذارد؛ اگر هدر نبود (دور زدن middleware) رفتار fail-closed است.
+  const pathname = headers().get("x-psm-pathname") || "";
+  const isLoginPage = pathname === "/admin/login";
+  const isAuthorArea = pathname === "/admin/author" || pathname.startsWith("/admin/author/");
+
+  if (!session && !isLoginPage) redirect("/admin/login");
+  if (session && session.role === "author" && !isAuthorArea) redirect("/admin/author");
+
   const messages = isAdmin ? getMessages() : [];
   const media = isAdmin ? getMedia() : { gallery: [], videos: [] };
   const articles = isAdmin ? getArticles() : [];

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+// Import the verification subpath (not the package root) so the Edge bundle
+// does not pull in JWE/deflate code that depends on Node's CompressionStream.
+import { jwtVerify } from "jose/jwt/verify";
 import { locales, defaultLocale } from "./lib/i18n";
 
 // ============================================================
@@ -61,9 +63,16 @@ function withLocaleCookie(response, locale) {
   return response;
 }
 
+/** پاسخ عبور، همراه با ثبت مسیر جاری برای بررسی دوباره در لایهٔ سرور */
+function passWithPath(request, pathname) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-psm-pathname", pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
 /** نگهبانی پنل ادمین: توکن را بررسی و بر اساس نقش هدایت میکند */
 async function guardAdminArea(request, pathname) {
-  if (pathname === LOGIN_PATH) return NextResponse.next();
+  if (pathname === LOGIN_PATH) return passWithPath(request, pathname);
 
   const token = request.cookies.get(ADMIN_COOKIE)?.value;
   const secret = process.env.JWT_SECRET;
@@ -76,10 +85,10 @@ async function guardAdminArea(request, pathname) {
     const isAuthorArea =
       pathname === AUTHOR_HOME || pathname.startsWith(AUTHOR_HOME + "/");
 
-    if (payload.role === "admin") return NextResponse.next();
+    if (payload.role === "admin") return passWithPath(request, pathname);
     if (payload.role === "author") {
       return isAuthorArea
-        ? NextResponse.next()
+        ? passWithPath(request, pathname)
         : NextResponse.redirect(new URL(AUTHOR_HOME, request.url));
     }
     return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
