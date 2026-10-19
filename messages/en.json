@@ -228,6 +228,51 @@
     "socialTitle": "Follow Us",
     "iranianSocial": "Iranian Messengers",
     "websiteLabel": "Website",
+    "career": {
+      "badge": "Careers",
+      "title": "Join the specialist team at Petro Sazeh Mihan",
+      "subtitle": "Petro Sazeh Mihan (PSM VALVE), a knowledge-based manufacturer of control valves, is expanding its production line and welcomes specialists in mechanical and industrial engineering, commercial affairs and planning, along with technicians in valve assembly and machining. Send your CV for the position you are interested in.",
+      "rolesTitle": "Open positions",
+      "roles": [
+        [
+          "Mechanical Engineer",
+          "",
+          "Mechanical design and analysis of control valves, material selection and technical document review."
+        ],
+        [
+          "Industrial Engineer",
+          "",
+          "Production process improvement, time study, line layout and productivity analysis."
+        ],
+        [
+          "Commercial Specialist",
+          "",
+          "Purchasing and sales negotiation and follow-up, price enquiries and supplier management."
+        ],
+        [
+          "Planning Specialist",
+          "",
+          "Production planning, inventory control, order scheduling and progress tracking."
+        ],
+        [
+          "Assembly Technician & Lathe Operator",
+          "",
+          "Valve assembly and industrial machining of parts according to technical drawings."
+        ]
+      ],
+      "offersTitle": "Why Petro Sazeh Mihan?",
+      "offers": [
+        "Full statutory insurance and benefits",
+        "Specialised training and a clear career path",
+        "An engineering team and real industrial projects",
+        "Stable knowledge-based local manufacturing"
+      ],
+      "applyTitle": "Send your CV",
+      "applyDesc": "Email your CV stating the position in the subject line; applications that match the requirements are invited for a technical interview.",
+      "applyRole": "Apply for this position",
+      "applyCta": "Send CV by Email",
+      "emailSubject": "Job Application"
+    },
     "guide": {
       "title": "Start an engineering conversation",
       "description": "Tell us about your process conditions and project needs. Your message will be routed to the relevant team for review.",

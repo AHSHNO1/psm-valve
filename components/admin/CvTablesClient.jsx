@@ -1,381 +1,1107 @@
 "use client";
-import { useMemo, useState } from "react";
-import { SaveBtn } from "./Actions";
+import { useMemo, useRef, useState } from "react";
+import { DeleteBtn, SaveBtn } from "./Actions";
+import {
+  DN_RE,
+  SERIES_RE,
+  STATUS_LABEL,
+  STATUS_TONE,
+  catalogRowsFor,
+  coverageSummary,
+  exportTables,
+  groupSeries,
+  normalizeDn,
+  normalizeRow,
+  parseCvLines,
+  validateRows
+} from "@/lib/cv-admin-utils";
 
-const DN_RE = /^DN\d{2,4}$/;
+// ============================================================
+// صفحهٔ «جدول Cv سایزینگ» پنل ادمین
+//  • پوشش واقعی داده (کاتالوگ + جدول دست‌نویس) روی سری‌های مؤثر در سایزینگ
+//  • کارت جداگانه برای هر سری (محصولات هم‌سری یک‌جا) + فیلتر و جست‌وجو
+//  • ویرایشگر با اعتبارسنجی زنده و دکمه‌های سریع سایزهای کاتالوگ
+//  • ورود گروهی از اکسل (سری، DN، Cv) و خروجی/ورود JSON
+// ============================================================
 
-function sizeRangeText(spec) {
-  if (!spec || !spec.en) return "بازهٔ سایز ثبت نشده";
-  return spec.en;
-}
+const CARD = { border: "1px solid #E5E7EB", borderRadius: 12, background: "#FFFFFF" };
+const INPUT = {
+  padding: "7px 9px",
+  borderRadius: 7,
+  border: "1px solid #E5E7EB",
+  fontFamily: "monospace",
+  fontSize: 11.5
+};
 
-function normalizeRow(row) {
-  return {
-    dn: String(row?.dn || "").toUpperCase().replace(/\s+/g, ""),
-    cv: row?.cv === "" || row?.cv == null ? "" : String(row.cv)
-  };
-}
-
-export default function CvTablesClient({ products = [], initial = {} }) {
-  const [tables, setTables] = useState(initial || {});
-  const [openSeries, setOpenSeries] = useState(null);
-  const [rows, setRows] = useState([]);
-  const [pasteText, setPasteText] = useState("");
-  const [message, setMessage] = useState({ type: "", text: "" });
-  const [saving, setSaving] = useState(false);
-  const [showGuide, setShowGuide] = useState(true);
-
-  const filledCount = useMemo(
-    () => Object.values(tables).filter((t) => Array.isArray(t?.sizes) && t.sizes.length > 0).length,
-    [tables]
+function smallBtn(extra) {
+  return Object.assign(
+    {
+      padding: "7px 11px",
+      borderRadius: 8,
+      border: "1px solid #E5E7EB",
+      background: "#FFFFFF",
+      color: "#334155",
+      fontSize: 11,
+      fontWeight: 800,
+      cursor: "pointer",
+      fontFamily: "inherit"
+    },
+    extra || {}
   );
+}
 
-  function notify(text, isError) {
-    setMessage({ type: isError ? "error" : "success", text });
-    if (!isError) setTimeout(() => setMessage({ type: "", text: "" }), 3500);
+function Pill({ tone, children }) {
+  const palette = STATUS_TONE[tone] || STATUS_TONE.none;
+  return (
+    <span
+      style={{
+        padding: "3px 9px",
+        borderRadius: 20,
+        fontSize: 9.5,
+        fontWeight: 900,
+        whiteSpace: "nowrap",
+        background: palette.bg,
+        color: palette.fg,
+        border: "1px solid " + palette.border
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function nameOf(product) {
+  const name = product && product.name;
+  if (!name) return (product && product.slug) || "";
+  return name.fa || name.en || (product && product.slug) || "";
+}
+
+function dateText(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  try {
+    return date.toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" });
+  } catch (error) {
+    return String(value);
   }
+}
 
-  function openEditor(series) {
-    if (openSeries === series) {
-      setOpenSeries(null);
-      return;
-    }
-    setOpenSeries(series);
-    setRows((tables[series]?.sizes || []).map(normalizeRow));
-    setPasteText("");
-    setMessage({ type: "", text: "" });
-  }
-
-  function updateRow(index, field, value) {
-    setRows((current) => current.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
-  }
-
-  function addRow() {
-    setRows((current) => current.concat([{ dn: "", cv: "" }]));
-  }
-
-  function removeRow(index) {
-    setRows((current) => current.filter((_, i) => i !== index));
-  }
-
-  function applyPaste() {
-    const lines = pasteText.split(/\r?\n/);
-    const parsed = [];
-    const errors = [];
-
-    lines.forEach((line, index) => {
-      const text = line.trim();
-      if (!text) return;
-      const match = text.match(/^(DN\s*\d{2,4})\s*[,;:=\t ]\s*([0-9]+(?:\.[0-9]+)?)$/i);
-      if (!match) {
-        errors.push(`خط ${index + 1}: «${text}»`);
-        return;
-      }
-      parsed.push({
-        dn: match[1].replace(/\s+/g, "").toUpperCase(),
-        cv: match[2]
-      });
-    });
-
-    if (parsed.length === 0) {
-      notify("هیچ ردیف معتبری پیدا نشد. قالب درست: DN50, 45", true);
-      return;
-    }
-
-    setRows((current) => {
-      const byDn = new Map(current.map((row) => [row.dn, row]));
-      parsed.forEach((row) => byDn.set(row.dn, row));
-      return Array.from(byDn.values());
-    });
-    setPasteText("");
-    notify(
-      `${parsed.length} ردیف اضافه شد` + (errors.length ? ` — ${errors.length} خط خوانده نشد` : ""),
-      errors.length > 0
-    );
-  }
-
-  function validateRows() {
-    if (rows.length === 0) return "دست‌کم یک سایز لازم است.";
-    const seen = new Set();
-    for (const row of rows) {
-      if (!DN_RE.test(row.dn)) return `قطر «${row.dn || "خالی"}» معتبر نیست؛ نمونهٔ درست: DN50`;
-      const cv = Number(row.cv);
-      if (!Number.isFinite(cv) || cv <= 0) return `Cv برای ${row.dn} باید عددی مثبت باشد.`;
-      if (seen.has(row.dn)) return `${row.dn} تکراری است.`;
-      seen.add(row.dn);
-    }
-    return "";
-  }
-
-  async function saveSeries(series) {
-    const problem = validateRows();
-    if (problem) {
-      notify(problem, true);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await fetch("/api/cv-tables", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          series,
-          sizes: rows.map((row) => ({ dn: row.dn, cv: Number(row.cv) }))
-        })
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        notify((data.errors && data.errors.join(" ")) || "ذخیره نشد.", true);
-        return;
-      }
-
-      setTables((current) => ({
-        ...current,
-        [series]: { sizes: data.sizes, updatedAt: new Date().toISOString() }
-      }));
-      setRows(data.sizes.map(normalizeRow));
-      notify(`جدول سری ${series} ذخیره شد — سایزینگ از همین حالا از آن استفاده می‌کند.`);
-    } catch {
-      notify("خطای شبکه در ذخیره.", true);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function deleteSeries(series) {
-    if (!confirm(`جدول Cv سری ${series} حذف شود؟`)) return;
-    try {
-      const res = await fetch(`/api/cv-tables?series=${encodeURIComponent(series)}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        notify((data.errors && data.errors.join(" ")) || "حذف نشد.", true);
-        return;
-      }
-      setTables((current) => {
-        const next = { ...current };
-        delete next[series];
-        return next;
-      });
-      setRows([]);
-      setOpenSeries(null);
-      notify("جدول حذف شد؛ سایزینگ به جدول عمومی برمی‌گردد.");
-    } catch {
-      notify("خطای شبکه در حذف.", true);
-    }
-  }
+/** کارت پوشش داده: چند سری واقعاً دادهٔ Cv دارند و کدام‌ها نه */
+function CoverageCard({ summary, onExport, onCopy }) {
+  const done = summary.total - summary.withoutData;
+  const tone = summary.total === 0 ? "none" : summary.withoutData === 0 ? "both" : done > 0 ? "admin" : "none";
 
   return (
-    <div style={{ padding: "20px 22px", maxWidth: 1080 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: "#1A1D21", margin: 0 }}>جدول Cv محصولات</h1>
-          <p style={{ fontSize: 12, color: "#6B7280", margin: "6px 0 0", lineHeight: 1.8 }}>
-            Cv کاتالوگی هر سری را اینجا وارد کنید تا سایزینگ به‌جای جدول عمومی، از محصول واقعی شما سایز پیشنهاد بدهد.
-          </p>
+    <div style={Object.assign({}, CARD, { marginTop: 14, padding: "14px 16px" })}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 12.5, color: "#1A1D21" }}>پوشش دادهٔ Cv</b>
+        <Pill tone={tone}>{summary.percent}٪</Pill>
+        <span style={{ fontSize: 11, color: "#6B7280" }}>
+          {summary.total} سری مؤثر در سایزینگ · {done} سری داده دارند
+        </span>
+        <div style={{ marginInlineStart: "auto", display: "flex", gap: 8 }}>
+          <button type="button" onClick={onExport} style={smallBtn()}>
+            خروجی JSON
+          </button>
+          <button type="button" onClick={onCopy} style={smallBtn()}>
+            کپی JSON
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowGuide(!showGuide)}
+      </div>
+
+      <div style={{ marginTop: 10, height: 8, borderRadius: 20, background: "#F1F5F9", overflow: "hidden" }}>
+        <div
           style={{
-            padding: "8px 12px", borderRadius: 9, border: "1px solid #E5E7EB",
-            background: showGuide ? "#FFF9E6" : "#FFFFFF", color: "#8A6508",
-            fontSize: 11, fontWeight: 800, cursor: "pointer"
+            width: summary.percent + "%",
+            height: "100%",
+            background: "linear-gradient(90deg, #E0A81A, #B8850A)",
+            transition: "width .25s ease"
           }}
-        >
-          {showGuide ? "بستن راهنما" : "راهنمای ورود داده"}
+        />
+      </div>
+
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 10, fontSize: 11, color: "#334155" }}>
+        <span>
+          کاتالوگ (با منحنی): <b>{summary.withCatalog}</b> سری
+        </span>
+        <span>
+          جدول دست‌نویس: <b>{summary.withAdmin}</b> سری
+        </span>
+        <span style={{ color: summary.withoutData ? "#991B1B" : "#065F46", fontWeight: 800 }}>
+          بدون داده: {summary.withoutData} سری
+        </span>
+        {summary.other > 0 && (
+          <span style={{ color: "#6B7280" }}>
+            خارج از سایزینگ: <b>{summary.other}</b> سری
+          </span>
+        )}
+      </div>
+
+      {summary.missing.length > 0 && (
+        <div style={{ marginTop: 8, fontSize: 11, color: "#991B1B", lineHeight: 2 }}>
+          سری‌های بدون داده (سایزینگ برای این‌ها «Cv عمومی» نشان می‌دهد) — با «ورود گروهی از اکسل» می‌توانید همه را یک‌جا وارد
+          کنید:{" "}
+          <span dir="ltr" style={{ fontFamily: "monospace" }}>
+            {summary.missing.join(" · ")}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** کارت دادهٔ مرجع کاتالوگ (فقط‌خواندنی) */
+function CatalogCard({ catalog }) {
+  const [open, setOpen] = useState(true);
+  if (!catalog || !catalog.stats || !(catalog.stats.trims > 0)) return null;
+
+  return (
+    <div style={Object.assign({}, CARD, { marginTop: 12, padding: "14px 16px", background: "#F8FAFC", borderColor: "#E2E8F0" })}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 12.5, color: "#334155" }}>دادهٔ مرجع کاتالوگ (فقط‌خواندنی)</b>
+        <span style={{ fontSize: 11, color: "#64748B" }}>
+          {catalog.stats.series} سری · {catalog.stats.sizes} سایز · {catalog.stats.trims} ترم
+          {catalog.source && catalog.source.file ? " — از " + catalog.source.file + " (شیت " + catalog.source.sheet + ")" : ""}
+        </span>
+        <button type="button" onClick={() => setOpen(!open)} style={smallBtn({ marginInlineStart: "auto" })}>
+          {open ? "بستن جزئیات" : "نمایش جزئیات"}
         </button>
       </div>
 
-      <div style={{
-        marginTop: 14, padding: "10px 14px", borderRadius: 10,
-        background: filledCount > 0 ? "#ECFDF5" : "#FFF9E6",
-        border: `1px solid ${filledCount > 0 ? "#A7F3D0" : "#FDE68A"}`,
-        fontSize: 11.5, fontWeight: 700,
-        color: filledCount > 0 ? "#065F46" : "#92400E"
-      }}>
-        وضعیت: {filledCount} از {products.length} سری جدول Cv دارد.
-        {filledCount === 0 && " تا وقتی جدولی وارد نشود، سایزینگ از جدول عمومی استفاده می‌کند."}
+      {open && (
+        <>
+          <ul style={{ margin: "8px 0 0", paddingInlineStart: 18, fontSize: 11.5, color: "#334155", lineHeight: 2 }}>
+            {catalog.series.map(function (entry) {
+              return (
+                <li key={entry.series} dir="auto">
+                  <b dir="ltr">سری {entry.series}</b> — {entry.sizes.length} سایز · {entry.trims} ترم
+                  {entry.cvMin != null ? " · Cv از " + entry.cvMin + " تا " + entry.cvMax : ""}
+                  {" · "}
+                  {Object.keys(entry.byCharacteristic).map(function (kind) {
+                    return kind + " " + entry.byCharacteristic[kind];
+                  }).join(" · ")}
+                </li>
+              );
+            })}
+          </ul>
+          <div style={{ marginTop: 8, fontSize: 11, color: "#64748B", lineHeight: 2 }}>
+            این داده در پنل ویرایش نمی‌شود. اگر برای یک DN مقداری ذخیره کنید، همان DN از جدول دست‌نویس شما خوانده می‌شود و
+            منحنی مشخصهٔ آن سایز در سایزینگ کنار گذاشته می‌شود (محاسبه با فرض خطی).
+          </div>
+        </>
+      )}
+
+      {catalog.repairedValues > 0 && (
+        <div style={{ marginTop: 8, color: "#92400E", fontWeight: 800, fontSize: 11 }}>
+          ⚠ {catalog.repairedValues} مقدار تایپی در منبع با درون‌یابی اصلاح شد (فهرست در بخش repairs فایل کاتالوگ).
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** راهنمای گام‌به‌گام */
+function GuideCard() {
+  return (
+    <div style={Object.assign({}, CARD, { marginTop: 12, padding: "14px 16px", background: "#F8FAFC", borderColor: "#E2E8F0" })}>
+      <div style={{ fontWeight: 900, marginBottom: 4, fontSize: 12.5, color: "#334155" }}>راهنمای گام‌به‌گام</div>
+      <ol style={{ margin: 0, paddingInlineStart: 18, fontSize: 11.5, color: "#334155", lineHeight: 2 }}>
+        <li>
+          Cv را از کاتالوگ سازنده بردارید — مقدار <b>۱۰۰٪ بازشدگی</b> و ترم <b>خطی</b>.
+        </li>
+        <li>
+          سری‌هایی که در کارتشان برچسب <b>«کاتالوگ (با منحنی)»</b> دارند دادهٔ کامل با منحنی مشخصهٔ ذاتی دارند؛ نیازی به ورود
+          دستی نیست. فقط اگر مقدار کاتالوگ را اصلاح می‌کنید، همان DN را ذخیره کنید.
+        </li>
+        <li>
+          سایزها را به شکل <code dir="ltr">DN50, 45</code> وارد کنید (DN و Cv) یا از چیپس‌های کاتالوگ همان سری استفاده کنید.
+        </li>
+        <li>
+          برای چند سری یک‌جا، «ورود گروهی از اکسل» را باز کنید و خطوط <code dir="ltr">51000, DN50, 45</code> را از اکسل
+          بچسبانید و «ذخیرهٔ همه» بزنید.
+        </li>
+        <li>«ذخیره» بلافاصله اثر می‌کند؛ صفحهٔ سایزینگ بدون بیلد از همین داده استفاده می‌کند.</li>
+        <li>
+          سری‌های <b>بدون داده</b> سایزینگ را خراب نمی‌کنند: برای آن‌ها جدول عمومی با برچسب «Cv عمومی» استفاده می‌شود.
+        </li>
+      </ol>
+      <div style={{ marginTop: 6, fontSize: 11, color: "#64748B", lineHeight: 2 }}>
+        تعریف Cv: دبی آب بر حسب gpm در ۶۰°F با افت فشار ۱ psi؛ بدون تبدیل واحد و مطابق کاتالوگ وارد شود. این جدول فقط Cv را
+        نگه می‌دارد؛ محدودهٔ فشار/دما، متریال، ترم و کلاس نشتی جداگانه باید بررسی شود.
+      </div>
+    </div>
+  );
+}
+
+/** پنل ورود گروهی از اکسل و ورود فایل JSON */
+function BulkPanel({ open, onToggle, text, onText, defaultSeries, onDefaultSeries, busy, preview, onApply, onFile }) {
+  const fileRef = useRef(null);
+  const ids = Object.keys(preview.groups);
+
+  return (
+    <div style={Object.assign({}, CARD, { marginTop: 12, padding: "14px 16px" })}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 12.5, color: "#1A1D21" }}>ورود گروهی از اکسل</b>
+        <span style={{ fontSize: 11, color: "#6B7280" }}>
+          چند سری را یک‌جا وارد یا به‌روزرسانی کنید (ستون‌ها با «ویرگول» یا «Tab» جدا شوند)
+        </span>
+        <button type="button" onClick={onToggle} style={smallBtn({ marginInlineStart: "auto" })}>
+          {open ? "بستن" : "باز کردن"}
+        </button>
       </div>
 
-      {showGuide && (
-        <div style={{
-          marginTop: 12, padding: "14px 16px", borderRadius: 12,
-          background: "#F8FAFC", border: "1px solid #E2E8F0",
-          fontSize: 11.5, color: "#334155", lineHeight: 2
-        }}>
-          <div style={{ fontWeight: 900, marginBottom: 4 }}>راهنمای گام‌به‌گام</div>
-          <ol style={{ margin: 0, paddingInlineStart: 18 }}>
-            <li>Cv را از کاتالوگ سازنده بردارید — مقدار <b>۱۰۰٪ بازشدگی</b> و ترم <b>خطی</b>.</li>
-            <li>برای هر سری، سایزها را به شکل <code dir="ltr">DN50, 45</code> وارد کنید (DN و Cv).</li>
-            <li>می‌توانید چند خط را یک‌جا در کادر «چسباندن» بریزید و «افزودن» بزنید.</li>
-            <li>«ذخیره» را بزنید؛ همین لحظه صفحهٔ سایزینگ از این اعداد استفاده می‌کند.</li>
-            <li>سری‌های خالی مشکلی ندارند: سایزینگ برای آن‌ها جدول عمومی را با برچسب «Cv عمومی» نشان می‌دهد.</li>
-            <li>اگر فقط بخشی از سایزها را دارید، همان‌ها را وارد کنید؛ سایزینگ کوچک‌ترین Cv بزرگ‌تر یا مساوی Cv محاسبه‌شده را برمی‌دارد.</li>
-          </ol>
-          <div style={{ marginTop: 6, color: "#64748B" }}>
-            تعریف Cv: دبی آب بر حسب gpm در ۶۰°F با افت فشار ۱ psi. برای همین Cv باید بدون تبدیل واحد و مطابق کاتالوگ وارد شود.
+      {open && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 11, color: "#475569" }}>
+            <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              سری پیش‌فرض (برای خطوط دو ستونی):
+              <input
+                dir="ltr"
+                value={defaultSeries}
+                onChange={(event) => onDefaultSeries(event.target.value)}
+                placeholder="51000"
+                style={Object.assign({}, INPUT, { width: 90 })}
+              />
+            </label>
+            <span>نمونه: </span>
+            <code dir="ltr" style={{ background: "#F1F5F9", padding: "2px 6px", borderRadius: 6 }}>
+              51000, DN50, 45
+            </code>
+            <code dir="ltr" style={{ background: "#F1F5F9", padding: "2px 6px", borderRadius: 6 }}>
+              46000&#9;DN80&#9;120
+            </code>
           </div>
+
+          <textarea
+            dir="ltr"
+            value={text}
+            onChange={(event) => onText(event.target.value)}
+            rows={7}
+            placeholder={"51000, DN50, 45\n51000, DN80, 90\n46000, DN50, 120"}
+            style={Object.assign({}, INPUT, {
+              width: "100%",
+              marginTop: 8,
+              fontSize: 12,
+              lineHeight: 1.9,
+              resize: "vertical",
+              background: "#FCFCFD"
+            })}
+          />
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginTop: 8, fontSize: 11 }}>
+            <span style={{ color: ids.length ? "#065F46" : "#6B7280", fontWeight: 800 }}>
+              {ids.length ? ids.length + " سری · " + preview.rows + " سایز معتبر" : "ردیف معتبری تشخیص داده نشد"}
+            </span>
+            {preview.errors.length > 0 && (
+              <span style={{ color: "#991B1B", fontWeight: 800 }}>{preview.errors.length} خط نامعتبر (نادیده گرفته می‌شود)</span>
+            )}
+            <div style={{ marginInlineStart: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={(event) => {
+                  const file = event.target.files && event.target.files[0];
+                  if (file) onFile(file);
+                  event.target.value = "";
+                }}
+                style={{ display: "none" }}
+              />
+              <button type="button" onClick={() => fileRef.current && fileRef.current.click()} style={smallBtn()} disabled={busy}>
+                ورود فایل JSON
+              </button>
+              <button
+                type="button"
+                onClick={onApply}
+                disabled={busy || !ids.length}
+                style={smallBtn({
+                  background: "#1A1D21",
+                  color: "#FFFFFF",
+                  borderColor: "#1A1D21",
+                  opacity: busy || !ids.length ? 0.5 : 1
+                })}
+              >
+                {busy ? "در حال ذخیره…" : "ذخیرهٔ همه (" + ids.length + " سری)"}
+              </button>
+            </div>
+          </div>
+
+          {ids.length > 0 && (
+            <ul style={{ margin: "8px 0 0", paddingInlineStart: 18, fontSize: 11, color: "#334155", lineHeight: 2 }}>
+              {ids.slice(0, 8).map(function (id) {
+                return (
+                  <li key={id} dir="auto">
+                    <b dir="ltr">سری {id}</b> — {preview.groups[id].length} سایز
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {preview.errors.slice(0, 4).map(function (problem) {
+            return (
+              <div key={problem.line} style={{ marginTop: 6, fontSize: 11, color: "#991B1B" }}>
+                خط {problem.line}: {problem.reason}
+                {problem.text ? " — " : ""}
+                <span dir="ltr" style={{ fontFamily: "monospace" }}>
+                  {problem.text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** کارت یک سری: سربرگ همیشه دیده می‌شود، ویرایشگر فقط در حالت باز */
+function SeriesCard({ info, open, editor }) {
+  const tone = STATUS_TONE[info.status] ? info.status : "none";
+  const first = info.products[0];
+  const extra = info.products.length - 1;
+  const range = info.sizeRanges.join(" · ");
+
+  return (
+    <div
+      style={Object.assign({}, CARD, {
+        padding: "12px 14px",
+        borderColor: open ? "#E0A81A" : "#E5E7EB",
+        boxShadow: open ? "0 0 0 3px rgba(224,168,26,.12)" : "none"
+      })}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={() => editor.onToggle(info.series)}
+          disabled={!info.valid}
+          style={smallBtn({
+            background: open ? "#1A1D21" : "#FFFFFF",
+            color: open ? "#FFFFFF" : "#334155",
+            borderColor: open ? "#1A1D21" : "#E5E7EB",
+            opacity: info.valid ? 1 : 0.45,
+            cursor: info.valid ? "pointer" : "not-allowed"
+          })}
+        >
+          {open ? "بستن" : info.adminCount > 0 ? "ویرایش" : info.catalog ? "بازنویسی" : "افزودن داده"}
+        </button>
+
+        <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 140 }}>
+          <span dir="auto" style={{ fontSize: 12.5, fontWeight: 900, color: "#1A1D21" }}>
+            {first ? nameOf(first) : ""}
+          </span>
+          <span dir="ltr" style={{ fontSize: 10.5, color: "#6B7280", fontFamily: "monospace" }}>
+            سری {info.series}
+          </span>
+        </span>
+
+        {extra > 0 && (
+          <span
+            dir="auto"
+            style={{ fontSize: 10, fontWeight: 800, color: "#475569", background: "#F1F5F9", padding: "2px 8px", borderRadius: 20 }}
+          >
+            + {extra} محصول هم‌سری
+          </span>
+        )}
+
+        {range && (
+          <span style={{ fontSize: 10.5, color: "#475569", maxWidth: 260 }} title={range}>
+            سایز: {range.length > 54 ? range.slice(0, 54) + "…" : range}
+          </span>
+        )}
+
+        <div style={{ marginInlineStart: "auto", display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          {info.inSizing && info.catalog && (
+            <span dir="ltr" style={{ fontSize: 10, fontFamily: "monospace", color: "#1D4ED8" }}>
+              کاتالوگ {info.catalog.sizes.length} سایز · Cv تا {info.catalog.sizes.reduce(function (max, size) {
+                return size.cvMax != null && size.cvMax > max ? size.cvMax : max;
+              }, 0)}
+            </span>
+          )}
+          {info.adminCount > 0 && (
+            <span dir="ltr" style={{ fontSize: 10, fontFamily: "monospace", color: "#9A3412" }}>
+              دست‌نویس {info.adminCount} سایز
+            </span>
+          )}
+          {!info.inSizing && <Pill tone="invalid">خارج از سایزینگ</Pill>}
+          <Pill tone={tone}>{STATUS_LABEL[info.status]}</Pill>
+        </div>
+      </div>
+
+      {!info.valid && (
+        <div style={{ marginTop: 8, fontSize: 11, color: "#991B1B", lineHeight: 2 }}>
+          شناسهٔ <span dir="ltr" style={{ fontFamily: "monospace" }}>{info.series}</span> با قاعدهٔ سرور سازگار نیست (فقط
+          حرف/رقم و <span dir="ltr">/ . -</span> تا ۲۴ کاراکتر). این سری قابل ذخیره نیست و در سایزینگ هم استفاده نمی‌شود.
         </div>
       )}
 
+      {open && editor.rows && <SeriesEditor info={info} editor={editor} />}
+    </div>
+  );
+}
+
+/** ویرایشگر یک سری: جدول DN/Cv، چیپس‌های کاتالوگ، چسباندن سریع و ذخیرهٔ زنده */
+function SeriesEditor({ info, editor }) {
+  const check = editor.check;
+  const catalog = info.catalog;
+
+  return (
+    <div style={{ marginTop: 10, borderTop: "1px dashed #E5E7EB", paddingTop: 10 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <SaveBtn onClick={editor.save} disabled={!check.ok} busy={editor.saving} />
+        <button type="button" onClick={editor.addRow} style={smallBtn()}>
+          + افزودن سایز
+        </button>
+        {catalog && (
+          <button type="button" onClick={editor.loadCatalog} style={smallBtn()} disabled={editor.saving || editor.deleting}>
+            بارگذاری {catalog.sizes.length} سایز از کاتالوگ
+          </button>
+        )}
+        {info.adminCount > 0 && <DeleteBtn onClick={editor.remove} title="حذف جدول این سری" />}
+        <span style={{ fontSize: 10.5, color: "#6B7280", marginInlineStart: "auto" }}>
+          {editor.rows.length} سایز در فرم
+          {editor.updatedAt ? " · آخرین ذخیره: " + dateText(editor.updatedAt) : " · تا حالا ذخیره نشده"}
+        </span>
+      </div>
+
+      {!check.ok && (
+        <div style={{ marginTop: 8, fontSize: 11, color: "#991B1B", lineHeight: 2 }}>
+          {check.messages.slice(0, 3).map(function (message, index) {
+            return <div key={index}>• {message}</div>;
+          })}
+          {check.messages.length > 3 && <div>• …</div>}
+        </div>
+      )}
+
+      {catalog && (
+        <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 10.5, color: "#64748B" }}>سایزهای کاتالوگ (کلیک = افزودن/به‌روزرسانی):</span>
+          {catalog.sizes.map(function (size) {
+            return (
+              <button
+                key={size.dn}
+                type="button"
+                dir="ltr"
+                onClick={() => editor.useSize(size.dn, size.cvMax)}
+                title={"Cv بیشینهٔ کاتالوگ: " + size.cvMax}
+                style={smallBtn({ padding: "4px 8px", fontSize: 10, fontFamily: "monospace" })}
+              >
+                {size.dn} · {size.cvMax}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+        {editor.rows.map(function (row, index) {
+          const error = check.rowErrors[index];
+          const border = error ? "#FCA5A5" : "#E5E7EB";
+          return (
+            <div key={index} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 10, color: "#94A3B8", width: 18, textAlign: "center" }}>{index + 1}</span>
+              <input
+                dir="ltr"
+                value={row.dn}
+                onChange={(event) => editor.setCell(index, { dn: event.target.value })}
+                placeholder="DN50"
+                style={Object.assign({}, INPUT, { width: 96, borderColor: border })}
+              />
+              <input
+                dir="ltr"
+                value={row.cv}
+                onChange={(event) => editor.setCell(index, { cv: event.target.value })}
+                placeholder="45"
+                style={Object.assign({}, INPUT, { width: 110, borderColor: border })}
+              />
+              {error && <span style={{ fontSize: 10.5, color: "#991B1B", fontWeight: 800 }}>{error}</span>}
+              <button
+                type="button"
+                onClick={() => editor.removeRow(index)}
+                title="حذف این سایز"
+                style={smallBtn({ marginInlineStart: "auto", padding: "4px 9px" })}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+        {editor.rows.length === 0 && (
+          <span style={{ fontSize: 11, color: "#6B7280" }}>
+            هنوز سایزی اضافه نشده — «افزودن سایز» بزنید یا از سایزهای کاتالوگ بالا انتخاب کنید.
+          </span>
+        )}
+      </div>
+
+      <details style={{ marginTop: 10 }}>
+        <summary style={{ fontSize: 11, fontWeight: 800, color: "#334155", cursor: "pointer" }}>
+          چسباندن سریع سایزها (کپی از اکسل)
+        </summary>
+        <div style={{ marginTop: 8 }}>
+          <textarea
+            dir="ltr"
+            rows={4}
+            value={editor.pasteText}
+            onChange={(event) => editor.setPasteText(event.target.value)}
+            placeholder={"DN50, 45\nDN80, 90"}
+            style={Object.assign({}, INPUT, { width: "100%", fontSize: 12, lineHeight: 1.9, resize: "vertical" })}
+          />
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 6, fontSize: 10.5 }}>
+            <span style={{ color: editor.paste.preview.length ? "#065F46" : "#6B7280", fontWeight: 800 }}>
+              {editor.paste.preview.length
+                ? editor.paste.preview.length + " سایز خوانده شد (DN تکراری: آخری برنده است)"
+                : "منتظر ورود…"}
+            </span>
+            {editor.paste.errors.length > 0 && (
+              <span style={{ color: "#991B1B" }}>{editor.paste.errors.length} خط نامعتبر</span>
+            )}
+            {editor.paste.otherSeries > 0 && (
+              <span style={{ color: "#92400E" }}>{editor.paste.otherSeries} خط مربوط به سری دیگر (نادیده گرفته می‌شود)</span>
+            )}
+            <button
+              type="button"
+              onClick={editor.applyPaste}
+              disabled={!editor.paste.preview.length}
+              style={smallBtn({ marginInlineStart: "auto", opacity: editor.paste.preview.length ? 1 : 0.5 })}
+            >
+              افزودن به فرم
+            </button>
+          </div>
+          {editor.paste.errors.slice(0, 3).map(function (problem) {
+            return (
+              <div key={problem.line} style={{ marginTop: 6, fontSize: 10.5, color: "#991B1B" }}>
+                خط {problem.line}: {problem.reason}{" "}
+                <span dir="ltr" style={{ fontFamily: "monospace" }}>
+                  {problem.text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </details>
+
+      <div style={{ marginTop: 10, fontSize: 10.5, color: "#64748B", lineHeight: 2 }}>
+        {catalog
+          ? "این سری دادهٔ کاتالوگی دارد؛ هر DN که اینجا ذخیره کنید فقط همان DN را در سایزینگ بازنویسی می‌کند (منحنی مشخصهٔ آن سایز کنار گذاشته و با فرض خطی حساب می‌شود)."
+          : "برای این سری دادهٔ Cv کاتالوگی ثبت نشده؛ تا وقتی سایزی ذخیره نکنید، سایزینگ برای آن «Cv عمومی» نشان می‌دهد."}
+      </div>
+    </div>
+  );
+}
+
+const FILTERS = [
+  { id: "all", label: "همه" },
+  { id: "missing", label: "بدون داده" },
+  { id: "catalog", label: "با کاتالوگ" },
+  { id: "admin", label: "جدول دست‌نویس" },
+  { id: "sizing", label: "فعال در سایزینگ" }
+];
+
+export default function CvTablesClient({ products = [], initial = {}, catalog = null }) {
+  const [tables, setTables] = useState(() => (initial && typeof initial === "object" ? initial : {}));
+  const [rows, setRows] = useState([]);
+  const [openSeries, setOpenSeries] = useState(null);
+  const [pasteText, setPasteText] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [showGuide, setShowGuide] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkSeries, setBulkSeries] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [busySeries, setBusySeries] = useState("");
+  const [message, setMessage] = useState({ tone: "", text: "" });
+
+  const messageId = useRef(0);
+
+  /** دادهٔ مشتق‌شده: کاتالوگ → نگاشت سری، لیست سری‌ها، پوشش، اعتبارسنجی زنده */
+  const catalogBySeries = useMemo(() => {
+    const map = {};
+    const list = catalog && Array.isArray(catalog.series) ? catalog.series : [];
+    list.forEach(function (entry) {
+      if (entry && entry.series) map[entry.series] = entry;
+    });
+    return map;
+  }, [catalog]);
+
+  const list = useMemo(() => groupSeries(products, tables, catalogBySeries), [products, tables, catalogBySeries]);
+  const summary = useMemo(() => coverageSummary(list), [list]);
+  const check = useMemo(() => validateRows(rows), [rows]);
+  const bulkPreview = useMemo(() => parseCvLines(bulkText, bulkSeries), [bulkText, bulkSeries]);
+
+  const paste = useMemo(() => {
+    if (!openSeries) return { preview: [], errors: [], otherSeries: 0 };
+    const parsed = parseCvLines(pasteText, openSeries);
+    const others = Object.keys(parsed.groups).filter(function (id) {
+      return id !== openSeries;
+    });
+    return {
+      preview: parsed.groups[openSeries] || [],
+      errors: parsed.errors,
+      otherSeries: others.length
+    };
+  }, [pasteText, openSeries]);
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return list.filter(function (item) {
+      if (filter === "missing" && item.status !== "none" && item.status !== "invalid") return false;
+      if (filter === "catalog" && !item.catalog) return false;
+      if (filter === "admin" && item.adminCount === 0) return false;
+      if (filter === "sizing" && !item.inSizing) return false;
+      if (!needle) return true;
+      if (item.series.toLowerCase().indexOf(needle) !== -1) return true;
+      return item.products.some(function (product) {
+        const name = product.name ? String(product.name.fa || "") + " " + String(product.name.en || "") : "";
+        return name.toLowerCase().indexOf(needle) !== -1;
+      });
+    });
+  }, [list, filter, query]);
+
+  function notify(text, tone) {
+    messageId.current += 1;
+    const id = messageId.current;
+    setMessage({ tone: tone || "success", text: text });
+    window.setTimeout(function () {
+      if (messageId.current === id) setMessage({ tone: "", text: "" });
+    }, 6000);
+  }
+
+  /** گرفتن نسخهٔ تازهٔ جدول‌ها از سرور (updatedAt هم هم‌زمان هم‌سان می‌شود) */
+  async function refreshTables() {
+    try {
+      const response = await fetch("/api/cv-tables", { cache: "no-store" });
+      const data = await response.json().catch(function () {
+        return {};
+      });
+      if (data && data.ok && data.series) setTables(data.series);
+    } catch (error) {
+      /* بی‌صدا: نمایش قدیمی می‌ماند ولی ذخیره انجام شده است */
+    }
+  }
+
+  function toggleSeries(series) {
+    if (openSeries === series) {
+      setOpenSeries(null);
+      setRows([]);
+      setPasteText("");
+      return;
+    }
+    setOpenSeries(series);
+    setPasteText("");
+    setMessage({ tone: "", text: "" });
+    const table = tables[series];
+    setRows((table && Array.isArray(table.sizes) ? table.sizes : []).map(normalizeRow));
+  }
+
+  function setCell(index, patch) {
+    setRows(function (current) {
+      return current.map(function (row, position) {
+        return position === index ? Object.assign({}, row, patch) : row;
+      });
+    });
+  }
+
+  function addRow() {
+    setRows(function (current) {
+      return current.concat([{ dn: "", cv: "" }]);
+    });
+  }
+
+  function removeRow(index) {
+    setRows(function (current) {
+      return current.filter(function (row, position) {
+        return position !== index;
+      });
+    });
+  }
+
+  /** افزودن/به‌روزرسانی یک سایز از چیپس کاتالوگ */
+  function useSize(dn, cv) {
+    const key = normalizeDn(dn);
+    const value = cv == null ? "" : String(cv);
+    setRows(function (current) {
+      const index = current.findIndex(function (row) {
+        return normalizeDn(row.dn) === key;
+      });
+      if (index === -1) return current.concat([{ dn: key, cv: value }]);
+      return current.map(function (row, position) {
+        return position === index ? Object.assign({}, row, { cv: value }) : row;
+      });
+    });
+  }
+
+  function applyPaste() {
+    const incoming = paste.preview;
+    if (!incoming.length) return;
+    setRows(function (current) {
+      const map = new Map();
+      current.forEach(function (row) {
+        if (row.dn) map.set(normalizeDn(row.dn), row);
+      });
+      incoming.forEach(function (row) {
+        map.set(normalizeDn(row.dn), { dn: normalizeDn(row.dn), cv: row.cv });
+      });
+      return Array.from(map.values());
+    });
+    setPasteText("");
+    notify(incoming.length + " سایز به فرم اضافه شد — با «ذخیره» نهایی کنید.");
+  }
+
+  /** ذخیرهٔ سری باز؛ اعتبارسنجی محلی دقیقاً مثل سرور است */
+  async function save() {
+    if (!openSeries) return;
+    const fresh = validateRows(rows);
+    if (!fresh.ok) {
+      notify(fresh.messages.join(" "), "error");
+      return;
+    }
+    const sizes = rows.map(function (row) {
+      return { dn: normalizeDn(row.dn), cv: Number(row.cv) };
+    });
+
+    setBusySeries(openSeries);
+    try {
+      const response = await fetch("/api/cv-tables", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ series: openSeries, sizes: sizes })
+      });
+      const data = await response.json().catch(function () {
+        return {};
+      });
+      if (!response.ok || !data.ok) {
+        notify((data.errors || ["ذخیره نشد."]).join(" "), "error");
+        return;
+      }
+      setTables(function (current) {
+        return Object.assign({}, current, {
+          [openSeries]: { sizes: data.sizes || sizes, updatedAt: new Date().toISOString() }
+        });
+      });
+      setRows((data.sizes || sizes).map(normalizeRow));
+      notify("سری " + openSeries + " ذخیره شد (" + sizes.length + " سایز) — سایزینگ از همین حالا از آن استفاده می‌کند.");
+      refreshTables();
+    } catch (error) {
+      notify("خطای شبکه در ذخیره؛ اتصال را بررسی کنید.", "error");
+    } finally {
+      setBusySeries("");
+    }
+  }
+
+  /** حذف جدول یک سری (بازگشت به دادهٔ کاتالوگ یا جدول عمومی) */
+  async function remove() {
+    if (!openSeries) return;
+    if (!window.confirm("جدول سری " + openSeries + " حذف شود؟")) return;
+
+    setBusySeries(openSeries);
+    try {
+      const response = await fetch("/api/cv-tables?series=" + encodeURIComponent(openSeries), { method: "DELETE" });
+      const data = await response.json().catch(function () {
+        return {};
+      });
+      if (!response.ok || !data.ok) {
+        notify((data.errors || ["حذف نشد."]).join(" "), "error");
+        return;
+      }
+      setTables(function (current) {
+        const next = Object.assign({}, current);
+        delete next[openSeries];
+        return next;
+      });
+      setRows([]);
+      notify(
+        "جدول سری " + openSeries + " حذف شد" + (catalogBySeries[openSeries] ? " — سایزینگ به دادهٔ کاتالوگ برمی‌گردد." : ".")
+      );
+    } catch (error) {
+      notify("خطای شبکه در حذف.", "error");
+    } finally {
+      setBusySeries("");
+    }
+  }
+
+  /** پر کردن فرم از سایزهای کاتالوگ همان سری */
+  function loadCatalog() {
+    const entry = openSeries ? catalogBySeries[openSeries] : null;
+    if (!entry) return;
+    const filled = catalogRowsFor(entry);
+    if (!filled.length) {
+      notify("برای این سری سایزی در کاتالوگ نیست.", "error");
+      return;
+    }
+    setRows(filled);
+    notify(filled.length + " سایز از کاتالوگ در فرم گذاشته شد — بررسی کنید و «ذخیره» را بزنید.");
+  }
+
+  /** ذخیرهٔ گروهی: هر سری یک PUT جدا می‌گیرد (همان مسیر دکمهٔ «ذخیره») */
+  async function saveGroups(groups, label) {
+    const ids = Object.keys(groups || {});
+    if (!ids.length) {
+      notify("ردیف معتبری برای ذخیره پیدا نشد.", "error");
+      return;
+    }
+
+    setBulkBusy(true);
+    const failed = [];
+    let saved = 0;
+
+    for (const id of ids) {
+      const sizes = groups[id].map(function (row) {
+        return { dn: normalizeDn(row.dn), cv: Number(row.cv) };
+      });
+      try {
+        const response = await fetch("/api/cv-tables", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ series: id, sizes: sizes })
+        });
+        const data = await response.json().catch(function () {
+          return {};
+        });
+        if (!response.ok || !data.ok) {
+          failed.push(id + ": " + (data.errors || ["ذخیره نشد."]).join(" "));
+          continue;
+        }
+        saved += 1;
+      } catch (error) {
+        failed.push(id + ": خطای شبکه");
+      }
+    }
+
+    setBulkBusy(false);
+    await refreshTables();
+
+    if (failed.length) {
+      notify(saved + " از " + ids.length + " سری " + label + " · خطا: " + failed.slice(0, 3).join(" | "), "error");
+    } else {
+      notify(saved + " سری " + label + " — سایزینگ از همین حالا از این داده استفاده می‌کند.");
+    }
+  }
+
+  /** «ذخیرهٔ همه» برای متن چسبانده‌شده از اکسل */
+  function applyBulk() {
+    const ids = Object.keys(bulkPreview.groups);
+    if (!ids.length) {
+      notify("هیچ ردیف معتبری برای ذخیره پیدا نشد.", "error");
+      return;
+    }
+    const note = bulkPreview.errors.length ? " (" + bulkPreview.errors.length + " خط نامعتبر نادیده گرفته می‌شود)" : "";
+    if (!window.confirm(ids.length + " سری با " + bulkPreview.rows + " سایز ذخیره شود؟" + note)) return;
+
+    setOpenSeries(null);
+    setRows([]);
+    setBulkText("");
+    saveGroups(bulkPreview.groups, "ذخیره شد");
+  }
+
+  /** ورود فایل JSON (خروجی همین صفحه یا فایل valve-cv-tables.json) */
+  async function importFile(file) {
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch (error) {
+      notify("فایل JSON خوانده نشد.", "error");
+      return;
+    }
+
+    const source = payload && payload.series ? payload.series : payload;
+    if (!source || typeof source !== "object") {
+      notify("ساختار فایل JSON مورد انتظار نیست.", "error");
+      return;
+    }
+
+    const groups = {};
+    let skipped = 0;
+    Object.keys(source).forEach(function (rawId) {
+      const id = String(rawId).trim();
+      if (!SERIES_RE.test(id)) {
+        skipped += 1;
+        return;
+      }
+      const value = source[rawId];
+      const list = Array.isArray(value) ? value : value && Array.isArray(value.sizes) ? value.sizes : [];
+      const fileRows = list.map(normalizeRow).filter(function (row) {
+        return DN_RE.test(row.dn) && Number(row.cv) > 0;
+      });
+      if (!fileRows.length) {
+        skipped += 1;
+        return;
+      }
+      groups[id] = fileRows;
+    });
+
+    const ids = Object.keys(groups);
+    if (!ids.length) {
+      notify("در فایل، سری معتبری با سایز پیدا نشد.", "error");
+      return;
+    }
+    const note = skipped ? " (" + skipped + " سری نادیده گرفته شد)" : "";
+    if (!window.confirm(ids.length + " سری از فایل " + file.name + " وارد شود؟" + note)) return;
+    saveGroups(groups, "از فایل وارد شد");
+  }
+
+  /** خروجی JSON برای پشتیبان‌گیری/انتقال بین محیط‌ها */
+  function downloadJson() {
+    const payload = exportTables(tables);
+    const count = Object.keys(payload.series).length;
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "valve-cv-tables.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      notify("فایل valve-cv-tables.json با " + count + " سری ساخته شد.");
+    } catch (error) {
+      notify("ساخت فایل ممکن نشد؛ از «کپی JSON» استفاده کنید.", "error");
+    }
+  }
+
+  async function copyJson() {
+    const text = JSON.stringify(exportTables(tables), null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("JSON جدول‌ها در کلیپ‌بورد کپی شد.");
+    } catch (error) {
+      notify("کپی خودکار ممکن نشد (دسترسی کلیپ‌بورد بسته است).", "error");
+    }
+  }
+
+  const openItem = list.find(function (item) {
+    return item.series === openSeries;
+  }) || null;
+
+  const editor = {
+    onToggle: toggleSeries,
+    rows: openSeries ? rows : null,
+    check: check,
+    paste: paste,
+    pasteText: pasteText,
+    setPasteText: setPasteText,
+    setCell: setCell,
+    addRow: addRow,
+    removeRow: removeRow,
+    useSize: useSize,
+    applyPaste: applyPaste,
+    loadCatalog: loadCatalog,
+    save: save,
+    remove: remove,
+    saving: Boolean(openSeries) && busySeries === openSeries,
+    deleting: Boolean(openSeries) && busySeries === openSeries,
+    updatedAt: openItem ? openItem.updatedAt : null
+  };
+
+  return (
+    <div style={{ padding: "20px 22px", maxWidth: 1120 }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#1A1D21" }}>جدول Cv سایزینگ</h1>
+          <p style={{ margin: "6px 0 0", fontSize: 11.5, color: "#6B7280", lineHeight: 2, maxWidth: 640 }}>
+            Cv هر سری را اینجا وارد یا بازنویسی کنید؛ صفحهٔ سایزینگ بدون بیلد از همین داده استفاده می‌کند. کارت هر سری را باز
+            کنید تا سایزها را ببینید یا اضافه کنید — بستن کارت، تغییرات ذخیره‌نشده را دور می‌ریزد.
+          </p>
+        </div>
+        <div style={{ marginInlineStart: "auto" }}>
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            style={smallBtn(showGuide ? { background: "#1A1D21", color: "#FFFFFF", borderColor: "#1A1D21" } : null)}
+          >
+            {showGuide ? "بستن راهنما" : "راهنما"}
+          </button>
+        </div>
+      </div>
+
+      <CoverageCard summary={summary} onExport={downloadJson} onCopy={copyJson} />
+      {showGuide && <GuideCard />}
+      <CatalogCard catalog={catalog} />
+
       {message.text && (
-        <div role="status" style={{
-          marginTop: 12, padding: "9px 13px", borderRadius: 9,
-          background: message.type === "error" ? "#FEF2F2" : "#ECFDF5",
-          border: `1px solid ${message.type === "error" ? "#FECACA" : "#A7F3D0"}`,
-          color: message.type === "error" ? "#991B1B" : "#065F46",
-          fontSize: 11.5, fontWeight: 800
-        }}>
+        <div
+          role="status"
+          style={{
+            marginTop: 12,
+            padding: "10px 12px",
+            borderRadius: 10,
+            fontSize: 11.5,
+            fontWeight: 800,
+            lineHeight: 2,
+            background: message.tone === "error" ? "#FEF2F2" : "#ECFDF5",
+            color: message.tone === "error" ? "#991B1B" : "#065F46",
+            border: "1px solid " + (message.tone === "error" ? "#FECACA" : "#A7F3D0")
+          }}
+        >
           {message.text}
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
-        {products.map((product) => {
-          const table = tables[product.series];
-          const count = table?.sizes?.length || 0;
-          const isOpen = openSeries === product.series;
+      <BulkPanel
+        open={bulkOpen}
+        onToggle={() => setBulkOpen(!bulkOpen)}
+        text={bulkText}
+        onText={setBulkText}
+        defaultSeries={bulkSeries}
+        onDefaultSeries={setBulkSeries}
+        busy={bulkBusy}
+        preview={bulkPreview}
+        onApply={applyBulk}
+        onFile={importFile}
+      />
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 14 }}>
+        <input
+          dir="auto"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="جست‌وجوی سری یا نام محصول…"
+          style={Object.assign({}, INPUT, { fontFamily: "inherit", fontSize: 11.5, width: 210 })}
+        />
+        {FILTERS.map(function (item) {
+          const active = filter === item.id;
           return (
-            <div key={product.slug} style={{
-              border: "1px solid #E5E7EB", borderRadius: 12, background: "#FFFFFF",
-              overflow: "hidden"
-            }}>
-              <button
-                type="button"
-                onClick={() => openEditor(product.series)}
-                aria-expanded={isOpen}
-                style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 14px", background: "transparent", border: "none",
-                  cursor: "pointer", textAlign: "start", fontFamily: "inherit"
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1A1D21" }}>
-                    {product.name?.fa || product.name?.en}
-                  </div>
-                  <div style={{ fontSize: 10.5, color: "#6B7280", marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span dir="ltr" style={{ fontFamily: "monospace" }}>سری {product.series}</span>
-                    <span>·</span>
-                    <span dir="ltr">{sizeRangeText(product.size)}</span>
-                  </div>
-                </div>
-                <span style={{
-                  padding: "3px 9px", borderRadius: 20, fontSize: 9.5, fontWeight: 900,
-                  background: count > 0 ? "#ECFDF5" : "#F3F4F6",
-                  color: count > 0 ? "#065F46" : "#6B7280",
-                  whiteSpace: "nowrap"
-                }}>
-                  {count > 0 ? `${count} سایز` : "ثبت نشده"}
-                </span>
-                <span style={{ color: "#9CA3AF", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .18s" }}>
-                  ▾
-                </span>
-              </button>
-
-              {isOpen && (
-                <div style={{ padding: "0 14px 14px", borderTop: "1px solid #F1F5F9" }}>
-                  <div style={{ overflowX: "auto", marginTop: 12 }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
-                      <thead>
-                        <tr style={{ background: "#F8FAFC" }}>
-                          <th style={{ padding: "7px 10px", textAlign: "start", color: "#64748B", fontWeight: 800 }}>قطر (DN)</th>
-                          <th style={{ padding: "7px 10px", textAlign: "start", color: "#64748B", fontWeight: 800 }}>Cv در ۱۰۰٪</th>
-                          <th style={{ padding: "7px 10px", width: 44 }} />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((row, index) => (
-                          <tr key={index} style={{ borderTop: "1px solid #F1F5F9" }}>
-                            <td style={{ padding: 6 }}>
-                              <input
-                                value={row.dn}
-                                onChange={(e) => updateRow(index, "dn", e.target.value)}
-                                placeholder="DN50"
-                                dir="ltr"
-                                style={{ width: 120, padding: "7px 9px", borderRadius: 7, border: "1px solid #E5E7EB", fontFamily: "monospace", fontSize: 11.5 }}
-                              />
-                            </td>
-                            <td style={{ padding: 6 }}>
-                              <input
-                                value={row.cv}
-                                onChange={(e) => updateRow(index, "cv", e.target.value)}
-                                placeholder="45"
-                                inputMode="decimal"
-                                dir="ltr"
-                                style={{ width: 140, padding: "7px 9px", borderRadius: 7, border: "1px solid #E5E7EB", fontFamily: "monospace", fontSize: 11.5 }}
-                              />
-                            </td>
-                            <td style={{ padding: 6, textAlign: "center" }}>
-                              <button
-                                type="button"
-                                onClick={() => removeRow(index)}
-                                aria-label={`حذف ${row.dn || "ردیف"}`}
-                                style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer", fontSize: 13 }}
-                              >
-                                ✕
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {rows.length === 0 && (
-                          <tr>
-                            <td colSpan={3} style={{ padding: "12px 10px", color: "#94A3B8", fontSize: 11 }}>
-                              هنوز سایزی وارد نشده است.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                    <button
-                      type="button"
-                      onClick={addRow}
-                      style={{ padding: "7px 11px", borderRadius: 8, border: "1px dashed #CBD5E1", background: "#FFFFFF", fontSize: 11, fontWeight: 800, cursor: "pointer", color: "#334155" }}
-                    >
-                      + افزودن سایز
-                    </button>
-                    <SaveBtn onClick={() => saveSeries(product.series)} busy={saving} />
-                    {count > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => deleteSeries(product.series)}
-                        style={{ padding: "7px 11px", borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2", color: "#991B1B", fontSize: 11, fontWeight: 800, cursor: "pointer" }}
-                      >
-                        حذف جدول این سری
-                      </button>
-                    )}
-                  </div>
-
-                  <details style={{ marginTop: 12 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#475569" }}>
-                      چسباندن چند سایز یک‌جا (DN50, 45 در هر خط)
-                    </summary>
-                    <textarea
-                      value={pasteText}
-                      onChange={(e) => setPasteText(e.target.value)}
-                      rows={5}
-                      dir="ltr"
-                      placeholder={"DN50, 45\nDN80, 90\nDN100, 150"}
-                      style={{ width: "100%", marginTop: 8, padding: 10, borderRadius: 9, border: "1px solid #E5E7EB", fontFamily: "monospace", fontSize: 11.5, resize: "vertical" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={applyPaste}
-                      style={{ marginTop: 6, padding: "7px 11px", borderRadius: 8, border: "none", background: "#1A1D21", color: "#FFFFFF", fontSize: 11, fontWeight: 800, cursor: "pointer" }}
-                    >
-                      افزودن به جدول
-                    </button>
-                  </details>
-                </div>
-              )}
-            </div>
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setFilter(item.id)}
+              style={smallBtn(active ? { background: "#1A1D21", color: "#FFFFFF", borderColor: "#1A1D21" } : null)}
+            >
+              {item.label}
+            </button>
           );
         })}
+        <span style={{ fontSize: 10.5, color: "#6B7280", marginInlineStart: "auto" }}>
+          {filtered.length} از {list.length} سری
+          {summary.withoutData > 0 ? " · " + summary.withoutData + " سری بدون داده" : ""}
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+        {filtered.map(function (item) {
+          return <SeriesCard key={item.series} info={item} open={openSeries === item.series} editor={editor} />;
+        })}
+      </div>
+
+      {filtered.length === 0 && (
+        <div
+          style={Object.assign({}, CARD, {
+            marginTop: 10,
+            padding: "18px 16px",
+            fontSize: 11.5,
+            color: "#6B7280",
+            textAlign: "center"
+          })}
+        >
+          سری‌ای با این فیلتر پیدا نشد — فیلتر «همه» را بزنید یا عبارت جست‌وجو را پاک کنید.
+        </div>
+      )}
+
+      <div style={{ marginTop: 14, fontSize: 10.5, color: "#94A3B8", lineHeight: 2 }}>
+        داده در فایل <span dir="ltr" style={{ fontFamily: "monospace" }}>data/valve-cv-tables.json</span> ذخیره می‌شود؛ برای
+        انتقال بین محیط‌ها از «خروجی JSON» و «ورود فایل JSON» استفاده کنید.
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import UploadDropzone from "./UploadDropzone";
 
 const LANGS = [
   { code: "fa", label: "فارسی" },
@@ -32,6 +33,7 @@ function blankArticle() {
     date: { fa: "", en: "", ar: "", ru: "" },
     readMinutes: 1,
     pdfUrl: "",
+    image: "",
     active: true
   };
 }
@@ -81,6 +83,12 @@ export default function ArticlesClient({ initial }) {
     const article = blankArticle();
     setItems((current) => [...current, article]);
     setEditing(articleKey(article));
+  }
+
+  function clone(article) {
+    const c = Object.assign({}, article, { slug: "article-" + Date.now().toString(36) });
+    setItems((current) => [...current, c]);
+    setEditing(articleKey(c));
   }
 
   function update(slug, patch) {
@@ -176,6 +184,9 @@ export default function ArticlesClient({ initial }) {
                         </Link>
                       )}
                       <EditBtn onClick={() => setEditing(isEditing ? null : articleKey(article))} />
+                      <button type="button" onClick={() => clone(article)} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                        +
+                      </button>
                       {article.slug && <DeleteBtn onClick={() => remove(article.slug)} />}
                     </div>
                   </div>
@@ -331,6 +342,15 @@ function ArticleForm({ article, articleId, update, onSave, onCancel }) {
         </div>
       )}
       {uploadError && <div className="msg msg-error" style={{ marginTop: 8 }}>{uploadError}</div>}
+
+      <label className="form-label" style={{ marginTop: 10 }}>تصویر مقاله</label>
+      <UploadDropzone
+        type="images"
+        value={article.image || ""}
+        onChange={(url) => update(articleId, { image: url })}
+        label="آپلود تصویر"
+        accept="image/*"
+      />
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} busy={uploading} />

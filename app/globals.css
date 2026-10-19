@@ -212,6 +212,26 @@ body::-webkit-scrollbar-thumb {
     transform: translateY(-4px);
     border-color: var(--gold);
   }
+
+  /* ===== THEME-AWARE GOLD HIGHLIGHT PANEL ===== */
+  .gold-panel {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FEF3C7 100%);
+    border: 2px solid #E0A81A;
+    box-shadow: 0 12px 32px rgba(201, 149, 13, 0.20);
+  }
+  .dark .gold-panel {
+    background: linear-gradient(135deg, rgba(224, 168, 26, 0.16) 0%, rgba(184, 133, 10, 0.08) 100%);
+    border-color: rgba(224, 168, 26, 0.45);
+    box-shadow: 0 12px 32px rgba(4, 10, 18, 0.30);
+  }
+  .gold-panel-title { color: #8A6508; }
+  .dark .gold-panel-title { color: var(--gold); }
+  .gold-panel-text { color: #8A6508; }
+  .dark .gold-panel-text { color: var(--text-soft); }
+  .gold-panel-icon { color: #B8850A; }
+  .dark .gold-panel-icon { color: var(--gold); }
+  .gold-panel-icon-box { box-shadow: 0 10px 24px rgba(201, 149, 13, 0.40); }
+  .dark .gold-panel-icon-box { box-shadow: 0 10px 24px rgba(4, 10, 18, 0.35); }
 }
 
 .grid-pattern {

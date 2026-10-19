@@ -16,7 +16,10 @@ export default function SettingsClient({ initial }) {
     siteUrl: (initial && initial.siteUrl) || "",
     workingHours: (initial && initial.workingHours) || "",
     mapLat: (initial && initial.mapLat) || "",
-    mapLng: (initial && initial.mapLng) || ""
+    mapLng: (initial && initial.mapLng) || "",
+    careerTitle: (initial && initial.careerTitle) || "",
+    careerSubtitle: (initial && initial.careerSubtitle) || "",
+    careerRoles: (initial && initial.careerRoles) || ""
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
@@ -95,6 +98,20 @@ export default function SettingsClient({ initial }) {
         </div>
       </SectionCard>
 
+      {/* Section: Career */}
+      <SectionCard icon="user" color="#E0A81A" title="فرصت همکاری (صفحه تماس)">
+        <Field label="عنوان بخش همکاری" value={form.careerTitle} onChange={function(v) { update("careerTitle", v); }} />
+        <Field label="متن توضیحی همکاری" value={form.careerSubtitle} onChange={function(v) { update("careerSubtitle", v); }} />
+        <Field
+          label="موقعیت‌های شغلی فعال (هر خط یک موقعیت)"
+          value={form.careerRoles}
+          onChange={function(v) { update("careerRoles", v); }}
+          rows={6}
+          placeholder={"مهندس مکانیک | Mechanical Engineer | طراحی و تحلیل مکانیکی شیرهای کنترلی\nمهندس صنایع | Industrial Engineer | بهبود فرایند تولید"}
+          hint="قالب هر خط: عنوان فارسی | عنوان انگلیسی | توضیح کوتاه. اگر این قسمت خالی بماند، فهرست پیش‌فرض ترجمه‌ها (مهندس مکانیک، مهندس صنایع، کارشناس بازرگانی، کارشناس برنامه‌ریزی، مونتاژکار و تراشکار) نمایش داده می‌شود."
+        />
+      </SectionCard>
+
       <div className="save-bar">
         <SaveBtn onClick={save} busy={busy} />
       </div>
@@ -131,18 +148,32 @@ function SectionCard({ icon, color, title, children }) {
   );
 }
 
-function Field({ label, value, onChange, dir, placeholder }) {
+function Field({ label, value, onChange, dir, placeholder, rows, hint }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <label className="form-label">{label}</label>
-      <input
-        type="text"
-        dir={dir}
-        value={value}
-        onChange={function(e) { onChange(e.target.value); }}
-        placeholder={placeholder}
-        className="form-input"
-      />
+      {rows ? (
+        <textarea
+          rows={rows}
+          dir={dir}
+          value={value}
+          onChange={function(e) { onChange(e.target.value); }}
+          placeholder={placeholder}
+          className="form-input"
+        />
+      ) : (
+        <input
+          type="text"
+          dir={dir}
+          value={value}
+          onChange={function(e) { onChange(e.target.value); }}
+          placeholder={placeholder}
+          className="form-input"
+        />
+      )}
+      {hint ? (
+        <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.8, color: "#7A8290" }}>{hint}</div>
+      ) : null}
     </div>
   );
 }

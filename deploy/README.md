@@ -12,6 +12,10 @@
 
 اگر مطمئن نیستی: مسیر **۱** را بردار (تکدستوری، شامل Node/PM2/Nginx/SSL/بکاپ/فایروال).
 
+> 🔌 **پورت:** پیشفرض اپ `3000` است. اگر روی سرور اشغال است یا چند سایت روی یک سرور داری، با
+> `--port <number>` (یا متغیر `APP_PORT`) عوضش کن؛ پورت در فایل `.app-port` ذخیره میشود و Nginx،
+> PM2 و بررسیهای سلامت همگی از همان یک فایل میخوانند (جزئیات: بخش «پورت اپ» پایینتر).
+
 ---
 
 ## مسیر ۱ — نصب یکدستوری روی VPS (PM2 + Nginx + SSL)
@@ -40,13 +44,47 @@ sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com
 | --- | --- |
 | `--domain <domain>` | دامنهٔ اصلی (اجباری)؛ `www` خودکار مدیریت میشود |
 | `--email <email>` | ایمیل Let's Encrypt (پیشفرض `admin@<domain>`) |
+| `--admin-user <user>` | نام کاربری پنل مدیریت (پیشفرض `admin`) |
 | `--admin-password <pass>` | رمز پنل؛ اگر ندهی رمز تصادفی ساخته و **یکبار** نمایش داده میشود |
 | `--repo <git-url>` · `--branch <name>` | مخزن/شاخهٔ انتشار |
 | `--app-dir <path>` · `--app-user <user>` | مسیر نصب (پیشفرض `/var/www/psm-valve`) و کاربر اجرا (پیشفرض `psm`) |
 | `--no-ssl` | فقط HTTP (وقتی DNS/SSL آماده نیست) |
 | `--no-firewall` · `--no-cron` | بدون ufw/fail2ban · بدون cron بکاپ |
 | `--skip-build` | پرش از بیلد (مثلاً وقتی `.next` را از قبل آپلود کردهای) |
-| `--port <number>` · `APP_PORT=<port>` | پورت اپلیکیشن؛ در فایل `.app-port` ذخیره میشود و Nginx، PM2 و health checkها همگی از آن میخوانند (پیشفرض `3000`) |
+| `--port <number>` · `APP_PORT=<port>` | پورت اپلیکیشن؛ در فایل `.app-port` ذخیره میشود و Nginx، PM2 و بررسیهای سلامت همگی از آن میخوانند (پیشفرض `3000`) |
+| `-h`, `--help` | نمایش همین راهنمای گزینهها |
+
+> همهٔ گزینهها هر دو شکل `--flag value` و `--flag=value` را میپذیرند.
+
+### پورت اپ — فایل `.app-port` (منبع یکتا)
+
+ترتیب خواندن پورت: متغیر محیطی `APP_PORT` → فایل `<app-dir>/.app-port` → پیشفرض `3000`.
+`install.sh` پورت را در `.app-port` مینویسد و Nginx (کانفیگ تولیدشده)، PM2 (`ecosystem.config.js`)،
+`deploy.sh`، `update.sh` و بررسیهای سلامت همگی از همین فایل میخوانند؛ پس بعد از نصب لازم نیست
+کانفیگ Nginx را دستی هماهنگ کنی.
+
+```bash
+# نصب با پورت غیرپیشفرض
+sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com --port 8080
+```
+
+تغییر پورت روی نصب موجود:
+
+```bash
+# راه ۱ (توصیهشده): اجرای دوبارهٔ نصب با پورت جدید — .app-port و Nginx با هم هماهنگ میشوند
+sudo bash deploy/install.sh --domain psmvalve.com --port 8080 --skip-build
+
+# راه ۲ (دستی، اگر نمیخواهی نصب دوباره اجرا شود)
+cd /var/www/psm-valve
+echo 8080 | sudo tee .app-port
+sudo chown psm:psm .app-port
+sudo sed -E -i 's/127\.0\.0\.1:[0-9]+/127.0.0.1:8080/g' /etc/nginx/sites-available/psmvalve.conf
+sudo nginx -t && sudo systemctl reload nginx
+su - psm -c "cd /var/www/psm-valve && pm2 reload ecosystem.config.js --update-env && pm2 save"   # پورت از .app-port خوانده میشود
+```
+
+> `APP_PORT=8080 bash deploy/update.sh` فقط برای همان اجرا پورت را بازنویسی میکند (`.app-port` دستنخورده میماند).
+> مسیر Docker پورت ثابت `3000:3000` دارد و `.app-port` را نمیخواند (نکتهٔ ۳ در «مسیر ۲»).
 
 ### اجرا از ویندوز (بدون ترمینال لینوکسی روی سیستم خودت)
 
@@ -57,6 +95,7 @@ sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com
 اسکریپت `install.sh` را با `scp` میفرستد، با `ssh` اجرا میکند و در پایان
 `deploy/push-assets.ps1` را برای انتقال `data/` و `public/uploads/` صدا میزند.
 (برای سروری که کاربر `sudo` دارد: `-SshUser psm -Sudo`)
+
 > ⚠️ فایلهای `deploy/*.ps1` با UTF-8 **همراه BOM** ذخیره شدهاند (بهخاطر متن فارسی و سازگاری با
 > Windows PowerShell 5.1). اگر ویرایششان میکنی، BOM را حفظ کن؛ در غیر این صورت خطای
 > «The string is missing the terminator» میگیری.
@@ -143,7 +182,7 @@ node scripts/rotate-admin-password.mjs
 | Docker | `git pull && docker compose up -d --build` |
 | cPanel | `git pull && npm ci && npm run build` + Restart در پنل |
 
-قبل از هر انتشار، پیشبررسی را محلی هم میشود اجرا کرد: `node scripts/preflight.mjs`.
+پیشبررسی را میتوان محلی هم اجرا کرد: `node scripts/preflight.mjs` (همین بررسی در `update.sh` روی سرور هم انجام میشود).
 
 ---
 
@@ -168,6 +207,10 @@ node scripts/rotate-admin-password.mjs
 | `../Dockerfile` · `../docker-compose.yml` · `../.dockerignore` | مسیر Docker |
 | `../ecosystem.config.js` | اجرای PM2 — پورت از فایل `.app-port` (منبع یکتا) خوانده میشود |
 
+> `.app-port` در **ریشهٔ پروژه روی سرور** (نه در این پوشه) نگه داشته میشود: `install.sh` میسازد،
+> `backup.sh` از آن بکاپ میگیرد و نسخههای قدیمی را پاک میکند، و `.dockerignore` آن را از بیلد Docker
+> کنار میگذارد (چون مسیر Docker پورت ثابت `3000` دارد).
+
 ---
 
 ## چکلیست قبل از انتشار
@@ -187,10 +230,10 @@ node scripts/rotate-admin-password.mjs
 
 | کار | دستور |
 | --- | --- |
-| وضعیت سرویس | `su - psm -c 'pm2 status'` · `pm2 logs psm-valve` |
-| بررسی سلامت | `curl -I http://127.0.0.1:3000/fa` · `https://www.<domain>/admin` (باید ۳۰۷ شود) |
-| بررسی سلامت (پورت غیرپیشفرض) | `curl -I "http://127.0.0.1:$(cat .app-port)/fa"` |
+| وضعیت سرویس | `su - psm -c 'pm2 status'` · `su - psm -c 'pm2 logs psm-valve'` |
+| بررسی سلامت | `curl -I "http://127.0.0.1:$(cat /var/www/psm-valve/.app-port)/fa"` (هر پورتی) · `curl -I https://www.<domain>/admin` (باید ۳۰۷ شود) |
+| تغییر پورت | بخش «پورت اپ» در بالا (`.app-port` + Nginx + `pm2 reload --update-env`) |
 | بکاپ دستی | `su - psm -c 'bash deploy/backup.sh'` |
 | تمدید SSL | خودکار (Certbot)؛ بازرسی: `certbot renew --dry-run` |
 | بازگردانی از بکاپ | `tar -xzf /var/backups/psm-valve/data-<stamp>.tar.gz` و سپس `pm2 reload psm-valve` |
-| بازگردانی نسخهٔ کد | `git log --oneline` → `git reset --hard <commit>` → `npm ci && npm run build && pm2 reload psm-valve` |
+| بازگردانی نسخهٔ کد | `git log --oneline` → `git reset --hard <commit>` → `npm ci && npm run build` → `su - psm -c "cd /var/www/psm-valve && pm2 reload ecosystem.config.js --update-env"` |

@@ -17,6 +17,7 @@ const SECTION_LABELS = {
   products: "محصولات",
   services: "خدمات",
   contact: "تماس",
+  career: "فرصت همکاری",
   footer: "پاورقی",
   sizing: "ابزار سایزینگ",
   about: "درباره ما",

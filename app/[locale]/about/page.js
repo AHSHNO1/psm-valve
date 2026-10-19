@@ -38,7 +38,7 @@ export default async function AboutPage({ params }) {
     <div>
       {/* Hero section */}
       <section style={{
-        background: "linear-gradient(135deg, #F7F9FC 0%, #EEF2F6 55%, #E8EEF5 100%)",
+        background: "linear-gradient(135deg, var(--bg) 0%, var(--bg-soft) 55%, var(--bg-card) 100%)",
         padding: "70px 0 90px",
         position: "relative",
         overflow: "hidden"
@@ -68,9 +68,9 @@ export default async function AboutPage({ params }) {
         <div className="container-x" style={{ position: "relative", zIndex: 1 }}>
           <div className="max-w-3xl mx-auto text-center">
             <span className="chip" style={{
-              background: "rgba(255, 255, 255, 0.8)",
+              background: "var(--bg-card)",
               borderColor: "rgba(245, 197, 24, 0.4)",
-              color: "#76580A"
+              color: "var(--gold)"
             }}>
               {L.badge}
             </span>
@@ -94,7 +94,7 @@ export default async function AboutPage({ params }) {
               border: "1px solid rgba(245, 197, 24, 0.35)"
             }}>
               <span style={{ fontSize: 14 }}>🧪</span>
-              <span style={{ fontSize: 12, fontWeight: 900, color: "#76580A" }}>
+              <span style={{ fontSize: 12, fontWeight: 900, color: "var(--gold)" }}>
                 {L.knowledgeType}
               </span>
             </div>
@@ -274,7 +274,7 @@ function StatCard({ value, label, color }) {
       background: "var(--bg-card)",
       border: "1px solid var(--border)",
       borderRadius: 20,
-      boxShadow: "0 8px 24px rgba(20, 22, 27, 0.08)",
+      boxShadow: "var(--shadow-md)",
       textAlign: "center",
       transition: "all 0.25s"
     }}>

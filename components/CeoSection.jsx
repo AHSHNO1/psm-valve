@@ -5,7 +5,12 @@ import { Quote, User, Award, BadgeCheck, FlaskConical } from "lucide-react";
 function pick(obj, locale) {
   if (!obj) return "";
   if (typeof obj === "string") return obj;
-  return obj[locale] || obj.en || obj.fa || "";
+  const candidates = [obj[locale], obj.en, obj.fa];
+  for (let i = 0; i < candidates.length; i += 1) {
+    const value = candidates[i];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return "";
 }
 
 export default function CeoSection({ ceo, locale, certificates, labels }) {
@@ -108,7 +113,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
               <h3 className="font-black text-lg sm:text-xl mb-4 relative z-10" style={{ color: "var(--gold)" }}>
                 {L.msgTitle}
               </h3>
-              <p className="leading-8 text-sm sm:text-base relative z-10 italic" style={{ color: "var(--text-soft)" }}>
+              <p className="leading-8 text-sm sm:text-base relative z-10 italic" style={{ color: "var(--text-soft)", whiteSpace: "pre-line" }}>
                 «{message}»
               </p>
               <div className="mt-5 pt-5 relative z-10 flex items-center gap-3"
@@ -123,12 +128,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
           )}
 
           {/* ★ دانش‌بنیان ویژه — زیر سخن مدیرعامل */}
-          <div className="relative rounded-2xl p-6 overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, #FFF9E6 0%, #FEF3C7 100%)",
-              border: "2px solid #E0A81A",
-              boxShadow: "0 12px 32px rgba(201, 149, 13, 0.20)"
-            }}>
+          <div className="relative rounded-2xl p-6 overflow-hidden gold-panel">
             {/* Decorative corner */}
             <div style={{
               position: "absolute",
@@ -142,7 +142,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
             }} />
 
             <div className="relative flex items-start gap-5">
-              <div style={{
+              <div className="gold-panel-icon-box" style={{
                 width: 72,
                 height: 72,
                 borderRadius: 20,
@@ -150,19 +150,17 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                 placeItems: "center",
                 background: "linear-gradient(135deg, #E0A81A, #B8850A)",
                 color: "#FFFFFF",
-                flexShrink: 0,
-                boxShadow: "0 10px 24px rgba(201, 149, 13, 0.4)"
+                flexShrink: 0
               }}>
                 <FlaskConical size={36} strokeWidth={1.8} />
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <BadgeCheck size={18} style={{ color: "#B8850A" }} />
-                  <div style={{
+                  <BadgeCheck size={18} className="gold-panel-icon" />
+                  <div className="gold-panel-title" style={{
                     fontSize: 16,
                     fontWeight: 900,
-                    color: "#8A6508",
                     letterSpacing: "0.01em"
                   }}>
                     {L.knowledge}
@@ -183,10 +181,9 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                   {L.knowledgeType}
                 </div>
 
-                <div style={{
+                <div className="gold-panel-text" style={{
                   fontSize: 11.5,
                   fontWeight: 700,
-                  color: "#8A6508",
                   lineHeight: 1.6
                 }}>
                   {L.knowledgeDesc}

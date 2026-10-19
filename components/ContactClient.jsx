@@ -2,8 +2,20 @@
 import React, { useState } from "react";
 import ContactForm from "./ContactForm";
 
-export default function ContactClient({ dict, locale, company, branding, content }) {
+export default function ContactClient({ dict, locale, company, branding, content, career }) {
   const isFa = locale === "fa";
+
+  // ===== بخش فرصت همکاری: متن از دیکشنری ترجمه و امکان بازنویسی از پنل مدیریت =====
+  const careerInfo = (dict.contact && dict.contact.career) || {};
+  const careerTitle = (career && career.careerTitle) || careerInfo.title || "";
+  const careerSubtitle = (career && career.careerSubtitle) || careerInfo.subtitle || "";
+  const careerRoles = resolveCareerRoles(career && career.careerRoles, careerInfo.roles);
+  const careerOffers = Array.isArray(careerInfo.offers) ? careerInfo.offers : [];
+  const careerMailto = function(roleTitle) {
+    const base = careerInfo.emailSubject || careerTitle || "";
+    const subject = roleTitle ? base + " - " + roleTitle : base;
+    return "mailto:" + emailPrimary + "?subject=" + encodeURIComponent(subject);
+  };
 
   const phoneOffice = company.phone.office;
   const phoneFactory = company.phone.factory;
@@ -305,6 +317,83 @@ export default function ContactClient({ dict, locale, company, branding, content
         </div>
       </section>
 
+      {/* ============ Careers / فرصت همکاری ============ */}
+      <section className="container-x py-16 sm:py-20" id="careers">
+        <div className="card-glass mx-auto max-w-4xl p-6 sm:p-9">
+          <div className="text-center">
+            <span className="chip">{careerInfo.badge}</span>
+            <h2 className="mt-3 text-xl font-black sm:text-2xl md:text-3xl" style={{ color: "var(--text)" }}>
+              <span className="heading-gold">{careerTitle}</span>
+            </h2>
+            {careerSubtitle ? (
+              <p className="mx-auto mt-3 max-w-2xl text-xs leading-7 sm:text-sm" style={{ color: "var(--text-soft)" }}>{careerSubtitle}</p>
+            ) : null}
+          </div>
+
+          {careerRoles.length > 0 ? (
+            <div className="mt-7 border-t pt-6" style={{ borderColor: "var(--border)" }}>
+              <h3 className="text-xs font-black" style={{ color: "var(--text-muted)" }}>{careerInfo.rolesTitle}</h3>
+              <ul className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                {careerRoles.map(function(role, index) {
+                  const showEn = role.en && role.en.toLowerCase() !== role.title.toLowerCase();
+                  return (
+                    <li key={role.title + index} className="flex items-start gap-2.5">
+                      <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--gold)" }} />
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold" style={{ color: "var(--text)" }}>
+                          {role.title}
+                          {showEn ? (
+                            <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)", marginInlineStart: 8 }} dir="ltr">{role.en}</span>
+                          ) : null}
+                        </div>
+                        {role.desc ? (
+                          <div className="mt-0.5 text-[11px] leading-6" style={{ color: "var(--text-muted)" }}>{role.desc}</div>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+          {careerOffers.length > 0 ? (
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+              {careerInfo.offersTitle ? (
+                <span className="text-[11px] font-black" style={{ color: "var(--text)" }}>{careerInfo.offersTitle}</span>
+              ) : null}
+              {careerOffers.map(function(item) {
+                return (
+                  <span key={item} className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-soft)" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E0A81A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {item}
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className="mt-7 flex flex-col gap-4 rounded-2xl px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5" style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}>
+            <div className="min-w-0">
+              <div className="text-xs font-black" style={{ color: "var(--text)" }}>{careerInfo.applyTitle}</div>
+              {careerInfo.applyDesc ? (
+                <div className="mt-1 text-[11px] leading-6" style={{ color: "var(--text-muted)" }}>{careerInfo.applyDesc}</div>
+              ) : null}
+              <div className="mt-1.5 truncate text-[11px] font-bold" style={{ color: "var(--gold)" }} dir="ltr">{emailPrimary}</div>
+            </div>
+            <a href={careerMailto("")} className="btn-gold shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+              {careerInfo.applyCta}
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ============ Map ============ */}
       <section className="container-x pb-16">
         <div className="card-glass" style={{ padding: 0, overflow: "hidden" }}>
@@ -382,6 +471,21 @@ function InfoIcon({ name }) {
       {icons[name] || icons.phone}
     </svg>
   );
+}
+
+// موقعیت‌های شغلی: از پنل مدیریت (هر خط: فارسی | انگلیسی | توضیح) یا از دیکشنری ترجمه
+function resolveCareerRoles(overrideText, dictRoles) {
+  const fromAdmin = String(overrideText || "")
+    .split(/\r?\n/)
+    .map(function(line) { return line.split("|").map(function(part) { return part.trim(); }); })
+    .filter(function(parts) { return parts[0]; })
+    .map(function(parts) { return { title: parts[0], en: parts[1] || "", desc: parts[2] || "" }; });
+  if (fromAdmin.length) return fromAdmin;
+  if (!Array.isArray(dictRoles)) return [];
+  return dictRoles.map(function(row) {
+    if (Array.isArray(row)) return { title: row[0] || "", en: row[1] || "", desc: row[2] || "" };
+    return { title: String(row || ""), en: "", desc: "" };
+  }).filter(function(role) { return role.title; });
 }
 
 function SocialIcon({ name, url, color, svg, handle }) {

@@ -46,6 +46,32 @@ export default function ProductsClient({ products: initialProducts, categories }
     return matchSearch && matchCat;
   });
 
+  async function handleClone(p) {
+    const base = p.slug + "-copy";
+    let slug = base;
+    let i = 1;
+    while (products.some(function(x) { return x.slug === slug; })) {
+      slug = base + "-" + (i++);
+    }
+    const c = Object.assign({}, p, { slug: slug });
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(c)
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setProducts(function(current) { return current.concat([c]); });
+        setNotice({ type: "success", text: "کپی محصول ساخته شد." });
+      } else {
+        setNotice({ type: "error", text: data.error || "کپی‌سازی ناموفق بود." });
+      }
+    } catch {
+      setNotice({ type: "error", text: "خطای شبکه در کپی‌سازی." });
+    }
+  }
+
   async function handleDelete(slug, label) {
     if (!confirm("محصول «" + label + "» حذف شود؟ این عمل قابل بازگشت نیست.")) return;
     setBusySlug(slug);
@@ -207,6 +233,9 @@ export default function ProductsClient({ products: initialProducts, categories }
 
                 <div className="card-item-foot">
                   <EditBtn href={"/admin/products/" + p.slug} />
+                  <button type="button" onClick={function() { handleClone(p); }} className="act-btn" title="کپی محصول" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                    <Icon name="plus" size={14} />
+                  </button>
                   <ViewBtn href={"/fa/products/" + p.slug} />
                   <span style={{ opacity: busySlug === p.slug ? 0.4 : 1 }}>
                     <DeleteBtn

@@ -1,5 +1,6 @@
 import { getDictionary } from "@/lib/getDictionary";
-import { services } from "@/lib/services";
+import { getServices } from "@/lib/content";
+import { services as fallbackServices } from "@/lib/services";
 import Link from "next/link";
 import { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings, ArrowLeft } from "lucide-react";
 
@@ -8,6 +9,9 @@ const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings };
 export default async function ServicesPage({ params }) {
   const { locale } = params;
   const dict = await getDictionary(locale);
+
+  const services = getServices();
+  const list = services && services.length ? services : fallbackServices;
 
   const t = {
     fa: { badge: "خدمات ما", title1: "خدمات", title2: "تخصصی", learnMore: "جزئیات" },
@@ -25,7 +29,7 @@ export default async function ServicesPage({ params }) {
       </h1>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {services.map((s) => {
+        {list.map((s) => {
           const Icon = ICONS[s.icon] || Cog;
           return (
             <div key={s.slug} className="card-glass p-6 sm:p-8 group hover:border-gold-500/50 transition">

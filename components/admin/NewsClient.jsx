@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import UploadDropzone from "./UploadDropzone";
 
 const LANGS = [
   { code: "fa", label: "فارسی" },
@@ -69,6 +70,12 @@ export default function NewsClient({ initial }) {
     const n = blank();
     setItems(items.concat([n]));
     setEditing(n.id);
+  }
+
+  function clone(n) {
+    const c = Object.assign({}, n, { id: "news-" + Date.now().toString(36), title: Object.assign({}, n.title) });
+    setItems(items.concat([c]));
+    setEditing(c.id);
   }
 
   function remove(id) {
@@ -149,6 +156,9 @@ export default function NewsClient({ initial }) {
                   <div className="row-actions">
                     <ToggleBtn active={n.active !== false} onClick={function() { toggle(n.id); }} />
                     <EditBtn onClick={function() { setEditing(isEditing ? null : n.id); }} />
+                    <button type="button" onClick={function() { clone(n); }} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                      +
+                    </button>
                     <DeleteBtn onClick={function() { remove(n.id); }} />
                   </div>
                 </div>
@@ -229,10 +239,13 @@ function NewsForm({ news, update, onSave, onCancel }) {
             onChange={function(e) { update(news.id, { date: e.target.value }); }}
             className="form-input" />
 
-          <label className="form-label" style={{ marginTop: 12 }}>تصویر</label>
-          <input type="text" dir="ltr" value={news.image || ""}
-            onChange={function(e) { update(news.id, { image: e.target.value }); }}
-            className="form-input" placeholder="آدرس تصویر" />
+          <UploadDropzone
+            type="images"
+            value={news.image || ""}
+            onChange={function(url) { update(news.id, { image: url }); }}
+            label="تصویر خبر"
+            accept="image/*"
+          />
         </div>
       </div>
 

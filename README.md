@@ -84,8 +84,8 @@ deploy/               اسکریپتها و کانفیگ انتشار
 
 اسکریپتهای پایتون فقط از کتابخانهٔ استاندارد استفاده میکنند؛ نصب بستهٔ اضافی لازم نیست.
 راهنمای کامل جدول Cv و دادهٔ مرجع: [`docs/CV-TABLES.md`](./docs/CV-TABLES.md)
-راهنمای سیستم واحدها (متریک/اینچی)، دبی حجمی/جرمی و جرم مولکولی: بخش ۱۱ در [`PROJECT-STATUS.md`](./PROJECT-STATUS.md)
-راهنمای بخش «فرصت همکاری» صفحهٔ تماس (متن دیکشنری + بازنویسی از پنل): بخش ۱۲ در [`PROJECT-STATUS.md`](./PROJECT-STATUS.md)
+سیستم واحدها (متریک/اینچی)، دبی حجمی/جرمی و جرم مولکولی: [`lib/unit-system.js`](./lib/unit-system.js) + تست [`tests/unit-system.test.mjs`](./tests/unit-system.test.mjs)
+بخش «فرصت همکاری» صفحهٔ تماس (متن از دیکشنری `messages/*.json` → `contact.career` و بازنویسی از پنل «تنظیمات»): [`components/ContactClient.jsx`](./components/ContactClient.jsx)
 
 ## انتشار
 

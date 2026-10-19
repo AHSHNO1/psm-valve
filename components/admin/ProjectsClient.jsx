@@ -71,6 +71,18 @@ export default function ProjectsClient({ initial }) {
     setEditing(p.id);
   }
 
+  function clone(p) {
+    const c = Object.assign({}, p, {
+      id: "proj-" + Date.now().toString(36),
+      title: Object.assign({}, p.title || {}),
+      client: Object.assign({}, p.client || {}),
+      industry: Object.assign({}, p.industry || {}),
+      description: Object.assign({}, p.description || {})
+    });
+    setItems(items.concat([c]));
+    setEditing(c.id);
+  }
+
   function remove(id) {
     if (!confirm("این پروژه حذف شود؟")) return;
     save(items.filter(function(x) { return x.id !== id; }));
@@ -154,6 +166,9 @@ export default function ProjectsClient({ initial }) {
                     <ToggleBtn active={p.active !== false} onClick={function() { toggle(p.id); }} />
                     <div style={{ display: "flex", gap: 6 }}>
                       <EditBtn onClick={function() { setEditing(isEditing ? null : p.id); }} />
+                      <button type="button" onClick={function() { clone(p); }} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                        +
+                      </button>
                       <DeleteBtn onClick={function() { remove(p.id); }} />
                     </div>
                   </div>
@@ -242,19 +257,19 @@ function ProjectForm({ project, update, onSave, onCancel }) {
       </div>
 
       <label className="form-label">عنوان پروژه</label>
-      <input type="text" value={project.title[lang] || ""}
+      <input type="text" value={(project.title || {})[lang] || ""}
         onChange={function(e) { upd("title", e.target.value); }} className="form-input" />
 
       <label className="form-label" style={{ marginTop: 10 }}>مشتری</label>
-      <input type="text" value={project.client[lang] || ""}
+      <input type="text" value={(project.client || {})[lang] || ""}
         onChange={function(e) { upd("client", e.target.value); }} className="form-input" />
 
       <label className="form-label" style={{ marginTop: 10 }}>صنعت</label>
-      <input type="text" value={project.industry[lang] || ""}
+      <input type="text" value={(project.industry || {})[lang] || ""}
         onChange={function(e) { upd("industry", e.target.value); }} className="form-input" />
 
       <label className="form-label" style={{ marginTop: 10 }}>توضیحات</label>
-      <textarea rows={3} value={project.description[lang] || ""}
+      <textarea rows={3} value={(project.description || {})[lang] || ""}
         onChange={function(e) { upd("description", e.target.value); }} className="form-input" />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>

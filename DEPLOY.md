@@ -1,6 +1,6 @@
 # راهنمای راهاندازی، انتشار و نگهداری — PSM VALVE
 
-> آخرین بهروزرسانی: ۲۰۲۶-۱۰-۱۶ · نسخهٔ اپ: `package.json` → Next.js 14.2.35
+> آخرین بهروزرسانی: ۲۰۲۶-۱۰-۱۹ · نسخهٔ اپ: `package.json` → Next.js 14.2.35
 > این فایل مرجع کامل «از صفر تا آنلاین» است. برای شروع سریع توسعه، `README.md` را ببین.
 > **خلاصهٔ انتشار و چک‌لیست:** [`GO-LIVE.md`](GO-LIVE.md) · پیش‌بررسی: `node scripts/preflight.mjs`
 > 🚀 **مسیر خودکار (توصیهشده):** `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
@@ -17,14 +17,14 @@
 | موضوع | مقدار / نیاز |
 | --- | --- |
 | نوع اپلیکیشن | Next.js 14 App Router — نیازمند **پروسهٔ Node** (`next start`) و دیسک پایدار. روی هاست اشتراکی فقط-PHP اجرا نمیشود؛ روی cPanel با **Node.js Selector** ممکن است (راهنما: [`deploy/cpanel/README.md`](./deploy/cpanel/README.md)). |
-| پورت پیشفرض | `3000` (قابل تغییر با `PORT`) |
+| پورت پیشفرض | `3000` — با `--port <number>` (یا `APP_PORT=<port>`) تغییر میکند و در فایل `.app-port` کنار پروژه ذخیره میشود؛ Nginx، PM2 و بررسیهای سلامت همه از همان یک فایل میخوانند (`PORT` در `.env` فقط بازنویسی موقت است). جزئیات: [`deploy/README.md`](deploy/README.md) → «پورت اپ». |
 | نسخهٔ Node | **۲۰ LTS** یا ۲۲ LTS (حداقل ۱۸.۱۷) |
 | ذخیرهسازی داده | **فایلسیستم پایدار**: `data/*.json`, پایگاه‌دادهٔ `data/psm-valve.sqlite` و `public/uploads/**` |
 | نقشهٔ داده | ۱) `data/` دادهٔ زندهٔ JSON و SQLite · ۲) `public/uploads/**` فایلهای آپلودشده از پنل · ۳) `lib/products.js` فقط دادهٔ اولیهٔ seed محصولات |
 | ناسازگار با | Vercel، Netlify، Render Static، Cloudflare Pages، هر PaaS با دیسک موقت (فایل نوشتهشده با هر دیپلوی/ریاستارت پاک میشود) |
 | سازگار با | VPS لینوکسی (توصیهشده)، کانتینر با Volume پایدار، سرور اختصاصی، PaaS با دیسک پایدار (مثل Liara با دیسک، یا Dokploy/Coolify روی VPS) |
 | دامنهٔ canonical | `https://www.psmvalve.com` — در `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` **هاردکد** شده است |
-| ⚠️ ناهمخوانی موجود | `data/settings.json` → `https://www.psm-valve.com` نوشته شده. قبل از انتشار یکی را انتخاب و همهجا یکسان کن (توصیه: همان `psmvalve.com` بدون `www` و ریدایرکت ۳۰۱ از `www`). |
+| ✅ دامنهٔ یکسانشده | همهجا `https://www.psmvalve.com`: `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` و `data/settings.json` → `website`. ریدایرکت ۳۰۱ از بدون-`www` به `www` در کانفیگ Nginx انجام میشود. |
 
 ---
 
@@ -228,7 +228,7 @@ pm2 start ecosystem.config.js
 pm2 save                                   # ذخیرهٔ لیست پروسهها
 pm2 startup systemd -u $USER --hp $HOME    # خروجی دستور را کپی و با sudo اجرا کن
 pm2 logs psm-valve --lines 50              # بررسی لاگ
-curl -I http://127.0.0.1:3000/fa           # باید 200 بدهد
+curl -I http://127.0.0.1:$(cat /var/www/psm-valve/.app-port)/fa           # باید 200 بدهد
 ```
 
 > ⚠️ در `ecosystem.config.js` مقدار `instances` را **۱** نگه دار؛ چون محدودسازی نرخ ورود/فرم در حافظهٔ پروسه است و دادهها روی فایلسیستم نوشته میشوند.
@@ -263,7 +263,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 | مورد | توضیح |
 | --- | --- |
-| پروکسی به `127.0.0.1:3000` | با هدرهای `X-Real-IP` و `X-Forwarded-For` → لازمهٔ کار درست محدودسازی نرخ ورود |
+| پروکسی به `127.0.0.1:<port>` (پورت از `.app-port`) | با هدرهای `X-Real-IP` و `X-Forwarded-For` → لازمهٔ کار درست محدودسازی نرخ ورود |
 | سرو مستقیم `/uploads/`، `/images/`، `/documents/`، `/hdri/` | فایل سنگین از Node عبور نمیکند (سرعت و RAM بهتر) |
 | پروکسی `robots.txt`، `sitemap.xml`، `manifest.webmanifest`، `icon.svg` | اینها **داینامیک** هستند (`app/robots.js`، `app/sitemap.js`، `app/manifest.js`، `app/icon.svg`) و باید از Node بیایند |
 | `client_max_body_size 60m` | API آپلود حداکثر ۵۰MB میپذیرد |
@@ -404,12 +404,12 @@ git push origin main
 
 ## ۸) وظایف پس از انتشار (چند ساعت کار)
 
-1. **تصویر OG**: فایل `1200×630` را در `public/og/og-default.jpg` بگذار (اکنون `app/[locale]/layout.js` به این مسیر اشاره میکند و فایل وجود ندارد → پیشنمایش شبکههای اجتماعی بدون عکس).
-2. **لوگو**: `data/branding.json` خالی است؛ لوگو را در `public/logo/` بگذار و مسیر را در پنل (تنظیمات ← برندینگ) تنظیم کن.
-3. **دامنه**: یک دامنه را canonical کن (`psmvalve.com`) و `data/settings.json` را هم با آن یکسان کن (`www.psm-valve.com` فعلی ناهمخوان است).
+1. **تصویر OG**: ✅ فایل `public/og/og-default.jpg` موجود است و `app/[locale]/layout.js` به همین مسیر اشاره میکند؛ فقط اگر برند/شعار عوض شد تصویر ۱۲۰۰×۶۳۰ را بهروز کن.
+2. **لوگو**: ✅ `public/logo/logo-main.png` · `logo-icon.png` موجود و در `data/branding.json` ثبت شدهاند؛ در پنل (تنظیمات ← برندینگ) فقط رنگها و لینکهای شبکههای اجتماعی خالی را تکمیل کن.
+3. **دامنه**: ✅ `https://www.psmvalve.com` در کد و `data/settings.json` یکسان شده است؛ باقیمانده فقط ثبت دامنه در Search Console و بازبینی فیلد سایت در پنل (تنظیمات ← شرکت) است.
 4. **Google Search Console**: دامنه را ثبت کن و `https://www.psmvalve.com/sitemap.xml` را ثبت کن.
 5. **Analytics**: اتصال GA4 (فعلاً `lib/analytics.js` رویدادها را فقط log میکند).
-6. **ایمیل فرم تماس**: پیامها فقط در `data/messages.json` ذخیره میشوند؛ SMTP/وبهوک اضافه کن تا لیدها از دست نروند.
+6. **ایمیل فرم تماس**: ✅ ارسال با `lib/mailer.js` (nodemailer) پیاده شده است؛ فقط `SMTP_*` و `CONTACT_TO` را در `.env.production` بگذار، سپس `su - psm -c "cd /var/www/psm-valve && pm2 reload ecosystem.config.js --update-env"` و با `node scripts/test-email.mjs` تست کن. اگر تنظیم نشود، پیامها در `data/messages.json` و پنل ذخیره میشوند و اعلان ایمیلی نمیرود.
 7. **محتوای نهایی**: PDF دیتاشیت محصولات، تأیید فنی مشخصات (`lib/products.js` هشدار «تأییدنشده» دارد)، متنهای چهار زبان.
 8. **مانیتورینگ**: یک سرویس uptime (مثل UptimeRobot) روی `https://www.psmvalve.com/fa` + هشدار دیسک پر.
 9. **تست بازیابی بکاپ**: یکبار روی سرور تست، بکاپ را برگردان و مطمئن شو سایت بالا میآید.
@@ -422,7 +422,7 @@ git push origin main
 | --- | --- |
 | «ورود در سرور پیکربندی نشده است» | `JWT_SECRET` یا رمز مدیر تنظیم نشده. `.env.production` را کامل کن و `pm2 reload psm-valve --update-env`. |
 | ورود با رمز درست رد میشود | `ADMIN_PASSWORD` کمتر از ۱۲ کاراکتر است یا `ADMIN_PASSWORD_HASH` اشتباه تولید شده. دوباره هش بساز. |
-| `502 Bad Gateway` | پروسهٔ Node بالا نیست: `pm2 status` → `pm2 logs psm-valve`. اگر پورت اشغال است، `ss -tlnp \| grep 3000`. |
+| `502 Bad Gateway` | پروسهٔ Node بالا نیست: `pm2 status` → `pm2 logs psm-valve`. اگر پورت اشغال است، `ss -tlnp \| grep "$(cat /var/www/psm-valve/.app-port)"`. |
 | ۴۰۴ برای تصاویر اسلایدر/کاتالوگ | `public/uploads/` روی سرور منتقل نشده → گام ۷ را اجرا کن. |
 | تصویر اول اسلایدر خالی است | ورودی اسلایدر به دامنهٔ وردپرس قدیمی اشاره میکند (`data/sliders.json`) — تصویر را دانلود و آپلود کن. |
 | بیلد با `Killed` قطع میشود | کمبود RAM → سواپ یا `NODE_OPTIONS=--max-old-space-size=2048`. |

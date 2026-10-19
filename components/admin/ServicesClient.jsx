@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import UploadDropzone from "./UploadDropzone";
 
 const LANGS = [
   { code: "fa", label: "فارسی" },
@@ -27,6 +28,7 @@ function blank() {
   return {
     slug: "service-" + Date.now().toString(36),
     icon: "Cog",
+    image: "",
     name: { fa: "", en: "", ar: "", ru: "" },
     short: { fa: "", en: "", ar: "", ru: "" },
     active: true,
@@ -61,6 +63,12 @@ export default function ServicesClient({ initial }) {
     const s = blank();
     setItems(items.concat([s]));
     setEditing(s.slug);
+  }
+
+  function clone(s) {
+    const c = Object.assign({}, s, { slug: "service-" + Date.now().toString(36), name: Object.assign({}, s.name) });
+    setItems(items.concat([c]));
+    setEditing(c.slug);
   }
 
   function remove(id) {
@@ -110,6 +118,7 @@ export default function ServicesClient({ initial }) {
             <div key={s.slug} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
               <div className={"card-item" + (isFeatured ? " card-item-featured" : "")}>
                 <div className="card-item-head">
+                  {s.image && <img src={s.image} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, marginLeft: 8 }} />}
                   <div className="card-item-icon" style={{
                     background: isFeatured
                       ? "linear-gradient(135deg, #E0A81A, #B8850A)"
@@ -127,6 +136,9 @@ export default function ServicesClient({ initial }) {
                   <ToggleBtn active={s.active !== false} onClick={function() { toggle(s.slug); }} />
                   <div style={{ display: "flex", gap: 6 }}>
                     <EditBtn onClick={function() { setEditing(isEditing ? null : s.slug); }} />
+                    <button type="button" onClick={function() { clone(s); }} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                      <Icon name="plus" size={14} />
+                    </button>
                     <DeleteBtn onClick={function() { remove(s.slug); }} />
                   </div>
                 </div>
@@ -209,6 +221,14 @@ function ServiceForm({ service, update, onSave, onCancel }) {
           );
         })}
       </div>
+
+      <UploadDropzone
+        type="images"
+        value={service.image || ""}
+        onChange={function(url) { update(service.slug, { image: url }); }}
+        label="تصویر خدمت"
+        accept="image/*"
+      />
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} />

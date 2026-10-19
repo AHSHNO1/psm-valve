@@ -1,5 +1,6 @@
 import { getProducts } from "@/lib/product-store";
-import { getCvTables } from "@/lib/valve-cv";
+import { buildSizingCatalog } from "@/lib/valve-catalog";
+import { getCvTables, getCvCatalogSummary } from "@/lib/valve-cv";
 import CvTablesClient from "@/components/admin/CvTablesClient";
 
 export const dynamic = "force-dynamic";
@@ -10,15 +11,22 @@ export const metadata = {
 };
 
 export default function CvTablesPage() {
-  const products = getProducts().map((product) => ({
+  const all = getProducts();
+
+  // همان شرطی که صفحهٔ سایزینگ استفاده می‌کند: سری‌هایی که بازهٔ سایز خوانا دارند
+  const sizingSeries = new Set(buildSizingCatalog(all).map((product) => product.series));
+
+  const products = all.map((product) => ({
     slug: product.slug,
     series: product.series,
     name: product.name,
     categoryId: product.categoryId,
-    size: product.spec && product.spec.size
+    sizeText: product.spec && product.spec.size,
+    inSizing: sizingSeries.has(product.series)
   }));
 
   const tables = getCvTables();
+  const catalog = getCvCatalogSummary();
 
-  return <CvTablesClient products={products} initial={tables.series} />;
+  return <CvTablesClient products={products} initial={tables.series} catalog={catalog} />;
 }
