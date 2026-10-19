@@ -1,0 +1,44 @@
+# ============================================================
+# PSM VALVE — فایلهای نادیدهگرفتهشده در بیلد ایمیج Docker
+# نکته: public/uploads/ عمداً نادیده گرفته نمیشود تا داراییهای سایت
+#       در اولین اجرا داخل volume بازگردانی شوند.
+# ============================================================
+
+# وابستگیها و خروجی بیلد (داخل ایمیج از نو ساخته میشوند)
+node_modules
+.next
+out
+build
+dist
+
+# گیت و محیط
+.git
+.gitignore
+.github
+.app-port
+
+# ⚠️ اسرار هرگز داخل ایمیج نمیروند (با env_file/docker compose داده میشوند)
+.env
+.env.*
+!.env.example
+
+# دادهٔ حجیم/موقت
+logs
+*.log
+archive/
+tmp-*
+data/*.sqlite
+data/*.sqlite-*
+data/*.backup
+data/*.backup-*
+data/*.tmp
+
+# داراییهای بومی/مستندات
+*.xlsx
+docs/
+tests/
+__pycache__/
+*.pyc
+*.orig
+*.backup.js
+*.backup-*.js

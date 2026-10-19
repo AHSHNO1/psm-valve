@@ -20,6 +20,12 @@ APP_NAME="${APP_NAME:-psm-valve}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/psm-valve}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
+# پورت اپ: اولویت با متغیر محیطی APP_PORT، سپس فایل .app-port، در نهایت ۳۰۰۰
+if [ -z "${APP_PORT:-}" ] && [ -f "$APP_DIR/.app-port" ]; then
+  APP_PORT="$(tr -dc '0-9' < "$APP_DIR/.app-port" | head -c 5)"
+fi
+APP_PORT="${APP_PORT:-3000}"
+
 cd "$APP_DIR"
 mkdir -p logs "$BACKUP_DIR"
 
@@ -62,7 +68,7 @@ pm2 save
 
 echo "[deploy] بررسی سلامت سرویس"
 sleep 3
-if curl -fsS -o /dev/null -w "  /fa → HTTP %{http_code}\n" http://127.0.0.1:3000/fa; then
+if curl -fsS -o /dev/null -w "  /fa → HTTP %{http_code}\n" http://127.0.0.1:$APP_PORT/fa; then
   echo "[deploy] ✅ موفق — نسخهٔ فعال: $(git log -1 --oneline)"
 else
   echo "[deploy] ❌ هشدار: health check ناموفق بود. لاگها: pm2 logs $APP_NAME --lines 50"

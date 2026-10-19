@@ -7,7 +7,7 @@
 
 | لایه | فناوری |
 | --- | --- |
-| فریمورک | Next.js 14.2.5 (App Router) + React 18 |
+| فریمورک | Next.js 14.2.35 (App Router) + React 18 |
 | استایل | Tailwind CSS 3.4 + CSS سراسری (تم Metro) |
 | انیمیشن/سهبعدی | Framer Motion، Three.js + @react-three/fiber/drei |
 | نمودار | ApexCharts / react-apexcharts |
@@ -71,7 +71,35 @@ deploy/               اسکریپتها و کانفیگ انتشار
 - از بخش «متن‌های سایت» می‌توان همهٔ رشته‌های متنی `data/content.json` را در چهار زبان ویرایش کرد؛ بخش «ترجمه‌های سایت» نیز واژه‌نامه‌های رابط را به‌صورت جست‌وجوپذیر مدیریت می‌کند.
 - تغییر رمز از بخش «امنیت» انجام می‌شود. ترجمه‌های ذخیره‌شده در `data/translations.json` قرار می‌گیرند؛ برای ماندگاری محتوا، پوشهٔ `data` باید روی فضای پایدار باشد و در بکاپ‌ها قرار گیرد.
 
+## ابزارهای داده و کیفیت (مهندسی)
+
+| دستور | کار |
+| --- | --- |
+| `npm test` | تستهای رگرسیون (`node --test`) — شامل کیفیت دادهٔ جدول Cv کاتالوگ |
+| `npm run cv:inspect` | بازبینی `VALVE_CV.xlsx` پیش از ورود (`--summary --validate --analyse`) |
+| `npm run cv:import` | ورود اکسل کاتالوگ به `data/valve-cv-catalog.json` (اتمیک + بکاپ + ثبت اصلاحها) |
+| `npm run cv:coverage` | پوشش جدول Cv روی محصولات واقعی + نمونهٔ پیشنهاد سایزینگ |
+| `npm run benchmark:sizing` | بنچمارک موتور سایزینگ |
+| `npm run audit:responsive` | بازبینی سرریز افقی/ریسپانسیو با CDP (Chrome روی پورت ۹۲۲۲) |
+
+اسکریپتهای پایتون فقط از کتابخانهٔ استاندارد استفاده میکنند؛ نصب بستهٔ اضافی لازم نیست.
+راهنمای کامل جدول Cv و دادهٔ مرجع: [`docs/CV-TABLES.md`](./docs/CV-TABLES.md)
+راهنمای سیستم واحدها (متریک/اینچی)، دبی حجمی/جرمی و جرم مولکولی: بخش ۱۱ در [`PROJECT-STATUS.md`](./PROJECT-STATUS.md)
+راهنمای بخش «فرصت همکاری» صفحهٔ تماس (متن دیکشنری + بازنویسی از پنل): بخش ۱۲ در [`PROJECT-STATUS.md`](./PROJECT-STATUS.md)
+
 ## انتشار
 
-راهنمای کامل گامبهگام (مشخصات سرور، نصب، Nginx، SSL، بکاپ، امنیت):
+مسیرهای آماده (انتخاب یکی): راهنمای یکجا 👉 [`deploy/README.md`](./deploy/README.md)
+
+| مسیر | دستور اصلی |
+| --- | --- |
+| **VPS تازه (توصیهشده)** — نصب Node/PM2/Nginx/SSL/بکاپ/فایروال با یک دستور | `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com` |
+| همان کار، از ویندوز | `.\deploy\install-remote.ps1 -Server <IP> -Domain psmvalve.com` |
+| **Docker** | `bash deploy/docker.sh` |
+| **cPanel/CloudLinux** (Node.js Selector) | [`deploy/cpanel/README.md`](./deploy/cpanel/README.md) |
+| انتشار نسخهٔ جدید روی نصب موجود | `bash deploy/update.sh` |
+
+پیشبررسی قبل از انتشار: `node scripts/preflight.mjs`
+
+راهنمای کامل دستی گامبهگام (مشخصات سرور، Nginx، SSL، بکاپ، امنیت):
 👉 [`DEPLOY.md`](./DEPLOY.md)

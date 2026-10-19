@@ -28,6 +28,7 @@
 | هدرهای امنیتی | ✅ |
 | آیکون PWA و OG | ✅ |
 | اسکریپت‌های استقرار/بکاپ | ✅ `deploy/*` |
+| نصب خودکار سرور (یکدستوری) | ✅ `deploy/install.sh` · `deploy/docker.sh` · `deploy/cpanel/` |
 | پیش‌بررسی خودکار | ✅ `node scripts/preflight.mjs` |
 
 ## ۲) پنج کار اجباری قبل از انتشار
@@ -109,7 +110,7 @@ node scripts/test-email.mjs
 
 ### ❌ نامناسب
 - **Vercel / Netlify / serverless**: فایل‌سیستم فقط‌خواندنی است؛ تغییرات پنل ادمین ذخیره نمی‌شود.
-- هاست اشتراکی cPanel بدون SSH/Node.
+- هاست اشتراکی cPanel بدون SSH/Node (اگر cPanel شما **Node.js Selector** دارد، مسیر [`deploy/cpanel/README.md`](deploy/cpanel/README.md) کار میکند).
 
 > PM2 باید **تک‌نسخه** بماند (`instances: 1`) چون محدودسازی نرخ و نوشتن داده در همان پروسه است.
 
@@ -133,6 +134,9 @@ sudo certbot --nginx -d www.psmvalve.com -d psmvalve.com
 ## ۵) استقرار گام‌به‌گام
 
 > راهنمای کامل با جزئیات: [DEPLOY.md](DEPLOY.md) · کانفیگ آماده: `deploy/nginx-psmvalve.conf`
+> ⏩ سریعترین راه: `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
+> که گامهای ۱ تا ۸ زیر را خودکار انجام میدهد. از ویندوز: `.\deploy\install-remote.ps1 -Server <IP> -Domain psmvalve.com`
+> یا با Docker: `bash deploy/docker.sh` — مقایسهٔ مسیرها: [deploy/README.md](deploy/README.md)
 
 ### گام ۱ — سرور
 ```bash

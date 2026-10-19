@@ -3,6 +3,12 @@
 > آخرین بهروزرسانی: ۲۰۲۶-۱۰-۱۶ · نسخهٔ اپ: `package.json` → Next.js 14.2.35
 > این فایل مرجع کامل «از صفر تا آنلاین» است. برای شروع سریع توسعه، `README.md` را ببین.
 > **خلاصهٔ انتشار و چک‌لیست:** [`GO-LIVE.md`](GO-LIVE.md) · پیش‌بررسی: `node scripts/preflight.mjs`
+> 🚀 **مسیر خودکار (توصیهشده):** `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
+> همین یک دستور، همهٔ گامهای بخش ۳ و ۴ را انجام میدهد: نصب Node 20 / PM2 / Nginx / Certbot، ساخت کاربر اجرا
+> و سواپ، دریافت کد، `npm ci`، ساخت `.env.production` با اسرار تصادفی، تنظیم رمز پنل (هش bcrypt)، بیلد،
+> اجرای PM2 با startup، کانفیگ Nginx و SSL، cron بکاپ روزانه، فایروال و بررسی سلامت.
+> گزینههای دیگر: Docker → `bash deploy/docker.sh` · cPanel/CloudLinux → [`deploy/cpanel/README.md`](deploy/cpanel/README.md)
+> مقایسهٔ همهٔ مسیرها و چکلیست: [`deploy/README.md`](deploy/README.md)
 
 ---
 
@@ -10,7 +16,7 @@
 
 | موضوع | مقدار / نیاز |
 | --- | --- |
-| نوع اپلیکیشن | Next.js 14 App Router — نیازمند **پروسهٔ Node** (`next start`). روی هاست اشتراکی cPanel/PHP اجرا نمیشود. |
+| نوع اپلیکیشن | Next.js 14 App Router — نیازمند **پروسهٔ Node** (`next start`) و دیسک پایدار. روی هاست اشتراکی فقط-PHP اجرا نمیشود؛ روی cPanel با **Node.js Selector** ممکن است (راهنما: [`deploy/cpanel/README.md`](./deploy/cpanel/README.md)). |
 | پورت پیشفرض | `3000` (قابل تغییر با `PORT`) |
 | نسخهٔ Node | **۲۰ LTS** یا ۲۲ LTS (حداقل ۱۸.۱۷) |
 | ذخیرهسازی داده | **فایلسیستم پایدار**: `data/*.json`, پایگاه‌دادهٔ `data/psm-valve.sqlite` و `public/uploads/**` |
@@ -85,6 +91,9 @@
 اسکریپت آمادهٔ راهاندازی سرور تازه: [`deploy/bootstrap-server.sh`](./deploy/bootstrap-server.sh)
 
 ## ۳) راهاندازی سرور — گامبهگام
+
+> ⏩ **میخواهی این بخش خودکار انجام شود؟** `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
+> (گامهای زیر همان کارهایی است که `install.sh` انجام میدهد؛ برای درک/بازرسی دستی این بخش را بخوان.)
 
 > همهٔ دستورها روی Ubuntu و با کاربر `psm` (نه root) اجرا میشوند، مگر جایی که `sudo` آمده.
 
@@ -226,6 +235,9 @@ curl -I http://127.0.0.1:3000/fa           # باید 200 بدهد
 
 ### گام ۹ — بهروزرسانیهای بعدی (Deploy مجدد)
 
+> ⏩ سادهترین راه: `su - psm -c 'bash /var/www/psm-valve/deploy/update.sh'`
+> (پیشبررسی → بکاپ دادهٔ زنده → دریافت کد → `npm ci` → بیلد → `pm2 reload` → `npm test` → بررسی سلامت)
+
 ```bash
 /var/www/psm-valve/deploy/deploy.sh
 ```
@@ -235,6 +247,8 @@ curl -I http://127.0.0.1:3000/fa           # باید 200 بدهد
 بعد از هر انتشار، چک کن: `git log -1 --oneline`، `pm2 status`، `curl -I https://www.psmvalve.com/fa`.
 
 ## ۴) Nginx — ریورسپروکسی، SSL و کارایی
+
+> ⏩ `deploy/install.sh` این بخش (بههمراه SSL و فایروال) را خودکار انجام میدهد؛ اگر خودکار نصب کردی، این بخش فقط برای بازبینی است.
 
 فایل آماده: [`deploy/nginx-psmvalve.conf`](./deploy/nginx-psmvalve.conf)
 

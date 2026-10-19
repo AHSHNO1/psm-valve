@@ -45,6 +45,7 @@ fi
 
 # ۴) پیکربندیها
 [ -f ecosystem.config.js ] && cp -a ecosystem.config.js "$BACKUP_DIR/ecosystem.config.js-$STAMP"
+[ -f .app-port ] && cp -a .app-port "$BACKUP_DIR/app-port-$STAMP"
 if [ -f .env.production ]; then
   cp -a .env.production "$BACKUP_DIR/env-production-$STAMP"
   chmod 600 "$BACKUP_DIR/env-production-$STAMP"
@@ -52,7 +53,7 @@ fi
 
 # ۴) پاکسازی نسخههای قدیمی
 find "$BACKUP_DIR" -type f \( -name "data-*.tar.gz" -o -name "uploads-*.tar.gz" -o -name "products-*.sqlite" \) -mtime +"$KEEP_DAYS" -delete
-find "$BACKUP_DIR" -type f \( -name "products.js-*" -o -name "products-seed-*.js" -o -name "ecosystem.config.js-*" -o -name "env-production-*" \) -mtime +"$KEEP_DAYS" -delete
+find "$BACKUP_DIR" -type f \( -name "products.js-*" -o -name "products-seed-*.js" -o -name "ecosystem.config.js-*" -o -name "env-production-*" -o -name "app-port-*" \) -mtime +"$KEEP_DAYS" -delete
 
 echo "[backup] $STAMP — پایان. محتوای پوشهٔ بکاپ:"
 du -sh "$BACKUP_DIR"

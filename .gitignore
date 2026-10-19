@@ -53,6 +53,9 @@ archive/
 logs/
 .pm2/
 
+# Port override written by deploy/install.sh (single source of truth for the app port)
+/.app-port
+
 # Local backups / scratch files
 *.backup.js
 *.backup-*.js
@@ -65,3 +68,10 @@ public/uploads/*
 # Cache
 .cache/
 *.tsbuildinfo
+
+# Python artifacts (scripts/*.py)
+__pycache__/
+*.pyc
+
+# Local scratch files
+/tmp-*

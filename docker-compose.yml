@@ -1,0 +1,53 @@
+# ============================================================
+# PSM VALVE — اجرای تولید با Docker Compose (یک دستور)
+#
+#   cp .env.example .env.production     # یا: bash deploy/make-env.sh
+#   docker compose up -d --build        # یا: bash deploy/docker.sh
+#
+# ⚠️ نکات:
+#   • تعداد replica باید همیشه ۱ بماند: محدودسازی نرخ ورود/فرم در حافظهٔ
+#     همین پروسه انجام میشود و دادهٔ سایت روی فایلسیستم است.
+#   • secrets از .env.production خوانده میشوند و داخل ایمیج نمیروند.
+#   • پورت را فقط اگر پشت Nginx/پراکسی هستید به 127.0.0.1 محدود کنید:
+#       ports: ["127.0.0.1:3000:3000"]
+#     (Docker بدون توجه به ufw پورت را باز میکند.)
+# ============================================================
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: psm-valve:latest
+    container_name: psm-valve
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      PSM_DATA_DIR: /app/data
+      PSM_DATABASE_PATH: /app/data/psm-valve.sqlite
+      PSM_UPLOAD_DIR: /app/public/uploads
+      TZ: Asia/Tehran
+    ports:
+      - "3000:3000"
+    volumes:
+      # دادهٔ زندهٔ سایت (JSON + SQLite) و داراییهای آپلودشده — پایدار
+      - ./data:/app/data
+      - ./public/uploads:/app/public/uploads
+      # خروجی بیلد Next (تا با هر ریاستارت، بیلد دوباره اجرا نشود)
+      - psm-next:/app/.next
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:3000/fa"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 600s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  psm-next:
