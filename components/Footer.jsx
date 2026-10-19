@@ -190,7 +190,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
                 {[...new Set([company.phone.office, company.phone.factory].filter(Boolean))].map((phone, index) => (
                   <span key={phone}>
                     {index > 0 && <span className="fc-sep">·</span>}
-                    <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link" style={{ direction: "ltr" }}>{phone}</a>
+                    <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link fc-num" dir="ltr">{phone}</a>
                   </span>
                 ))}
               </div>
@@ -204,7 +204,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
                 {company.phone.mobile.filter(Boolean).map((phone, index) => (
                   <span key={phone}>
                     {index > 0 && <span className="fc-sep">·</span>}
-                    <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link" style={{ direction: "ltr" }}>{phone}</a>
+                    <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link fc-num" dir="ltr">{phone}</a>
                   </span>
                 ))}
               </div>
@@ -218,7 +218,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
                 {[company.email.primary, company.email.secondary].filter(Boolean).map((email, index) => (
                   <span key={email}>
                     {index > 0 && <span className="fc-sep">·</span>}
-                    <a href={"mailto:" + email} className="fc-link" style={{ direction: "ltr" }}>{email}</a>
+                    <a href={"mailto:" + email} className="fc-link fc-num" dir="ltr">{email}</a>
                   </span>
                 ))}
               </div>
@@ -229,7 +229,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
               <Printer size={13} className="fc-icon" />
               <div className="fc-text fc-inline">
                 <span className="fc-label">{L.fax}:</span>
-                <span className="fc-link" style={{ direction: "ltr" }}>
+                <span className="fc-link fc-num" dir="ltr">
                   {company.fax.office}
                 </span>
               </div>
@@ -311,7 +311,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
             <span className="footer-bottom-sep">|</span>
             {L.rights} ©{new Date().getFullYear()}
           </div>
-          <a href={"mailto:" + L.itEmail} className="footer-bottom-email">
+          <a href={"mailto:" + L.itEmail} className="footer-bottom-email" dir="ltr">
             <Mail size={12} />
             <span>{L.itEmail}</span>
           </a>
@@ -531,6 +531,15 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
         }
         .fc-link:hover {
           color: var(--gold);
+        }
+        /* شماره تماس، همراه، فکس و ایمیل
+           در متن راست‌به‌چپ باید جهت‌شان ایزوله شود؛ وگرنه «+» ابتدای شماره
+           و ترتیب ارقام/جداکننده‌ها در حالت فارسی به‌هم می‌ریزد. */
+        .fc-num {
+          display: inline-block;
+          direction: ltr;
+          unicode-bidi: isolate;
+          white-space: nowrap;
         }
         .fc-sep {
           color: var(--text-muted);
