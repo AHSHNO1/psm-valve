@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseSizeRange, buildSizingCatalog, suggestValves, selectCatalogValve, countCvSeries } from "../lib/valve-catalog.js";
+import { parseSizeRange, buildSizingCatalog, suggestValves, selectCatalogValve, countCvSeries, curveCvAt, curveOpening } from "../lib/valve-catalog.js";
 
 test("parseSizeRange reads catalogue ranges in inches", () => {
   assert.deepEqual(parseSizeRange({ en: "2 – 24 inch" }), { min: 2, max: 24 });
@@ -78,4 +78,129 @@ test("selectCatalogValve keeps the design opening near 80%", () => {
   const tight = selectCatalogValve(89, catalog, { "51000": { sizes: [{ dn: "DN80", cv: 90 }] } });
   assert.equal(tight.dn, "DN80");
   assert.ok(tight.openingPercent > 80);
+});
+// منحنی واقعی سری ۵۱۰۰۰ برای سایز ۸ اینچ (Cv نامی ۳۶۰، مشخصهٔ درصدی)
+const GLOBE_51000_8INN_EQUAL = [9, 21, 39, 60, 87, 135, 200, 269, 326, 360];
+const GLOBE_51000_8INN_LINEAR = [36, 72, 108, 144, 180, 216, 252, 288, 324, 360];
+
+function globeCatalog() {
+  return buildSizingCatalog([
+    { slug: "globe", series: "51000", name: { en: "Globe" }, categoryId: "control-valves", spec: { size: { en: "2 – 24 inch" } } }
+  ]);
+}
+
+test("curveCvAt interpolates the ten catalogue points", () => {
+  assert.equal(curveCvAt(GLOBE_51000_8INN_EQUAL, 0), 0);
+  assert.equal(curveCvAt(GLOBE_51000_8INN_EQUAL, 10), 9);
+  assert.equal(curveCvAt(GLOBE_51000_8INN_EQUAL, 50), 87);
+  assert.equal(curveCvAt(GLOBE_51000_8INN_EQUAL, 80), 269);
+  assert.equal(curveCvAt(GLOBE_51000_8INN_EQUAL, 100), 360);
+  assert.equal(curveCvAt(GLOBE_51000_8INN_EQUAL, 15), 15);
+  assert.equal(curveCvAt([1, 2], 50), null);
+});
+
+test("curveOpening inverts the curve and extrapolates beyond the ends", () => {
+  assert.equal(curveOpening(GLOBE_51000_8INN_EQUAL, 9), 10);
+  assert.equal(curveOpening(GLOBE_51000_8INN_EQUAL, 87), 50);
+  assert.equal(curveOpening(GLOBE_51000_8INN_EQUAL, 360), 100);
+  assert.equal(curveOpening(GLOBE_51000_8INN_EQUAL, 720), 200);
+  assert.equal(curveOpening(GLOBE_51000_8INN_EQUAL, 0), null);
+  assert.equal(curveOpening(null, 10), null);
+});
+
+test("catalogue selection reports the true opening from the curve, not the linear ratio", () => {
+  const tables = {
+    "51000": {
+      sizes: [{
+        dn: "DN200",
+        nps: 8,
+        cv: 360,
+        source: "catalog",
+        trims: [{ cv: 360, characteristic: "equal", curve: GLOBE_51000_8INN_EQUAL }]
+      }]
+    }
+  };
+
+  // ۱۸۰ ÷ ۳۶۰ = ۵۰٪ با فرض خطی، ولی منحنی درصدی واقعی ۶۷٪ می‌دهد.
+  const pick = selectCatalogValve(180, globeCatalog(), tables);
+  assert.equal(pick.dn, "DN200");
+  assert.equal(pick.curveBased, true);
+  assert.equal(pick.characteristic, "equal");
+  assert.equal(pick.openingPercent, 67);
+  assert.equal(pick.withinMargin, true);
+  assert.equal(pick.source, "catalog");
+
+  const linear = selectCatalogValve(180, globeCatalog(), {
+    "51000": { sizes: [{ dn: "DN200", cv: 360, trims: [{ cv: 360, characteristic: "linear", curve: GLOBE_51000_8INN_LINEAR }] }] }
+  });
+  assert.equal(linear.openingPercent, 50);
+});
+
+test("design margin uses the curve capacity at 80% opening", () => {
+  const tables = {
+    "51000": {
+      sizes: [{
+        dn: "DN200",
+        cv: 360,
+        trims: [
+          { cv: 360, characteristic: "equal", curve: GLOBE_51000_8INN_EQUAL },
+          { cv: 500, characteristic: "linear", curve: null }
+        ]
+      }]
+    }
+  };
+
+  // ۳۵۰ > ظرفیت منحنی در ۸۰٪ (=۲۶۹) پس تریم خطی ۵۰۰ انتخاب می‌شود.
+  const pick = selectCatalogValve(350, globeCatalog(), tables);
+  assert.equal(pick.cv, 500);
+  assert.equal(pick.withinMargin, true);
+
+  // اگر هیچ تریمی از این حاشیه رد نشود، تنگ‌ترین تناسب با هشدار بازشدگی برمی‌گردد.
+  const tight = selectCatalogValve(340, globeCatalog(), {
+    "51000": { sizes: [{ dn: "DN200", cv: 360, trims: [{ cv: 360, characteristic: "equal", curve: GLOBE_51000_8INN_EQUAL }] }] }
+  });
+  assert.equal(tight.openingPercent, 94);
+  assert.equal(tight.withinMargin, false);
+});
+
+test("equal percentage wins a tie against linear at the same rated Cv", () => {
+  const tables = {
+    "51000": {
+      sizes: [{
+        dn: "DN200",
+        cv: 360,
+        trims: [
+          { cv: 360, characteristic: "linear", curve: GLOBE_51000_8INN_LINEAR },
+          { cv: 360, characteristic: "equal", curve: GLOBE_51000_8INN_EQUAL }
+        ]
+      }]
+    }
+  };
+
+  const pick = selectCatalogValve(180, globeCatalog(), tables);
+  assert.equal(pick.characteristic, "equal");
+
+  // اما کوچک‌ترین Cv نامی همیشه مقدم است (تنگ‌ترین تناسب).
+  const smallerLinear = selectCatalogValve(180, globeCatalog(), {
+    "51000": {
+      sizes: [{
+        dn: "DN200",
+        cv: 370,
+        trims: [
+          { cv: 370, characteristic: "linear", curve: null },
+          { cv: 400, characteristic: "equal", curve: null }
+        ]
+      }]
+    }
+  });
+  assert.equal(smallerLinear.cv, 370);
+  assert.equal(smallerLinear.characteristic, "linear");
+});
+
+test("legacy admin tables still work and accept both table shapes", () => {
+  const legacy = { "51000": { sizes: [{ dn: "DN50", cv: 45 }, { dn: "DN80", cv: 90 }] } };
+
+  assert.equal(selectCatalogValve(35, globeCatalog(), legacy).dn, "DN50");
+  assert.equal(selectCatalogValve(35, globeCatalog(), { series: legacy }).dn, "DN50");
+  assert.equal(selectCatalogValve(35, globeCatalog(), { series: {} }), null);
 });

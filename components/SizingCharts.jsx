@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   CheckCircle2, AlertTriangle, TrendingUp, Gauge, Target, Zap, Activity, BookOpen, Star, Award
 } from "lucide-react";
+import { velocityFromSI } from "@/lib/unit-system";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -150,7 +151,7 @@ export function ValveCharacteristicChart({ result, form, locale = "fa" }) {
   );
 }
 
-export function TipsAndStandards({ result, form, locale = "fa" }) {
+export function TipsAndStandards({ result, form, units, locale = "fa" }) {
   const [tab, setTab] = useState("tips");
 
   const tips = useMemo(() => {
@@ -185,11 +186,14 @@ export function TipsAndStandards({ result, form, locale = "fa" }) {
         });
       }
     }
+    // سرعت موتور همیشه m/s است؛ برای نمایش در سیستم اینچی به ft/s تبدیل میشود
+    const velocityUnit = (units && units.velocity) || "m/s";
+    const velocityValue = velocityFromSI(result.velocity, velocityUnit);
     if (result.velocity > 5) {
       t.push({
         icon: Zap, color: "#F59E0B",
         title: locale === "fa" ? "سرعت بالا" : "High Velocity",
-        desc: locale === "fa" ? `سرعت ${result.velocity} m/s — سایز بزرگتر توصیه می‌شود.` : `Velocity ${result.velocity} m/s — larger size.`
+        desc: locale === "fa" ? `سرعت ${velocityValue} ${velocityUnit} — سایز بزرگتر توصیه می‌شود.` : `Velocity ${velocityValue} ${velocityUnit} — larger size.`
       });
     }
     if (result.noise > 85) {
@@ -554,7 +558,7 @@ export function AlternativeSizes({ result, locale = "fa" }) {
   );
 }
 
-export function InstalledChart({ result, form, locale = "fa" }) {
+export function InstalledChart({ result, form, units, locale = "fa" }) {
   const isDark = useChartTheme();
   const gridColor = isDark ? "rgba(192, 192, 192, 0.12)" : "#E5E7EB";
   const labelColor = isDark ? "#8A929E" : "#6B7280";
@@ -602,7 +606,7 @@ export function InstalledChart({ result, form, locale = "fa" }) {
         stroke: { curve: "smooth", width: [2.5, 1.5, 0], dashArray: [0, 5, 0] },
         markers: { size: [0, 0, 9], strokeWidth: [0, 0, 2], strokeColors: isDark ? "#1F2124" : "#FFFFFF" },
         xaxis: { title: { text: locale === "fa" ? "درصد بازشدگی (%)" : "Opening (%)", style: { color: labelColor } }, min: 0, max: 100, tickAmount: 10, labels: { style: { colors: labelColor } } },
-        yaxis: { title: { text: "Q (m³/h)", style: { color: labelColor } }, labels: { style: { colors: labelColor } } },
+        yaxis: { title: { text: `Q (${(units && units.flow) || "m³/h"})`, style: { color: labelColor } }, labels: { style: { colors: labelColor } } },
         colors: ["#E0A81A", isDark ? "#6B7280" : "#9CA3AF", "#E81123"],
         legend: { position: "top", fontSize: "11px", fontWeight: 700, labels: { colors: labelColor } },
         grid: { borderColor: gridColor, strokeDashArray: 3 },
@@ -623,7 +627,7 @@ export function InstalledChart({ result, form, locale = "fa" }) {
   );
 }
 
-export function DeltaPChart({ result, form, locale = "fa" }) {
+export function DeltaPChart({ result, form, units, locale = "fa" }) {
   const isDark = useChartTheme();
   const gridColor = isDark ? "rgba(192, 192, 192, 0.12)" : "#E5E7EB";
   const labelColor = isDark ? "#8A929E" : "#6B7280";
@@ -656,8 +660,8 @@ export function DeltaPChart({ result, form, locale = "fa" }) {
         theme: { mode: isDark ? "dark" : "light" },
         stroke: { curve: "smooth", width: [2.5, 0] },
         markers: { size: [0, 9], strokeWidth: [0, 2], strokeColors: isDark ? "#1F2124" : "#FFFFFF" },
-        xaxis: { title: { text: "ΔP (bar)", style: { color: labelColor } }, type: "numeric", labels: { style: { colors: labelColor } } },
-        yaxis: { title: { text: "Q (m³/h)", style: { color: labelColor } }, labels: { style: { colors: labelColor } } },
+        xaxis: { title: { text: `ΔP (${(units && units.pressure) || "bar"})`, style: { color: labelColor } }, type: "numeric", labels: { style: { colors: labelColor } } },
+        yaxis: { title: { text: `Q (${(units && units.flow) || "m³/h"})`, style: { color: labelColor } }, labels: { style: { colors: labelColor } } },
         colors: ["#0078D4", "#E81123"],
         annotations: {
           xaxis: [{

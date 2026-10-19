@@ -11,15 +11,44 @@ import {
 import { ValveCharacteristicChart } from "./SizingCharts";
 import { VALVE_SIZES } from "@/lib/sizing-advanced";
 import { generateSizingPDF } from "@/lib/pdf-generator";
+import { velocityFromSI } from "@/lib/unit-system";
 import { track } from "@/lib/analytics";
 
-export default function SizingReportModal({ isOpen, onClose, result, form, fluid, locale = "fa", selectedFluidName }) {
+// نام مشخصهٔ ذاتی کاتالوگ در چهار زبان (خروجی انتخاب شیر)
+const CATALOG_CHARACTERISTICS = {
+  fa: { equal: "درصدی (Equal%)", modified: "درصدی اصلاح‌شده", linear: "خطی (Linear)", quick: "بازشدگی سریع" },
+  en: { equal: "Equal %", modified: "Modified %", linear: "Linear", quick: "Quick opening" },
+  ar: { equal: "نسبة متساوية (Equal%)", modified: "نسبة معدلة", linear: "خطي (Linear)", quick: "فتح سريع" },
+  ru: { equal: "Равнопроцентная (Equal %)", modified: "Модифицированная", linear: "Линейная", quick: "Быстрооткрывающаяся" }
+};
+
+const MW_LABEL = {
+  fa: "جرم مولکولی (MW)",
+  en: "Molecular weight (MW)",
+  ar: "الوزن الجزيئي (MW)",
+  ru: "Молекулярная масса (MW)"
+};
+
+export default function SizingReportModal({ isOpen, onClose, result, form, formSI = null, units = null, unitSystem = "SI", fluid, locale = "fa", selectedFluidName, catalogMatch = null }) {
   const [mounted, setMounted] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [shotLoading, setShotLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const isFa = locale === "fa";
+  const characteristicNames = CATALOG_CHARACTERISTICS[locale] || CATALOG_CHARACTERISTICS.en;
+  const characteristicName = catalogMatch && catalogMatch.characteristic
+    ? characteristicNames[catalogMatch.characteristic] || catalogMatch.characteristic
+    : null;
+
+  // واحدهای نمایشی از SizingTool میآیند؛ در نبود آنها واحدهای SI فرض میشوند
+  const flowUnit = (units && units.flow) || (fluid === "steam" ? "kg/h" : (fluid === "liquid" ? "m³/h" : "Nm³/h"));
+  const pressureUnit = (units && units.pressure) || "bar";
+  const tempUnit = (units && units.temp) || "°C";
+  const velocityUnit = (units && units.velocity) || "m/s";
+  const mwLabel = MW_LABEL[locale] || MW_LABEL.en;
+  // نمودارها همیشه با فرم SI رسم میشوند (معادلات موتور بر پایهٔ SI است)
+  const chartForm = formSI || form;
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -45,7 +74,15 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       dpLbl: "افت فشار", gfLbl: "چگالی نسبی", ggLbl: "چگالی گاز", pvLbl: "فشار بخار", tLbl: "دما",
       cvLbl: "ضریب Cv", kvLbl: "ضریب Kv", sizeLbl: "سایز", openingLbl: "بازشدگی",
       velocityLbl: "سرعت", noiseLbl: "نویز", cavLbl: "کاویتاسیون",
-      recommended: "پیشنهاد", tooSmall: "خیلی کوچک", small: "کوچک", optimal: "بهینه", large: "بزرگ", tooLarge: "خیلی بزرگ"
+      recommended: "پیشنهاد", tooSmall: "خیلی کوچک", small: "کوچک", optimal: "بهینه", large: "بزرگ", tooLarge: "خیلی بزرگ",
+      catalogTitle: "انتخاب از کاتالوگ PSM",
+      catalogSeries: "سری",
+      catalogTrim: "ترم (Cv نامی)",
+      catalogCharacteristic: "مشخصهٔ ذاتی",
+      catalogBasis: "مبنای بازشدگی",
+      catalogBasisCurve: "منحنی کاتالوگ",
+      catalogBasisLinear: "فرض خطی (بدون منحنی)",
+      catalogMarginWarn: "بازشدگی از ۸۰٪ بیشتر است — سایز بزرگ‌تر پیشنهاد می‌شود"
     },
     en: {
       title: "Preliminary Control Valve Sizing Estimate", subtitle: "Not a validated ISA-75.01.01 (IEC 60534-2-1) calculation",
@@ -62,7 +99,15 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       dpLbl: "Pressure drop", gfLbl: "Specific gravity", ggLbl: "Gas gravity", pvLbl: "Vapor pressure", tLbl: "Temperature",
       cvLbl: "Cv Factor", kvLbl: "Kv Factor", sizeLbl: "Size", openingLbl: "Opening",
       velocityLbl: "Velocity", noiseLbl: "Noise", cavLbl: "Cavitation",
-      recommended: "Recommended", tooSmall: "Too Small", small: "Small", optimal: "Optimal", large: "Large", tooLarge: "Too Large"
+      recommended: "Recommended", tooSmall: "Too Small", small: "Small", optimal: "Optimal", large: "Large", tooLarge: "Too Large",
+      catalogTitle: "PSM catalogue selection",
+      catalogSeries: "Series",
+      catalogTrim: "Trim (rated Cv)",
+      catalogCharacteristic: "Inherent characteristic",
+      catalogBasis: "Opening basis",
+      catalogBasisCurve: "Catalogue curve",
+      catalogBasisLinear: "Linear assumption (no curve)",
+      catalogMarginWarn: "Opening above 80% — a larger size is recommended"
     },
     ar: {
       title: "تقدير أولي لحجم صمام التحكم", subtitle: "ليس حسابًا معتمدًا وفق ISA-75.01.01 (IEC 60534-2-1)",
@@ -77,7 +122,15 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       dpLbl: "الفرق", gfLbl: "الكثافة", ggLbl: "كثافة الغاز", pvLbl: "ضغط البخار", tLbl: "الحرارة",
       cvLbl: "Cv", kvLbl: "Kv", sizeLbl: "الحجم", openingLbl: "الفتح",
       velocityLbl: "السرعة", noiseLbl: "الضجيج", cavLbl: "التجويف",
-      recommended: "موصى به", tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل", large: "كبير", tooLarge: "كبير جدًا"
+      recommended: "موصى به", tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل", large: "كبير", tooLarge: "كبير جدًا",
+      catalogTitle: "الاختيار من كتالوج PSM",
+      catalogSeries: "السلسلة",
+      catalogTrim: "القطعة الداخلية (Cv الاسمي)",
+      catalogCharacteristic: "المنحنى الذاتي",
+      catalogBasis: "أساس الفتح",
+      catalogBasisCurve: "منحنى الكاتالوج",
+      catalogBasisLinear: "افتراض خطي (بدون منحنى)",
+      catalogMarginWarn: "نسبة الفتح تتجاوز ۸۰٪ — يُنصح بحجم أكبر"
     },
     ru: {
       title: "Предварительная оценка регулирующего клапана", subtitle: "Расчет не подтвержден по ISA-75.01.01 (IEC 60534-2-1)",
@@ -91,7 +144,15 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       dpLbl: "Перепад", gfLbl: "Плотность", ggLbl: "Газ", pvLbl: "Давл. паров", tLbl: "Темп.",
       cvLbl: "Cv", kvLbl: "Kv", sizeLbl: "Размер", openingLbl: "Открытие",
       velocityLbl: "Скорость", noiseLbl: "Шум", cavLbl: "Кавитация",
-      recommended: "Рекомендуется", tooSmall: "Слишком мал", small: "Мал", optimal: "Оптимально", large: "Велик", tooLarge: "Слишком велик"
+      recommended: "Рекомендуется", tooSmall: "Слишком мал", small: "Мал", optimal: "Оптимально", large: "Велик", tooLarge: "Слишком велик",
+      catalogTitle: "Выбор из каталога PSM",
+      catalogSeries: "Серия",
+      catalogTrim: "Трим (номинальный Cv)",
+      catalogCharacteristic: "Собственная характеристика",
+      catalogBasis: "Основа открытия",
+      catalogBasisCurve: "Каталожная кривая",
+      catalogBasisLinear: "Линейное допущение (без кривой)",
+      catalogMarginWarn: "Открытие выше 80% — рекомендуется больший размер"
     }
   }[locale] || {};
 
@@ -151,7 +212,11 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
     setPdfLoading(true);
     try {
       const chartImage = await captureChartImage();
-      await generateSizingPDF({ result, form, fluid, locale, selectedFluidName, candidates, chartImage });
+      await generateSizingPDF({
+        result, form, fluid, locale, selectedFluidName, candidates, chartImage,
+        units: { flow: flowUnit, pressure: pressureUnit, temp: tempUnit, velocity: velocityUnit },
+        mw: form.MW
+      });
       track.pdfDownloaded({ cv: result.Cv, size: result.size.size, fluid });
     } catch (err) {
       console.error(err);
@@ -190,17 +255,17 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
       ["PSM VALVE — Petro Sazeh Mihan"], ["IT Department"], [""],
       ["Parameter", "Value", "Unit"],
       [L.fluidLbl, selectedFluidName || fluid, ""],
-      [L.flowLbl, fluid === "steam" ? form.W : form.Q, fluid === "steam" ? "kg/h" : (fluid === "liquid" ? "m³/h" : "Nm³/h")],
-      [L.p1Lbl, form.P1, "bar"], [L.p2Lbl, form.P2, "bar"],
-      [L.dpLbl, (form.P1 - form.P2).toFixed(2), "bar"],
-      ...(fluid === "liquid" ? [[L.gfLbl, form.Gf, "—"], [L.pvLbl, form.Pv, "bar"]] : []),
-      ...(fluid === "gas" ? [[L.ggLbl, form.Gg, "—"]] : []),
-      ...(fluid !== "liquid" ? [[L.tLbl, form.T, "°C"]] : []),
+      [L.flowLbl, fluid === "steam" ? form.W : form.Q, flowUnit],
+      [L.p1Lbl, form.P1, pressureUnit], [L.p2Lbl, form.P2, pressureUnit],
+      [L.dpLbl, (form.P1 - form.P2).toFixed(2), pressureUnit],
+      ...(fluid === "liquid" ? [[L.gfLbl, form.Gf, "—"], [L.pvLbl, form.Pv, pressureUnit]] : []),
+      ...(fluid === "gas" ? [[L.ggLbl, form.Gg, "—"], [mwLabel, form.MW, "kg/kmol"]] : []),
+      ...(fluid !== "liquid" ? [[L.tLbl, form.T, tempUnit]] : []),
       [""], ["Result", "", ""],
       [L.cvLbl, result.Cv, ""], [L.kvLbl, result.Kv, ""],
       [L.sizeLbl, result.size.size, ""], ["DN", result.size.dn, ""],
       [L.openingLbl, result.openingPercent + "%", ""],
-      [L.velocityLbl, result.velocity || "-", "m/s"],
+      [L.velocityLbl, result.velocity ? velocityFromSI(result.velocity, velocityUnit) : "-", velocityUnit],
       [L.noiseLbl, result.noise || "-", "dB"],
       [L.cavLbl, result.cavitationRisk || "-", ""],
       ["Engineering note", L.engineeringDisclaimer, ""],
@@ -226,8 +291,8 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
     const text = [
       "═══════════════════════════════", "  PSM VALVE — Sizing Report", "═══════════════════════════════", "",
       `${L.fluidLbl}: ${selectedFluidName || fluid}`,
-      `${L.flowLbl}: ${fluid === "steam" ? form.W + " kg/h" : form.Q + " " + (fluid === "liquid" ? "m³/h" : "Nm³/h")}`,
-      `P1: ${form.P1} bar · P2: ${form.P2} bar · ΔP: ${dP} bar`, "",
+      `${L.flowLbl}: ${fluid === "steam" ? form.W + " " + flowUnit : form.Q + " " + flowUnit}`,
+      `P1: ${form.P1} ${pressureUnit} · P2: ${form.P2} ${pressureUnit} · ΔP: ${dP} ${pressureUnit}`,"",
       "───────── RESULT ─────────",
       `Cv: ${result.Cv} · Kv: ${result.Kv}`,
       `${L.sizeLbl}: ${result.size.size} (${result.size.dn})`,
@@ -381,6 +446,40 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
                     </div>
                   </div>
 
+                  {catalogMatch && (
+                    <div>
+                      <div className="report-heading">
+                        <Package size={13} color="var(--gold)" />
+                        {L.catalogTitle}
+                      </div>
+                      <div style={{
+                        padding: 14, borderRadius: 12,
+                        background: "var(--bg-soft)", border: "1px solid var(--border)"
+                      }}>
+                        <ReportRow label={L.catalogSeries} value={String(catalogMatch.product.series)} />
+                        <ReportRow
+                          label={L.sizeLbl}
+                          value={catalogMatch.matchedSize.dn + (catalogMatch.nps ? ` (${catalogMatch.nps}")` : "")}
+                        />
+                        <ReportRow label={L.catalogTrim} value={"Cv " + catalogMatch.matchedSize.cv} />
+                        {characteristicName && (
+                          <ReportRow label={L.catalogCharacteristic} value={characteristicName} />
+                        )}
+                        <ReportRow label={L.openingLbl} value={catalogMatch.openingPercent + "%"} />
+                        <ReportRow
+                          label={L.catalogBasis}
+                          value={catalogMatch.curveBased ? L.catalogBasisCurve : L.catalogBasisLinear}
+                          last
+                        />
+                      </div>
+                      {catalogMatch.withinMargin === false && (
+                        <div role="alert" style={{ marginTop: 8, fontSize: 10.5, fontWeight: 800, color: "#92400E" }}>
+                          ⚠ {L.catalogMarginWarn}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <div className="report-heading">
                       <FileText size={13} color="var(--gold)" />
@@ -392,17 +491,18 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
                     }}>
                       <ReportRow label={L.fluidLbl} value={selectedFluidName || fluid} />
                       {fluid === "steam" ? (
-                        <ReportRow label={L.flowLbl} value={form.W + " kg/h"} />
+                        <ReportRow label={L.flowLbl} value={form.W + " " + flowUnit} />
                       ) : (
-                        <ReportRow label={L.flowLbl} value={form.Q + (fluid === "liquid" ? " m³/h" : " Nm³/h")} />
+                        <ReportRow label={L.flowLbl} value={form.Q + " " + flowUnit} />
                       )}
-                      <ReportRow label={L.p1Lbl} value={form.P1 + " bar"} />
-                      <ReportRow label={L.p2Lbl} value={form.P2 + " bar"} />
-                      <ReportRow label={L.dpLbl} value={(form.P1 - form.P2).toFixed(2) + " bar"} />
+                      <ReportRow label={L.p1Lbl} value={form.P1 + " " + pressureUnit} />
+                      <ReportRow label={L.p2Lbl} value={form.P2 + " " + pressureUnit} />
+                      <ReportRow label={L.dpLbl} value={(form.P1 - form.P2).toFixed(2) + " " + pressureUnit} />
                       {fluid === "liquid" && <ReportRow label={L.gfLbl} value={form.Gf} />}
                       {fluid === "gas" && <ReportRow label={L.ggLbl} value={form.Gg} />}
-                      {fluid === "liquid" && <ReportRow label={L.pvLbl} value={form.Pv + " bar"} />}
-                      {fluid !== "liquid" && <ReportRow label={L.tLbl} value={form.T + " °C"} last />}
+                      {fluid === "gas" && <ReportRow label={mwLabel} value={form.MW} />}
+                      {fluid === "liquid" && <ReportRow label={L.pvLbl} value={form.Pv + " " + pressureUnit} />}
+                      {fluid !== "liquid" && <ReportRow label={L.tLbl} value={form.T + " " + tempUnit} last />}
                     </div>
                   </div>
 
@@ -412,7 +512,7 @@ export default function SizingReportModal({ isOpen, onClose, result, form, fluid
                       {L.chart}
                     </div>
                     <div id="report-chart-for-pdf">
-                      <ValveCharacteristicChart result={result} form={form} locale={locale} />
+                      <ValveCharacteristicChart result={result} form={chartForm} locale={locale} />
                     </div>
                   </div>
 

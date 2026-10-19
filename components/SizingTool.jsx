@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useId } from "react";
+import { useState, useEffect, useMemo, useId, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,12 +30,17 @@ import SizingReportModal from "./SizingReportModal";
 import MaterialGuide from "./MaterialGuide";
 import FluidPicker from "./FluidPicker";
 import { suggestValves, selectCatalogValve } from "@/lib/valve-catalog";
-import { SYSTEMS, formToSI, formFromSI, tempToC } from "@/lib/unit-system";
+import { SYSTEMS, formToSI, formFromSI, tempToC, barToPressure } from "@/lib/unit-system";
+import {
+  flowToEngine, engineToFlow, flowUnitGroups, defaultFlowUnit,
+  mwFromGg, ggFromMW, velocityFromSI, inchToDn
+} from "@/lib/unit-system";
 import { track } from "@/lib/analytics";
 
 const DEFAULT_FORM = {
-  Q: null, Gf: 1, Gg: 0.65, P1: null, P2: null, T: null,
-  Pv: 0.5, Pc: 221, Z: 1, k: 1.4, xT: 0.7, FL: 0.9, W: null, pipeDn: null
+  Q: null, Gf: 1, Gg: 0.65, MW: 18.82, P1: null, P2: null, T: null,
+  Pv: 0.5, Pc: 221, Z: 1, k: 1.4, xT: 0.7, FL: 0.9, W: null, pipeDn: null,
+  QUnit: null, WUnit: null
 };
 
 function getRecommendedCharacteristic(fluid, openingPercent) {
@@ -45,6 +50,19 @@ function getRecommendedCharacteristic(fluid, openingPercent) {
     return "equal";
   }
   return "equal";
+}
+
+// نگاشت مشخصهٔ ذاتی کاتالوگ به کلید برچسب چهارزبانه
+const CHARACTERISTIC_LABEL_KEYS = {
+  equal: "charEqual",
+  modified: "charModified",
+  linear: "charLinear",
+  quick: "charQuick"
+};
+
+function characteristicLabel(labels, characteristic) {
+  const key = CHARACTERISTIC_LABEL_KEYS[characteristic];
+  return (key && labels[key]) || labels.charUnknown;
 }
 
 function validateForm(form, fluid, locale, unitSystem) {
@@ -108,6 +126,79 @@ function validateForm(form, fluid, locale, unitSystem) {
   return errors;
 }
 
+// ---- واحد دبی و جرم مولکولی: برچسبها و پیامهای اعتبارسنجی ----
+const FLOW_I18N = {
+  fa: {
+    groupVolumetric: "دبی حجمی",
+    groupMass: "دبی جرمی",
+    mwHelp: "جرم مولکولی گاز (kg/kmol). برای تبدیل دبی جرمی به حجمی و همگامسازی Gg استفاده میشود (Gg = MW ÷ 28.96).",
+    qHelp: "دبی سیال — واحد حجمی (m3/h، Nm3/h، gpm، SCFM) یا جرمی (kg/h، lb/h) قابل انتخاب است.",
+    densityRequired: "برای دبی جرمی گاز، جرم مولکولی (MW) یا چگالی نسبی (Gg) لازم است.",
+    unknownUnit: "واحد دبی انتخابشده پشتیبانی نمیشود.",
+    mwInvalid: "جرم مولکولی باید عددی بزرگتر از صفر باشد"
+  },
+  en: {
+    groupVolumetric: "Volumetric",
+    groupMass: "Mass flow",
+    mwHelp: "Gas molecular weight (kg/kmol). Used to convert a mass flow to volumetric and to keep Gg in sync (Gg = MW / 28.96).",
+    qHelp: "Flow rate — pick a volumetric (m3/h, Nm3/h, gpm, SCFM) or a mass (kg/h, lb/h) unit.",
+    densityRequired: "Enter the molecular weight (MW) or relative density (Gg) for a gas mass flow.",
+    unknownUnit: "The selected flow unit is not supported.",
+    mwInvalid: "MW must be a number greater than 0"
+  },
+  ar: {
+    groupVolumetric: "تدفق حجمي",
+    groupMass: "تدفق كتلي",
+    mwHelp: "الوزن الجزيئي للغاز (kg/kmol) لتحويل التدفق الكتلي إلى حجمي ومزامنة Gg.",
+    qHelp: "التدفق — يمكن اختيار وحدة حجمية أو كتلية.",
+    densityRequired: "أدخل الوزن الجزيئي (MW) أو الكثافة النسبية (Gg) للتدفق الكتلي للغاز.",
+    unknownUnit: "وحدة التدفق غير مدعومة.",
+    mwInvalid: "يجب أن يكون الوزن الجزيئي أكبر من صفر"
+  },
+  ru: {
+    groupVolumetric: "Объёмный",
+    groupMass: "Массовый",
+    mwHelp: "Молекулярная масса газа (kg/kmol) для перевода массового расхода в объёмный и синхронизации Gg.",
+    qHelp: "Расход — выберите объёмную или массовую единицу.",
+    densityRequired: "Укажите молекулярную массу (MW) или относительную плотность (Gg) для массового расхода газа.",
+    unknownUnit: "Выбранная единица расхода не поддерживается.",
+    mwInvalid: "Молекулярная масса должна быть больше нуля"
+  }
+};
+
+// بررسی سازگاری واحد دبی با سیال (مثلاً دبی جرمی گاز بدون MW/Gg)
+function validateFlowInputs(form, fluid, locale, unitSystem) {
+  const t = FLOW_I18N[locale] || FLOW_I18N.en;
+  const errors = {};
+  const ctx = { Gf: form.Gf, MW: form.MW, Gg: form.Gg };
+  if (fluid === "gas" && form.MW != null && form.MW !== "" && !(Number(form.MW) > 0)) {
+    errors.MW = t.mwInvalid;
+  }
+
+  const isSteam = fluid === "steam";
+  const key = isSteam ? "W" : "Q";
+  const unit = isSteam
+    ? (form.WUnit || SYSTEMS[unitSystem].flowMass || SYSTEMS[unitSystem].flowSteam)
+    : (form.QUnit || defaultFlowUnit(unitSystem, fluid));
+  const value = form[key];
+  if (value != null && value !== "") {
+    const conv = flowToEngine(value, unit, isSteam ? "steam" : fluid, ctx);
+    if (conv.error === "densityRequired") errors[key] = t.densityRequired;
+    else if (conv.error === "unknownUnit") errors[key] = t.unknownUnit;
+  }
+  return errors;
+}
+
+// گروههای واحد با برچسب محلی برای <optgroup>
+function localizeUnitGroups(groups, locale) {
+  const t = FLOW_I18N[locale] || FLOW_I18N.en;
+  return groups.map((g) => ({
+    id: g.id,
+    label: g.id === "mass" ? t.groupMass : t.groupVolumetric,
+    units: g.units
+  }));
+}
+
 const FIELD_HELP = {
   fa: {
     Q: "دبی حجمی سیال — مایع: m³/h، گاز: Nm³/h",
@@ -145,7 +236,7 @@ const FIELD_HELP = {
   ru: { Q: "Расход", W: "Расход пара", Gf: "Плотность", Gg: "Плотность газа", P1: "Вход", P2: "Выход", Pv: "Давление паров", Pc: "Крит. давление", FL: "Коэффициент", T: "Температура", Z: "Сжимаемость", k: "Показатель", xT: "Запирание", pipeDn: "Диаметр трубы (DN); если клапан меньше, применяется Fp." }
 };
 
-function Field({ label, unit, value, onChange, step, help, error, placeholder, required }) {
+function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, help, error, placeholder, required }) {
   const [showHelp, setShowHelp] = useState(false);
   const inputId = useId();
   const errorId = useId();
@@ -181,7 +272,26 @@ function Field({ label, unit, value, onChange, step, help, error, placeholder, r
             </button>
           )}
         </div>
-        {unit && (
+        {unitGroups && unitGroups.length > 0 ? (
+          <select
+            value={unit}
+            onChange={(e) => onUnitChange(e.target.value)}
+            aria-label={label + " — unit"}
+            title={label + " — unit"}
+            style={{
+              fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace",
+              fontWeight: 800, padding: "2px 4px", borderRadius: 5,
+              background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)",
+              border: "1px solid var(--border)", whiteSpace: "nowrap", cursor: "pointer"
+            }}
+          >
+            {unitGroups.map((group) => (
+              <optgroup key={group.id} label={group.label}>
+                {group.units.map((u) => <option key={u} value={u}>{u}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        ) : unit && (
           <span style={{
             fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace",
             fontWeight: 800, padding: "2px 7px", borderRadius: 5,
@@ -282,14 +392,58 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
   const [referenceTab, setReferenceTab] = useState("reference");
   const [undoSnapshot, setUndoSnapshot] = useState(null);
   const [showUndo, setShowUndo] = useState(false);
+  // سیال انتخابشده در ویزارد، پیش از بهروزرسانی state در همین رفرنس نگه داشته میشود
+  const wizardFluidRef = useRef(null);
 
-  const help = FIELD_HELP[locale] || FIELD_HELP.en;
+  const help = useMemo(() => {
+    const t = FLOW_I18N[locale] || FLOW_I18N.en;
+    return Object.assign({}, FIELD_HELP[locale] || FIELD_HELP.en, { Q: t.qHelp, MW: t.mwHelp });
+  }, [locale]);
   // فیلدهای بی‌بعد مثل Gf، Z، FL و xT واحد فیزیکی ندارند؛ برچسب «نسبت» گویاتر از «—» است.
   const ratioUnit = { fa: "نسبت", en: "ratio", ar: "نسبة", ru: "отн." }[locale] || "ratio";
   const sys = SYSTEMS[unitSystem];
   const isFa = locale === "fa";
 
-  const errors = useMemo(() => validateForm(form, fluid, locale, unitSystem), [form, fluid, locale, unitSystem]);
+  // دبی: واحد انتخابی کاربر (یا پیشفرض سیستم/سیال) و گروههای واحد برای UI
+  const qUnit = form.QUnit || defaultFlowUnit(unitSystem, fluid);
+  const wUnit = form.WUnit || sys.flowMass || sys.flowSteam;
+  const qUnitGroups = useMemo(() => localizeUnitGroups(flowUnitGroups(fluid), locale), [fluid, locale]);
+  const wUnitGroups = useMemo(() => localizeUnitGroups(flowUnitGroups("steam"), locale), [locale]);
+  const densityCtx = { Gf: form.Gf, MW: form.MW, Gg: form.Gg };
+
+  // واحدهای نمایشی نتایج (گزارش، CSV، PDF)
+  const displayUnits = useMemo(() => ({
+    flow: fluid === "steam" ? wUnit : qUnit,
+    pressure: sys.pressure,
+    temp: sys.temp,
+    velocity: sys.velocity
+  }), [fluid, qUnit, wUnit, sys.pressure, sys.temp, sys.velocity]);
+
+  // واحدهای SI موتور — نمودارها همیشه با SI رسم میشوند و محورها همین برچسب را دارند
+  const siEngineUnits = useMemo(() => ({
+    flow: fluid === "gas" ? "Nm3/h" : "m3/h",
+    pressure: "bar",
+    velocity: "m/s"
+  }), [fluid]);
+
+  // فرم SI (ورودی موتور) — همهٔ محاسبات از این نسخه استفاده میکنند
+  const siForm = useMemo(() => formToSI(form, unitSystem, fluid), [form, unitSystem, fluid]);
+  // فرم با قطر لولهٔ میلیمتری، چون محدودهٔ مجاز DN در SI تعریف شده است
+  const mmForm = useMemo(() => {
+    if (form.pipeDn == null || form.pipeDn === "") return form;
+    return Object.assign({}, form, {
+      pipeDn: unitSystem === "IMPERIAL" ? inchToDn(form.pipeDn) : Number(form.pipeDn)
+    });
+  }, [form, unitSystem]);
+
+  const errors = useMemo(
+    () => Object.assign(
+      {},
+      validateForm(mmForm, fluid, locale, unitSystem),
+      validateFlowInputs(form, fluid, locale, unitSystem)
+    ),
+    [mmForm, form, fluid, locale, unitSystem]
+  );
   const hasErrors = Object.keys(errors).length > 0;
 
   const topProduct = useMemo(() => {
@@ -301,6 +455,10 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
         product: fromCatalog.product,
         matchedSize: { dn: fromCatalog.dn, cv: fromCatalog.cv, size: fromCatalog.dn },
         openingPercent: fromCatalog.openingPercent,
+        characteristic: fromCatalog.characteristic,
+        curveBased: fromCatalog.curveBased,
+        withinMargin: fromCatalog.withinMargin,
+        nps: fromCatalog.nps,
         source: "catalog"
       };
     }
@@ -313,6 +471,10 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
       product: match,
       matchedSize: result.size,
       openingPercent: result.openingPercent,
+      characteristic: result.recommendedCharacteristic || null,
+      curveBased: false,
+      withinMargin: null,
+      nps: null,
       source: "generic"
     };
   }, [result, catalog, cvTables]);
@@ -365,14 +527,15 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
 
   function runCalculation() {
     if (hasErrors) return;
-    const siForm = formToSI(form, unitSystem, fluid);
+    // siForm از memo بالای کامپوننت میآید: هر واحد (حجمی/جرمی) به واحد موتور تبدیل شده است
+    const ggEff = siForm.MW != null && Number(siForm.MW) > 0 ? ggFromMW(siForm.MW) : siForm.Gg;
     let r;
     if (fluid === "liquid") {
-      r = calcLiquidCv({ Q: siForm.Q, Gf: siForm.Gf, P1: siForm.P1, P2: siForm.P2, Pv: siForm.Pv, Pc: siForm.Pc, FL: siForm.FL, pipeDnMm: form.pipeDn });
+      r = calcLiquidCv({ Q: siForm.Q, Gf: siForm.Gf, P1: siForm.P1, P2: siForm.P2, Pv: siForm.Pv, Pc: siForm.Pc, FL: siForm.FL, pipeDnMm: siForm.pipeDn });
     } else if (fluid === "steam") {
-      r = calcSteamCv({ W: siForm.W, P1: siForm.P1, P2: siForm.P2, T: siForm.T, pipeDnMm: form.pipeDn });
+      r = calcSteamCv({ W: siForm.W, P1: siForm.P1, P2: siForm.P2, T: siForm.T, pipeDnMm: siForm.pipeDn });
     } else {
-      r = calcGasCv({ Q: siForm.Q, Gg: siForm.Gg, T: siForm.T, P1: siForm.P1, P2: siForm.P2, Z: siForm.Z, k: siForm.k, xT: siForm.xT, pipeDnMm: form.pipeDn });
+      r = calcGasCv({ Q: siForm.Q, Gg: ggEff, T: siForm.T, P1: siForm.P1, P2: siForm.P2, Z: siForm.Z, k: siForm.k, xT: siForm.xT, pipeDnMm: siForm.pipeDn });
     }
     if (r.error) { setResult({ error: r.error }); return; }
     const openingPercent = Math.min(100, Math.round((r.Cv / r.size.cv) * 100));
@@ -407,9 +570,52 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
     };
   }
 
+  // تغییر واحد دبی بدون از دست دادن معنی عدد: مقدار فعلی به واحد جدید تبدیل میشود
+  function changeFlowUnit(target, nextUnit) {
+    const isQ = target === "Q";
+    const currentUnit = isQ ? qUnit : wUnit;
+    if (nextUnit === currentUnit) return;
+    const fluidKind = fluid === "steam" ? "steam" : fluid;
+    let converted = form[target];
+    if (converted != null && converted !== "") {
+      const engine = flowToEngine(converted, currentUnit, fluidKind, densityCtx);
+      const back = engine.error ? { value: null } : engineToFlow(engine.value, nextUnit, fluidKind, densityCtx);
+      if (back.value != null) converted = +Number(back.value).toPrecision(6);
+    }
+    setForm(Object.assign({}, form, {
+      [target]: converted,
+      [isQ ? "QUnit" : "WUnit"]: nextUnit
+    }));
+    setHasInteracted(true);
+  }
+
+  // MW و Gg به هم قفلاند: Gg = MW ÷ 28.96 (فقط برای گاز)
+  function updateMW(e) {
+    const raw = e.target.value;
+    const parsed = raw === "" ? null : parseFloat(raw);
+    const value = parsed != null && Number.isFinite(parsed) ? parsed : null;
+    setForm(Object.assign({}, form, {
+      MW: value,
+      Gg: value == null ? form.Gg : +ggFromMW(value).toFixed(4)
+    }));
+    setHasInteracted(true);
+  }
+
+  function updateGg(e) {
+    const raw = e.target.value;
+    const parsed = raw === "" ? null : parseFloat(raw);
+    const value = parsed != null && Number.isFinite(parsed) ? parsed : null;
+    setForm(Object.assign({}, form, {
+      Gg: value,
+      MW: value == null ? form.MW : +mwFromGg(value).toFixed(2)
+    }));
+    setHasInteracted(true);
+  }
+
   function applyPreset(preset) {
     setFluid(preset.fluid);
-    setForm(Object.assign({}, DEFAULT_FORM, preset.values));
+    // مقادیر پریستها بر پایهٔ SI هستند؛ در حالت اینچی به واحد نمایشی تبدیل میشوند
+    setForm(formFromSI(Object.assign({}, DEFAULT_FORM, preset.values), unitSystem, preset.fluid));
     setResult(null);
     setHasInteracted(true);
     setSelectedFluidName(null);
@@ -419,20 +625,34 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
   function applyFluidPreset(key) {
     const p = FLUID_PRESETS[key];
     if (!p) return;
-    setForm(Object.assign({}, form, { Gf: p.Gf, Pv: p.Pv, Pc: p.Pc }));
+    setForm(Object.assign({}, form, {
+      Gf: p.Gf,
+      Pv: barToPressure(p.Pv, sys.pressure),
+      Pc: barToPressure(p.Pc, sys.pressure)
+    }));
     setHasInteracted(true);
   }
 
   function handleFluidPick(pickedFluid) {
     setSelectedFluidName(pickedFluid.names[locale] || pickedFluid.names.en);
-    if (pickedFluid.type !== fluid) setFluid(pickedFluid.type);
+    const switchingType = pickedFluid.type !== fluid;
+    if (switchingType) setFluid(pickedFluid.type);
     const updates = {};
+    // با تغییر نوع سیال، واحد دبی بیمعنا میشود: به پیشفرض همان سیال برمیگردیم
+    if (switchingType) {
+      updates.QUnit = null;
+      updates.WUnit = null;
+    }
     if (pickedFluid.type === "liquid") {
       if (pickedFluid.Gf != null) updates.Gf = pickedFluid.Gf;
-      if (pickedFluid.Pv != null) updates.Pv = pickedFluid.Pv;
-      if (pickedFluid.Pc != null) updates.Pc = pickedFluid.Pc;
+      // دادههای مرجع سیالات بر پایهٔ bar هستند
+      if (pickedFluid.Pv != null) updates.Pv = barToPressure(pickedFluid.Pv, sys.pressure);
+      if (pickedFluid.Pc != null) updates.Pc = barToPressure(pickedFluid.Pc, sys.pressure);
     } else if (pickedFluid.type === "gas") {
-      if (pickedFluid.Gg != null) updates.Gg = pickedFluid.Gg;
+      if (pickedFluid.Gg != null) {
+        updates.Gg = pickedFluid.Gg;
+        updates.MW = +mwFromGg(pickedFluid.Gg).toFixed(2);
+      }
       if (pickedFluid.k != null) updates.k = pickedFluid.k;
       if (pickedFluid.Z != null) updates.Z = pickedFluid.Z;
     } else if (pickedFluid.type === "steam") {
@@ -571,6 +791,16 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
       productSourceCatalog: "Cv کاتالوگ",
       productSourceGeneric: "Cv عمومی",
       productNoteCatalog: "سایز از جدول Cv ثبت‌شدهٔ همین سری انتخاب شده است؛ انتخاب نهایی را با مهندسی PSM تأیید کنید.",
+      characteristicLabel: "مشخصهٔ ذاتی",
+      charEqual: "درصدی (Equal%)",
+      charModified: "درصدی اصلاح‌شده",
+      charLinear: "خطی (Linear)",
+      charQuick: "بازشدگی سریع",
+      charUnknown: "نامشخص",
+      curveBasis: "مبنای بازشدگی: منحنی کاتالوگ",
+      linearBasis: "مبنای بازشدگی: فرض خطی (بدون منحنی)",
+      trimRatedCv: "ترم (Cv نامی)",
+      marginExceeded: "بازشدگی از ۸۰٪ بیشتر است — سایز بزرگ‌تر پیشنهاد می‌شود",
       productHint: "بر اساس Cv محاسبه‌شده",
       noProduct: "محصولی برای این Cv یافت نشد",
       viewProduct: "مشاهده محصولات",
@@ -615,6 +845,16 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
       productSourceCatalog: "Catalogue Cv",
       productSourceGeneric: "General Cv",
       productNoteCatalog: "This size comes from the recorded Cv table of this series; confirm the final selection with PSM engineering.",
+      characteristicLabel: "Inherent characteristic",
+      charEqual: "Equal %",
+      charModified: "Modified %",
+      charLinear: "Linear",
+      charQuick: "Quick opening",
+      charUnknown: "Not recorded",
+      curveBasis: "Opening basis: catalogue curve",
+      linearBasis: "Opening basis: linear assumption (no curve)",
+      trimRatedCv: "Trim (rated Cv)",
+      marginExceeded: "Opening above 80% — a larger size is recommended",
       productHint: "Based on your calculated Cv",
       noProduct: "No matching product for this Cv",
       viewProduct: "View Products",
@@ -653,6 +893,16 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
       productSourceCatalog: "Cv الكتالوج",
       productSourceGeneric: "Cv العام",
       productNoteCatalog: "الحجم مأخوذ من جدول Cv المسجل لهذه السلسلة؛ أكد الاختيار النهائي مع مهندسي PSM.",
+      characteristicLabel: "المنحنى الذاتي",
+      charEqual: "نسبة متساوية (Equal%)",
+      charModified: "نسبة معدلة",
+      charLinear: "خطي (Linear)",
+      charQuick: "فتح سريع",
+      charUnknown: "غير مسجل",
+      curveBasis: "أساس الفتح: منحنى الكاتالوج",
+      linearBasis: "أساس الفتح: افتراض خطي (بدون منحنى)",
+      trimRatedCv: "القطعة الداخلية (Cv الاسمي)",
+      marginExceeded: "نسبة الفتح تتجاوز ۸۰٪ — يُنصح بحجم أكبر",
       noProduct: "لا يوجد", viewProduct: "عرض",
       refTitle: "المراجع", refStandards: "المعايير",
       refMaterial: "المواد", refCharts: "الرسوم",
@@ -686,6 +936,16 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
       productSourceCatalog: "Cv каталога",
       productSourceGeneric: "Общий Cv",
       productNoteCatalog: "Размер выбран по записанной таблице Cv этой серии; окончательный выбор подтверждает инженер PSM.",
+      characteristicLabel: "Собственная характеристика",
+      charEqual: "Равнопроцентная (Equal %)",
+      charModified: "Модифицированная",
+      charLinear: "Линейная",
+      charQuick: "Быстрооткрывающаяся",
+      charUnknown: "Не записана",
+      curveBasis: "Основа открытия: каталожная кривая",
+      linearBasis: "Основа открытия: линейное допущение",
+      trimRatedCv: "Трим (номинальный Cv)",
+      marginExceeded: "Открытие выше 80% — рекомендуется больший размер",
       noProduct: "Нет", viewProduct: "Смотреть",
       refTitle: "Справочники", refStandards: "Стандарты",
       refMaterial: "Материалы", refCharts: "Графики",
@@ -704,10 +964,14 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
       <section className="container-x py-6 sizing-root">
         <SizingWizard
           locale={locale}
-          form={form}
+          form={siForm}
           fluid={fluid}
-          setForm={setForm}
-          setFluid={setFluid}
+          setForm={(next) => {
+            // ویزارد همیشه با مقادیر SI کار میکند؛ خروجی به واحد نمایشی تبدیل میشود
+            const targetFluid = wizardFluidRef.current || fluid;
+            setForm(formFromSI(Object.assign({}, next, { QUnit: null, WUnit: null }), unitSystem, targetFluid));
+          }}
+          setFluid={(f) => { wizardFluidRef.current = f; setFluid(f); }}
           onCalculate={() => {
             setWizardMode(false);
             setTimeout(() => { runCalculation(true); setHasInteracted(true); }, 300);
@@ -865,12 +1129,13 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {fluid === "steam" ? (
-                <Field label="W" unit={sys.flowSteam} value={form.W} onChange={update("W")} help={help.W} error={errors.W} placeholder="500" required />
+                <Field label="W" unit={wUnit} unitGroups={wUnitGroups} onUnitChange={(u) => changeFlowUnit("W", u)} value={form.W} onChange={update("W")} help={help.W} error={errors.W} placeholder="500" required />
               ) : (
-                <Field label="Q" unit={fluid === "liquid" ? sys.flowLiquid : sys.flowGas} value={form.Q} onChange={update("Q")} help={help.Q} error={errors.Q} placeholder="100" required />
+                <Field label="Q" unit={qUnit} unitGroups={qUnitGroups} onUnitChange={(u) => changeFlowUnit("Q", u)} value={form.Q} onChange={update("Q")} help={help.Q} error={errors.Q} placeholder="100" required />
               )}
               {fluid === "liquid" && <Field label="Gf" unit={ratioUnit} value={form.Gf} onChange={update("Gf")} step={0.01} help={help.Gf} error={errors.Gf} placeholder="1.0" />}
-              {fluid === "gas" && <Field label="Gg" unit={ratioUnit} value={form.Gg} onChange={update("Gg")} step={0.01} help={help.Gg} error={errors.Gg} placeholder="0.65" />}
+              {fluid === "gas" && <Field label="Gg" unit={ratioUnit} value={form.Gg} onChange={updateGg} step={0.01} help={help.Gg} error={errors.Gg} placeholder="0.65" />}
+              {fluid === "gas" && <Field label="MW" unit="kg/kmol" value={form.MW} onChange={updateMW} step={0.01} help={help.MW} error={errors.MW} placeholder="18.82" />}
               <Field label="P1" unit={sys.pressure} value={form.P1} onChange={update("P1")} step={0.1} help={help.P1} error={errors.P1} placeholder="10" required />
               <Field label="P2" unit={sys.pressure} value={form.P2} onChange={update("P2")} step={0.1} help={help.P2} error={errors.P2} placeholder="6" required />
               {fluid === "liquid" && <Field label="Pv" unit={sys.pressure} value={form.Pv} onChange={update("Pv")} step={0.01} help={help.Pv} error={errors.Pv} placeholder="0.5" />}
@@ -906,7 +1171,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                     <Field label="xT" unit={ratioUnit} value={form.xT} onChange={update("xT")} step={0.01} help={help.xT} error={errors.xT} />
                   </>
                 )}
-                <Field label="D" unit="DN" value={form.pipeDn} onChange={update("pipeDn")} step={5} help={help.pipeDn} error={errors.pipeDn} placeholder="100" />
+                <Field label="D" unit={sys.pipeLabel} value={form.pipeDn} onChange={update("pipeDn")} step={unitSystem === "IMPERIAL" ? 0.25 : 5} help={help.pipeDn} error={errors.pipeDn} placeholder={unitSystem === "IMPERIAL" ? "4" : "100"} />
               </div>
             )}
 
@@ -1053,7 +1318,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                     <div className="hero-metric">
                       <Activity size={12} />
                       <span className="hero-metric-label">{L.velocity}</span>
-                      <span className="hero-metric-value">{result.velocity}</span>
+                      <span className="hero-metric-value">{velocityFromSI(result.velocity, sys.velocity)} {sys.velocity}</span>
                     </div>
                   )}
                   {result.noise && (
@@ -1099,7 +1364,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                 </button>
               </div>
 
-              <ValveCharacteristicChart result={result} form={form} locale={locale} />
+              <ValveCharacteristicChart result={result} form={siForm} locale={locale} />
 
               {topProduct && (
                 <div className="result-product-card" style={{
@@ -1132,11 +1397,23 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                       }}>
                         {topProduct.matchedSize.dn} · Cv {topProduct.matchedSize.cv} · {L.opening} {topProduct.openingPercent}%
                       </div>
+                      {topProduct.characteristic && (
+                        <div style={{ fontSize: 10, color: "var(--text-soft)", fontWeight: 700, marginTop: 3 }}>
+                          {L.characteristicLabel}: {characteristicLabel(L, topProduct.characteristic)}
+                          {" · "}
+                          {topProduct.curveBased ? L.curveBasis : L.linearBasis}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div style={{ fontSize: 9.5, color: "var(--text-soft)", marginTop: 8, lineHeight: 1.7, fontWeight: 600 }}>
                     {topProduct.source === "catalog" ? L.productNoteCatalog : L.productDataNote}
                   </div>
+                  {topProduct.withinMargin === false && (
+                    <div role="alert" style={{ fontSize: 10, color: "#92400E", fontWeight: 800, marginTop: 6 }}>
+                      ⚠ {L.marginExceeded}
+                    </div>
+                  )}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10 }}>
                     <Link href={"/" + locale + "/contact?product=" + encodeURIComponent(topProduct.product.series)}
                       onClick={() => track.quoteRequested({ product: topProduct.product.series, source: "result_card" })}
@@ -1180,18 +1457,18 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
 
         <div className="reference-content">
           {referenceTab === "reference" && (
-            <TipsAndStandards result={result} form={form} locale={locale} />
+            <TipsAndStandards result={result} form={siForm} units={displayUnits} locale={locale} />
           )}
           {referenceTab === "material" && (
-            <MaterialGuide form={form} fluid={fluid} locale={locale} />
+            <MaterialGuide form={siForm} fluid={fluid} locale={locale} />
           )}
           {referenceTab === "charts" && (
             <div style={{ display: "grid", gap: 12 }}>
               {result && !result.error ? (
                 <>
                   <AlternativeSizes result={result} locale={locale} />
-                  <InstalledChart result={result} form={form} locale={locale} />
-                  <DeltaPChart result={result} form={form} locale={locale} />
+                  <InstalledChart result={result} form={siForm} units={siEngineUnits} locale={locale} />
+                  <DeltaPChart result={result} form={siForm} units={siEngineUnits} locale={locale} />
                 </>
               ) : (
                 <div className="sizing-card" style={{ padding: 40, textAlign: "center" }}>
@@ -1212,9 +1489,13 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
         onClose={() => setShowReport(false)}
         result={result}
         form={form}
+        formSI={siForm}
+        units={displayUnits}
+        unitSystem={unitSystem}
         fluid={fluid}
         locale={locale}
         selectedFluidName={selectedFluidName}
+        catalogMatch={topProduct}
       />
 
       <SizingCompare
@@ -1222,6 +1503,8 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
         onClose={() => setShowCompare(false)}
         result={result}
         form={form}
+        units={displayUnits}
+        unitSystem={unitSystem}
         fluid={fluid}
         locale={locale}
       />

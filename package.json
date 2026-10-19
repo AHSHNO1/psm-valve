@@ -9,7 +9,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test tests/"
+    "test": "node --test tests/",
+    "cv:inspect": "python scripts/inspect-cv-xlsx.py VALVE_CV.xlsx --summary --validate --analyse",
+    "cv:import": "python scripts/import-cv-xlsx.py",
+    "cv:coverage": "node scripts/catalogue-coverage.mjs",
+    "benchmark:sizing": "node scripts/sizing-benchmark.mjs",
+    "audit:responsive": "node scripts/responsive-audit.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.108.3",

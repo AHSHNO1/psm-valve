@@ -4,10 +4,15 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, ArrowLeft, AlertTriangle, TrendingDown, TrendingUp, Award } from "lucide-react";
 import { VALVE_SIZES } from "@/lib/sizing-advanced";
+import { formToSI, velocityFromSI } from "@/lib/unit-system";
 
-export default function SizingCompare({ isOpen, onClose, result, form, fluid, locale = "fa" }) {
+export default function SizingCompare({ isOpen, onClose, result, form, units = null, unitSystem = "SI", fluid, locale = "fa" }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  // محاسبات موتور بر پایهٔ SI است؛ فرم نمایشی ابتدا به SI تبدیل میشود
+  const siForm = useMemo(() => formToSI(form, unitSystem, fluid), [form, unitSystem, fluid]);
+  const velocityUnit = (units && units.velocity) || "m/s";
 
   const L = {
     fa: {
@@ -52,8 +57,8 @@ export default function SizingCompare({ isOpen, onClose, result, form, fluid, lo
     return uniqueIndices.map((idx) => {
       const size = VALVE_SIZES[idx];
       const opening = Math.round((required / size.cv) * 100);
-      const dP = Math.max(0.1, (form.P1 || 0) - (form.P2 || 0));
-      const Q = fluid === "steam" ? (form.W / 1000) * 1.2 : (form.Q || 0);
+      const dP = Math.max(0.1, (siForm.P1 || 0) - (siForm.P2 || 0));
+      const Q = fluid === "steam" ? ((siForm.W || 0) / 1000) * 1.2 : (siForm.Q || 0);
       const idInch = parseFloat(size.size);
       const idM = (idInch * 25.4) / 1000;
       const areaM2 = Math.PI * Math.pow(idM / 2, 2);
@@ -76,7 +81,7 @@ export default function SizingCompare({ isOpen, onClose, result, form, fluid, lo
         isOptimal: opening >= 20 && opening <= 80
       };
     });
-  }, [result, form, fluid, L]);
+  }, [result, siForm, fluid, L]);
 
   if (!mounted || !isOpen || !result || result.error || candidates.length === 0) return null;
 
@@ -250,7 +255,7 @@ export default function SizingCompare({ isOpen, onClose, result, form, fluid, lo
                       </div>
 
                       <CompareRow label={L.cv} value={c.size.cv} />
-                      <CompareRow label={L.velocity} value={c.velocity + " m/s"} />
+                      <CompareRow label={L.velocity} value={velocityFromSI(c.velocity, velocityUnit) + " " + velocityUnit} />
                       <CompareRow label={L.noise} value={c.noise + " dB"} last />
 
                       <div style={{
