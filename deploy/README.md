@@ -113,7 +113,7 @@ su - psm -c "cd /var/www/psm-valve && pm2 reload ecosystem.config.js --update-en
    .\deploy\push-assets.ps1 -Server 1.2.3.4 -User psm
    ```
 4. ایمیل فرم تماس (اختیاری): `SMTP_*` و `CONTACT_TO` را در `/var/www/psm-valve/.env.production`
-   پر کن و سپس `su - psm -c 'pm2 reload psm-valve --update-env'`.
+   پر کن و سپس `su - psm -c 'pm2 reload ecosystem.config.js --update-env'`.
 
 ### بهروزرسانی بعدی (با یک دستور)
 
@@ -234,8 +234,8 @@ node scripts/rotate-admin-password.mjs
 | --- | --- |
 | وضعیت سرویس | `su - psm -c 'pm2 status'` · `su - psm -c 'pm2 logs psm-valve'` |
 | بررسی سلامت | `curl -I "http://127.0.0.1:$(cat /var/www/psm-valve/.app-port)/fa"` (هر پورتی) · `curl -I https://www.<domain>/admin` (باید ۳۰۷ شود) |
-| تغییر پورت | بخش «پورت اپ» در بالا (`.app-port` + Nginx + `pm2 reload --update-env`) |
+| تغییر پورت | بخش «پورت اپ» در بالا (`.app-port` + Nginx + `pm2 reload ecosystem.config.js --update-env`) |
 | بکاپ دستی | `su - psm -c 'bash deploy/backup.sh'` |
 | تمدید SSL | خودکار (Certbot)؛ بازرسی: `certbot renew --dry-run` |
-| بازگردانی از بکاپ | `tar -xzf /var/backups/psm-valve/data-<stamp>.tar.gz` و سپس `pm2 reload psm-valve` |
+| بازگردانی از بکاپ | `tar -xzf /var/backups/psm-valve/data-<stamp>.tar.gz` و سپس `pm2 reload ecosystem.config.js --update-env` |
 | بازگردانی نسخهٔ کد | `git log --oneline` → `git reset --hard <commit>` → `npm ci && npm run build` → `su - psm -c "cd /var/www/psm-valve && pm2 reload ecosystem.config.js --update-env"` |

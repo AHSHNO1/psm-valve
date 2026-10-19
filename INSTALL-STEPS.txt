@@ -71,7 +71,7 @@
   ۳) ساخت کاربر psm، پوشههای پروژه/بکاپ و سواپ ۲GB
   ۴) git clone در نصب اول یا git pull در اجرای دوباره
   ۵) npm ci
-  ۶) ساخت .env.production با اسرار تصادفی (دسترسی 600)
+  ۶) ساخت .env.production با اسرار تصادفی (deploy/make-env.sh — دسترسی 600)
   ۷) تنظیم رمز پنل بهصورت هش bcrypt در data/admin.json
   ۸) npm run build (بعد از ساخت env، چون JWT_SECRET در زمان بیلد درونریزی میشود)
   ۹) اجرای دائمی با PM2 + pm2 save + pm2 startup
@@ -184,7 +184,7 @@
 
   محتوای هر بکاپ:
     data-<stamp>.tar.gz              همهٔ data/*.json (محتوا، تنظیمات، پیامها، مقالات)
-    products-<stamp>.sqlite          اسنپشات تراکنشی کاتالوگ محصولات
+    products-<stamp>.sqlite   (deploy/backup-products-db.cjs)  اسنپشات تراکنشی کاتالوگ محصولات
     uploads-<stamp>.tar.gz           داراییهای public/uploads
     products-seed-<stamp>.js         فقط اگر SQLite هنوز ساخته نشده باشد
     ecosystem.config.js-<stamp>      کانفیگ PM2
@@ -194,7 +194,7 @@
   بازگردانی دادهٔ JSON :
 
     tar -xzf /var/backups/psm-valve/data-<stamp>.tar.gz -C /var/www/psm-valve
-    su - psm -c "cd /var/www/psm-valve && pm2 reload psm-valve"
+    su - psm -c "cd /var/www/psm-valve && pm2 reload ecosystem.config.js --update-env"
 
   بازگردانی کاتالوگ SQLite :
 
@@ -280,6 +280,31 @@
   [ ] GO-LIVE.md علامت خورده است
 
 -------------------------------------------------------------------------------
+پیوست — همهٔ اسکریپت‌ها و فایل‌های پوشهٔ deploy
+-------------------------------------------------------------------------------
+مسیر همهٔ فایل‌های زیر نسبت به ریشهٔ پروژه: deploy/<نام> — پرکاربردترین‌ها:
+    deploy/deploy.sh · deploy/bootstrap-server.sh · deploy/docker-entrypoint.sh · deploy/docker.sh
+    deploy/update.sh · deploy/install.sh · deploy/backup.sh · deploy/make-env.sh
+    deploy/backup-products-db.cjs · deploy/backup-docker.sh · deploy/push-assets.ps1
+    deploy/nginx-psmvalve.conf · deploy/cpanel/README.md · deploy/install-remote.ps1
+  install.sh              نصب کامل سرور تازه (۱۱ گام) — مسیر توصیه‌شده
+  install-remote.ps1      اجرای install.sh از ویندوز (scp + ssh) و انتقال داده
+  update.sh               انتشار نسخهٔ جدید: preflight → بکاپ → deploy → تست → سلامت
+  deploy.sh               موتور انتشار (reset به origin/main + حفظ دادهٔ زنده)؛
+                          update.sh همین را صدا می‌زند — مستقیم هم قابل اجراست
+  bootstrap-server.sh     فقط آماده‌سازی سرور تازه (بسته‌ها، کاربر، سواپ) بدون کد
+  make-env.sh             ساخت .env.production با اسرار تصادفی (--force برای بازنویسی)
+  backup.sh               بکاپ روزانه (data + SQLite + uploads + کانفیگ) با KEEP_DAYS
+  backup-products-db.cjs  ابزار اسنپ‌شات تراکنشی SQLite (backup.sh از آن استفاده می‌کند)
+  backup-docker.sh        بکاپ دادهٔ نصب Docker
+  docker.sh               نصب/بیلد/بالا آوردن Docker + ساخت رمز مدیر
+  docker-entrypoint.sh    نقطهٔ ورود کانتینر (کپی دادهٔ اولیه در volume خالی)
+  nginx-psmvalve.conf     کانفیگ Nginx پروژه (proxy_pass + کش + ریدایرکت www)
+  push-assets.ps1         انتقال data/ و uploads/ از ویندوز به سرور (با بکاپ قبلی)
+  cpanel/README.md        مسیر cPanel / CloudLinux (Node.js Selector)
+  cpanel/app.js · .htaccess  فایل‌های لازم برای Passenger روی cPanel
+  README.md               انتخاب مسیر و همهٔ گزینه‌ها (نسخهٔ جدولی)
+-------------------------------------------------------------------------------
 منابع
 -------------------------------------------------------------------------------
   deploy/README.md             انتخاب مسیر و همهٔ گزینهها (نسخهٔ جدولی)
@@ -289,4 +314,6 @@
   deploy/nginx-psmvalve.conf   کانفیگ Nginx پروژه
   ecosystem.config.js          کانفیگ PM2 (APP_PORT → .app-port → ۳۰۰۰)
   lib/mailer.js                ارسال ایمیل فرم تماس (SMTP)
+  docs/CV-TABLES.md            مرجع جدول Cv کاتالوگ و دادهٔ تحلیل (API اسنپ‌شات)
+  INSTALL-STEPS.txt            همین راهنمای متنی (ریشهٔ پروژه) — سند اصلی
 ===============================================================================

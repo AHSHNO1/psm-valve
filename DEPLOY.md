@@ -420,7 +420,7 @@ git push origin main
 
 | نشانه | دلیل و راهحل |
 | --- | --- |
-| «ورود در سرور پیکربندی نشده است» | `JWT_SECRET` یا رمز مدیر تنظیم نشده. `.env.production` را کامل کن و `pm2 reload psm-valve --update-env`. |
+| «ورود در سرور پیکربندی نشده است» | `JWT_SECRET` یا رمز مدیر تنظیم نشده. `.env.production` را کامل کن و `pm2 reload ecosystem.config.js --update-env`. |
 | ورود با رمز درست رد میشود | `ADMIN_PASSWORD` کمتر از ۱۲ کاراکتر است یا `ADMIN_PASSWORD_HASH` اشتباه تولید شده. دوباره هش بساز. |
 | `502 Bad Gateway` | پروسهٔ Node بالا نیست: `pm2 status` → `pm2 logs psm-valve`. اگر پورت اشغال است، `ss -tlnp \| grep "$(cat /var/www/psm-valve/.app-port)"`. |
 | ۴۰۴ برای تصاویر اسلایدر/کاتالوگ | `public/uploads/` روی سرور منتقل نشده → گام ۷ را اجرا کن. |

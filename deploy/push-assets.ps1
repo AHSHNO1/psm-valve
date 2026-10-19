@@ -85,5 +85,5 @@ if (-not $SkipUploads) {
 Write-Host "`u{2192} تنظیم دسترسی فایل‌های خصوصی ..." -ForegroundColor Cyan
 & ssh $target "chmod 600 '$RemotePath/data/admin.json' 2>/dev/null; chmod 600 '$RemotePath/data/users.json' 2>/dev/null; chmod -R u+rwX '$RemotePath/data' '$RemotePath/public/uploads'; ls -1 '$RemotePath/data' | head -20"
 
-Write-Host "✅ انتقال انجام شد. سپس: pm2 reload psm-valve --update-env" -ForegroundColor Green
+Write-Host "✅ انتقال انجام شد. سپس: pm2 reload ecosystem.config.js --update-env" -ForegroundColor Green
 Write-Host "   بکاپ قبل از این انتقال: $RemotePath/backups/data-before-push-$stamp.tar.gz" -ForegroundColor DarkGray

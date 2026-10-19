@@ -93,7 +93,7 @@ if (-not $SkipAssets) {
 
     Write-Host "→ اصلاح مالکیت فایلها به کاربر $AppUser ..." -ForegroundColor Cyan
     & ssh $target "$prefix`chown -R ${AppUser}:${AppUser} $AppDir"
-    & ssh $target "$prefix`su - $AppUser -c 'export PATH=`$PATH:/usr/bin; cd $AppDir && pm2 reload psm-valve --update-env'"
+    & ssh $target "$prefix`su - $AppUser -c 'export PATH=`$PATH:/usr/bin; cd $AppDir && pm2 reload ecosystem.config.js --update-env'"
 }
 
 Write-Host ""

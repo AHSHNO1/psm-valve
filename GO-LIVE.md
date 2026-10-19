@@ -1,6 +1,8 @@
 # GO-LIVE — انتشار PSM Valve روی هاست و دامنه
 
-**تاریخ:** ۲۰۲۶-۱۰-۱۸ · **نسخهٔ کد:** Next 14.2.35 · **آخرین بیلد:** موفق · **تست‌ها:** ۲۵/۲۵
+**تاریخ:** ۲۰۲۶-۱۰-۱۸ · **بازبینی تست‌ها:** ۲۰۲۶-۱۰-۲۰ · **نسخهٔ کد:** Next 14.2.35 · **آخرین بیلد:** موفق · **تست‌ها:** ۵۶/۵۶
+
+> راهنمای متنی ساده و همیشه‌به‌روز این چک‌لیست: [`INSTALL-STEPS.txt`](INSTALL-STEPS.txt)
 
 ---
 
@@ -19,7 +21,7 @@
 | مورد | وضعیت |
 |---|---|
 | بیلد تولید | ✅ `npm run build` |
-| تست‌ها | ✅ ۲۵/۲۵ (`npm test`) |
+| تست‌ها | ✅ ۵۶/۵۶ (`npm test`) |
 | چهار زبان + RTL | ✅ |
 | پنل ادمین (۲۵ صفحه) | ✅ با احراز هویت و نگهبانی لایه‌ای |
 | دیتاشیت چاپی مستقل | ✅ با اطلاعات تماس واقعی |
@@ -210,7 +212,7 @@ cd C:\Users\ahshn\Desktop\psm-valve
 
 بعد از انتقال:
 ```bash
-pm2 reload psm-valve --update-env
+pm2 reload ecosystem.config.js --update-env
 ```
 
 ---
@@ -245,7 +247,7 @@ curl -s https://www.psmvalve.com/sitemap.xml | head
 
 - بکاپ شامل `data/`، `public/uploads/` و دیتابیس SQLite (آنلاین) است.
 - **ماهانه یک بار restore را تست کنید** — بکاپی که تست نشده، بکاپ نیست.
-- به‌روزرسانی سایت: `sudo -u psm bash deploy/deploy.sh`
+- به‌روزرسانی سایت: `su - psm -c 'bash /var/www/psm-valve/deploy/update.sh'`
 
 ---
 
