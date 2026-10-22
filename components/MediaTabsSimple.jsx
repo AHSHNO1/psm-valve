@@ -102,12 +102,12 @@ function formatVideoDuration(value, locale) {
     : `${padded.format(minutes)}:${padded.format(rest)}`;
 }
 
-function MediaCover({ src, title, fallback }) {
+function MediaCover({ src, title, alt, fallback }) {
   return (
     <div className="aspect-video overflow-hidden bg-[var(--bg-soft)]">
       <img
         src={src || fallback}
-        alt={title}
+        alt={alt || title}
         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
         loading="lazy"
       />
@@ -406,7 +406,7 @@ function GalleryGrid({ items, dict, locale }) {
             rel="noopener noreferrer"
             className="card-glass group flex h-full flex-col overflow-hidden"
           >
-            <MediaCover src={img.url} title={title} fallback="/images/media/article-cover.svg" />
+            <MediaCover src={img.url} title={title} alt={img.alt || title} fallback="/images/media/article-cover.svg" />
             <div className="flex flex-1 flex-col p-5">
               <h3 className="font-bold text-base" style={{ color: "var(--text)" }}>{title}</h3>
               <p className="mt-2 text-sm leading-6 text-soft">{fallbackText(locale, "gallery")}</p>

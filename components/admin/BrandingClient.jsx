@@ -1,10 +1,53 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { SaveBtn } from "./Actions";
+import ContentStudioNav from "./ContentStudioNav";
+import EditorPanel, { FormSection, FormGrid, Field } from "./EditorPanel";
+import UploadDropzone from "./UploadDropzone";
+import { useUnsavedChanges, isDirty } from "./useUnsavedChanges";
 
-export default function BrandingClient({ initial }) {
-  const [form, setForm] = useState({
+const LOGO_FIELDS = [
+  {
+    key: "logo",
+    label: "لوگوی اصلی",
+    hint: "در هدر، فوتر و اسلایدر استفاده می‌شود. PNG شفاف یا SVG.",
+    guidelineKey: "partnerLogo"
+  },
+  {
+    key: "logoLight",
+    label: "لوگوی روشن",
+    hint: "برای پس‌زمینه‌های تیره؛ نسخه سفید و شفاف.",
+    guidelineKey: "partnerLogo"
+  },
+  {
+    key: "logoIcon",
+    label: "نشان لوگو",
+    hint: "نسخه مربعی و خوانا برای اندازه‌های کوچک.",
+    guidelineKey: "productImage"
+  },
+  {
+    key: "favicon",
+    label: "فاویکون",
+    hint: "آیکون مرورگر؛ تصویر مربعی کوچک.",
+    guidelineKey: "productImage"
+  }
+];
+
+const SOCIAL_FIELDS = [
+  ["instagram", "اینستاگرام", "https://instagram.com/..."],
+  ["linkedin", "لینکدین", "https://linkedin.com/..."],
+  ["telegram", "تلگرام", "https://t.me/..."],
+  ["whatsapp", "واتساپ", "https://wa.me/..."],
+  ["youtube", "یوتیوب", "https://youtube.com/..."],
+  ["aparat", "آپارات", "https://aparat.com/..."],
+  ["bale", "بله", "https://ble.ir/..."],
+  ["rubika", "روبیکا", "https://rubika.ir/..."],
+  ["eitaa", "ایتا", "https://eitaa.com/..."]
+];
+
+function initialForm(initial) {
+  return {
     logo: (initial && initial.logo) || "",
     logoLight: (initial && initial.logoLight) || "",
     logoIcon: (initial && initial.logoIcon) || "",
@@ -12,9 +55,16 @@ export default function BrandingClient({ initial }) {
     primaryColor: (initial && initial.primaryColor) || "#D4A017",
     secondaryColor: (initial && initial.secondaryColor) || "#C0C0C0",
     socialLinks: (initial && initial.socialLinks) || {}
-  });
+  };
+}
+
+export default function BrandingClient({ initial }) {
+  const [form, setForm] = useState(() => initialForm(initial));
+  const [saved, setSaved] = useState(() => initialForm(initial));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
+  const dirty = isDirty(form, saved);
+  useUnsavedChanges(dirty);
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -38,8 +88,14 @@ export default function BrandingClient({ initial }) {
         body: JSON.stringify(form)
       });
       const data = await res.json();
-      if (data.ok) notify("تنظیمات برند ذخیره شد");
-      else notify("خطا در ذخیره", true);
+      if (data.ok) {
+        const next = initialForm(data.branding || form);
+        setForm(next);
+        setSaved(next);
+        notify("تنظیمات برند ذخیره شد");
+      } else {
+        notify("خطا در ذخیره", true);
+      }
     } catch (e) {
       notify("خطای شبکه", true);
     }
@@ -48,6 +104,8 @@ export default function BrandingClient({ initial }) {
 
   return (
     <div>
+      <ContentStudioNav />
+
       <div className="page-header anim-in">
         <div className="page-header-left">
           <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #B4009E, #8A007A)" }}>
@@ -58,259 +116,102 @@ export default function BrandingClient({ initial }) {
             <div className="page-header-sub">لوگو، رنگ‌ها و شبکه‌های اجتماعی</div>
           </div>
         </div>
+        {dirty && <span className="chip chip-gold">تغییرات ذخیره‌نشده</span>}
       </div>
 
       {msg.text && (
-        <div className={"msg anim-in " + (msg.type === "success" ? "msg-success" : "msg-error")}>
+        <div className={"msg anim-in " + (msg.type === "success" ? "msg-success" : "msg-error")} role="status">
           <Icon name={msg.type === "success" ? "check" : "alert"} /> {msg.text}
         </div>
       )}
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: 12
-      }}>
-        <UploadTile
-          label="لوگوی اصلی"
-          hint="PNG، JPG، WebP یا SVG · قابل استفاده در هدر، فوتر و اسلایدر"
-          value={form.logo}
-          onChange={function(url) { update({ logo: url }); }}
-          onClear={function() { update({ logo: "" }); }}
-        />
+      <EditorPanel
+        title="لوگوهای برند"
+        subtitle="برای هر جایگاه، فایل مناسب همان اندازه را بارگذاری کنید."
+        icon={<Icon name="image" size={17} />}
+      >
+        <FormGrid>
+          {LOGO_FIELDS.map(function (field) {
+            return (
+              <Field as="div" key={field.key} label={field.label} hint={field.hint}>
+                <UploadDropzone
+                  type="images"
+                  guidelineKey={field.guidelineKey}
+                  value={form[field.key]}
+                  onChange={function (url) { update({ [field.key]: url }); }}
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  label=""
+                />
+              </Field>
+            );
+          })}
+        </FormGrid>
+      </EditorPanel>
 
-        <UploadTile
-          label="لوگوی روشن (پس‌زمینه تیره)"
-          hint="300×80 پیکسل · PNG شفاف سفید"
-          value={form.logoLight}
-          onChange={function(url) { update({ logoLight: url }); }}
-          onClear={function() { update({ logoLight: "" }); }}
-        />
+      <EditorPanel
+        title="رنگ‌های برند"
+        subtitle="رنگ اصلی در دکمه‌ها و تأکیدها و رنگ ثانویه در جزئیات استفاده می‌شود."
+        icon={<Icon name="sparkles" size={17} />}
+      >
+        <FormGrid>
+          {[
+            ["primaryColor", "رنگ اصلی"],
+            ["secondaryColor", "رنگ ثانویه"]
+          ].map(function ([key, label]) {
+            return (
+              <Field as="div" key={key} label={label}>
+                <div className="branding-color-row">
+                  <input
+                    type="color"
+                    value={form[key]}
+                    onChange={function (e) { update({ [key]: e.target.value }); }}
+                    className="branding-color-swatch"
+                    aria-label={label}
+                  />
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={form[key]}
+                    onChange={function (e) { update({ [key]: e.target.value }); }}
+                    className="form-input"
+                    style={{ fontFamily: "monospace" }}
+                  />
+                </div>
+              </Field>
+            );
+          })}
+        </FormGrid>
+      </EditorPanel>
 
-        <UploadTile
-          label="نشان لوگو برای هدر"
-          hint="نسخه مربعی و خوانا برای نمایش در اندازه کوچک"
-          value={form.logoIcon}
-          onChange={function(url) { update({ logoIcon: url }); }}
-          onClear={function() { update({ logoIcon: "" }); }}
-        />
-
-        <UploadTile
-          label="فاویکون"
-          hint="64×64 پیکسل · PNG یا ICO"
-          value={form.favicon}
-          onChange={function(url) { update({ favicon: url }); }}
-          onClear={function() { update({ favicon: "" }); }}
-        />
-
-        <ColorTile
-          label="رنگ اصلی"
-          value={form.primaryColor}
-          onChange={function(v) { update({ primaryColor: v }); }}
-        />
-
-        <ColorTile
-          label="رنگ ثانویه"
-          value={form.secondaryColor}
-          onChange={function(v) { update({ secondaryColor: v }); }}
-        />
-      </div>
-
-      <div style={{ marginTop: 20 }} className="anim-in">
-        <h3 style={{
-          fontSize: 14, fontWeight: 900, color: "#1A1D21",
-          marginBottom: 10, display: "flex", alignItems: "center", gap: 6
-        }}>
-          <Icon name="globe" size={16} /> شبکه‌های اجتماعی
-        </h3>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: 10
-        }}>
-          <SocialField label="اینستاگرام" value={form.socialLinks.instagram || ""} onChange={function(v) { updateSocial("instagram", v); }} placeholder="https://instagram.com/..." />
-          <SocialField label="لینکدین" value={form.socialLinks.linkedin || ""} onChange={function(v) { updateSocial("linkedin", v); }} placeholder="https://linkedin.com/..." />
-          <SocialField label="تلگرام" value={form.socialLinks.telegram || ""} onChange={function(v) { updateSocial("telegram", v); }} placeholder="https://t.me/..." />
-          <SocialField label="واتساپ" value={form.socialLinks.whatsapp || ""} onChange={function(v) { updateSocial("whatsapp", v); }} placeholder="https://wa.me/..." />
-          <SocialField label="یوتیوب" value={form.socialLinks.youtube || ""} onChange={function(v) { updateSocial("youtube", v); }} placeholder="https://youtube.com/..." />
-          <SocialField label="آپارات" value={form.socialLinks.aparat || ""} onChange={function(v) { updateSocial("aparat", v); }} placeholder="https://aparat.com/..." />
-          <SocialField label="بله" value={form.socialLinks.bale || ""} onChange={function(v) { updateSocial("bale", v); }} placeholder="https://ble.ir/..." />
-          <SocialField label="روبیکا" value={form.socialLinks.rubika || ""} onChange={function(v) { updateSocial("rubika", v); }} placeholder="https://rubika.ir/..." />
-          <SocialField label="ایتا" value={form.socialLinks.eitaa || ""} onChange={function(v) { updateSocial("eitaa", v); }} placeholder="https://eitaa.com/..." />
-        </div>
-      </div>
+      <EditorPanel
+        title="شبکه‌های اجتماعی"
+        subtitle="نشانی‌های خالی در سایت نمایش داده نمی‌شوند."
+        icon={<Icon name="globe" size={17} />}
+      >
+        <FormSection>
+          <FormGrid>
+            {SOCIAL_FIELDS.map(function ([key, label, placeholder]) {
+              return (
+                <Field key={key} label={label}>
+                  <input
+                    type="url"
+                    dir="ltr"
+                    value={form.socialLinks[key] || ""}
+                    onChange={function (e) { updateSocial(key, e.target.value); }}
+                    placeholder={placeholder}
+                    className="form-input"
+                  />
+                </Field>
+              );
+            })}
+          </FormGrid>
+        </FormSection>
+      </EditorPanel>
 
       <div className="save-bar">
         <SaveBtn onClick={save} busy={busy} />
+        {dirty && <span className="text-soft" style={{ fontSize: 12, fontWeight: 700 }}>تغییرات ذخیره نشده است</span>}
       </div>
-    </div>
-  );
-}
-
-function UploadTile({ label, hint, value, onChange, onClear }) {
-  const [uploading, setUploading] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [error, setError] = useState("");
-  const inputRef = useRef(null);
-
-  async function upload(file) {
-    if (!file) return;
-    setError("");
-    if (file.size > 10 * 1024 * 1024) {
-      setError("حجم فایل لوگو نباید بیشتر از ۱۰ مگابایت باشد");
-      return;
-    }
-    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type)) {
-      setError("فرمت لوگو باید PNG، JPG، WebP یا SVG باشد");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "images");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "آپلود لوگو انجام نشد");
-      onChange(data.url);
-    } catch (e) {
-      setError(e.message || "خطا در آپلود لوگو");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
-
-  return (
-    <div style={{
-      background: "#FFFFFF",
-      border: "1px solid #D1D5DB",
-      borderRadius: 12,
-      padding: 14
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 900, color: "#1A1D21" }}>{label}</div>
-        {value && (
-          <button type="button" onClick={onClear} className="act-btn act-btn-delete" title="حذف">
-            <Icon name="trash" />
-          </button>
-        )}
-      </div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#7A8290", marginBottom: 10 }}>{hint}</div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp,image/svg+xml"
-        style={{ display: "none" }}
-        onChange={function(e) { upload(e.target.files[0]); }}
-      />
-
-      {value ? (
-        <div style={{
-          background: "#F4F5F7",
-          border: "1px solid #D1D5DB",
-          borderRadius: 10,
-          padding: 16,
-          textAlign: "center"
-        }}>
-          <img src={value} alt="" style={{ maxWidth: "100%", maxHeight: 80, objectFit: "contain" }} />
-          <button
-            type="button"
-            onClick={function() { inputRef.current && inputRef.current.click(); }}
-            disabled={uploading}
-            className="btn-outline text-xs"
-            style={{ marginTop: 10 }}
-          >
-            {uploading ? "در حال آپلود..." : "جایگزینی فایل"}
-          </button>
-        </div>
-      ) : (
-        <div
-          onClick={function() { inputRef.current && inputRef.current.click(); }}
-          onDragOver={function(e) { e.preventDefault(); setDragging(true); }}
-          onDragLeave={function() { setDragging(false); }}
-          onDrop={function(e) {
-            e.preventDefault();
-            setDragging(false);
-            if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);
-          }}
-          style={{
-            background: dragging ? "#FFF9E6" : "#F4F5F7",
-            border: "2px dashed " + (dragging ? "#C9950D" : "#D1D5DB"),
-            borderRadius: 10,
-            padding: "24px 16px",
-            textAlign: "center",
-            cursor: "pointer",
-            transition: "all 0.15s"
-          }}
-        >
-          {uploading ? (
-            <Icon name="loader" size={24} />
-          ) : (
-            <>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                margin: "0 auto 8px",
-                display: "grid", placeItems: "center",
-                background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                color: "#FFFFFF"
-              }}>
-                <Icon name="upload" size={20} />
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 900, color: "#1A1D21" }}>کلیک کنید یا فایل را رها کنید</div>
-            </>
-          )}
-        </div>
-      )}
-      {error && (
-        <div role="alert" style={{ color: "#B91C1C", fontSize: 11, fontWeight: 700, marginTop: 8 }}>
-          {error}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ColorTile({ label, value, onChange }) {
-  return (
-    <div style={{
-      background: "#FFFFFF",
-      border: "1px solid #D1D5DB",
-      borderRadius: 12,
-      padding: 14
-    }}>
-      <div style={{ fontSize: 13, fontWeight: 900, color: "#1A1D21", marginBottom: 8 }}>{label}</div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input type="color" value={value} onChange={function(e) { onChange(e.target.value); }}
-          style={{ width: 52, height: 44, borderRadius: 10, cursor: "pointer", border: "1px solid #D1D5DB", padding: 2 }} />
-        <input type="text" dir="ltr" value={value} onChange={function(e) { onChange(e.target.value); }}
-          className="form-input" style={{ flex: 1, fontFamily: "monospace" }} />
-      </div>
-    </div>
-  );
-}
-
-function SocialField({ label, value, onChange, placeholder }) {
-  return (
-    <div style={{
-      background: "#FFFFFF",
-      border: "1px solid #D1D5DB",
-      borderRadius: 12,
-      padding: 12
-    }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 900, color: "#1A1D21", marginBottom: 6 }}>
-        {label}
-      </label>
-      <input
-        type="text"
-        dir="ltr"
-        value={value}
-        onChange={function(e) { onChange(e.target.value); }}
-        placeholder={placeholder}
-        className="form-input"
-        style={{ fontSize: 12 }}
-      />
     </div>
   );
 }

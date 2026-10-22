@@ -271,6 +271,8 @@ export default function ProductWizard({ initial, categories = [], isNew = false,
       {msg.text && (
         <div
           className="wizard-msg"
+          role="status"
+          aria-live="polite"
           style={{
             background: msg.type === "success" ? "#ECFDF5" : "#FEF2F2",
             border: "2px solid " + (msg.type === "success" ? "#A7F3D0" : "#FECACA"),
@@ -283,7 +285,7 @@ export default function ProductWizard({ initial, categories = [], isNew = false,
         </div>
       )}
 
-      <div className="wiz-steps" ref={stepsRef}>
+      <div className="wiz-steps" ref={stepsRef} role="group" aria-label="مراحل ویرایش محصول">
         {STEPS.map(function(s, i) {
           const isActive = step === s.id;
           const isDone = step > s.id;
@@ -293,6 +295,7 @@ export default function ProductWizard({ initial, categories = [], isNew = false,
               <button
                 type="button"
                 aria-label={s.title + " — مرحله " + s.id}
+                aria-current={isActive ? "step" : undefined}
                 onClick={function() { setStep(s.id); }}
                 className={"wiz-step" + (isActive ? " wiz-step-active" : "") + (isDone ? " wiz-step-done" : "")}
               >
@@ -309,7 +312,7 @@ export default function ProductWizard({ initial, categories = [], isNew = false,
         })}
       </div>
 
-      <div className="wiz-card">
+      <div className="wiz-card" role="region" aria-label={STEPS[step - 1].title}>
         <div className="wiz-card-header">
           <div className="wiz-card-icon" style={{ background: stepColor + "18", color: stepColor }}>
             <StepIcon size={26} />

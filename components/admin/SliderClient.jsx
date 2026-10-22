@@ -5,6 +5,7 @@ import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
 import UploadDropzone from "./UploadDropzone";
 import ContentStudioNav from "./ContentStudioNav";
 import EditorPanel, { ADMIN_LANGUAGES, FormSection, Field, LocaleTabs } from "./EditorPanel";
+import { useUnsavedChanges, confirmDiscard, isDirty } from "./useUnsavedChanges";
 
 function pick(obj) {
   if (!obj) return "—";
@@ -38,9 +39,14 @@ function blank() {
 export default function SliderClient({ initial }) {
   const [items, setItems] = useState(initial || []);
   const [draft, setDraft] = useState(null);
+  const [draftBase, setDraftBase] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+  const [dragIndex, setDragIndex] = useState(-1);
+  const [dropIndex, setDropIndex] = useState(-1);
 
   const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
+  const draftDirty = Boolean(draft) && isDirty(draft, draftBase);
+  useUnsavedChanges(draftDirty);
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -69,20 +75,31 @@ export default function SliderClient({ initial }) {
   }
 
   function add() {
-    setDraft(blank());
+    if (!confirmDiscard(draftDirty)) return;
+    const next = blank();
+    setDraft(next);
+    setDraftBase(copy(next));
   }
 
   function edit(slide) {
+    if (draft && draft.id === slide.id) return;
+    if (!confirmDiscard(draftDirty)) return;
     setDraft(copy(slide));
+    setDraftBase(copy(slide));
   }
 
   function cancel() {
+    if (!confirmDiscard(draftDirty)) return;
     setDraft(null);
+    setDraftBase(null);
   }
 
   function remove(id) {
     if (!confirm("این اسلاید حذف شود؟")) return;
-    if (draft && draft.id === id) setDraft(null);
+    if (draft && draft.id === id) {
+      setDraft(null);
+      setDraftBase(null);
+    }
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -108,6 +125,36 @@ export default function SliderClient({ initial }) {
     });
   }
 
+  function handleDragStart(event, index) {
+    setDragIndex(index);
+    setDropIndex(index);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  }
+
+  function handleDragOver(event, index) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    if (dropIndex !== index) setDropIndex(index);
+  }
+
+  function handleDrop(event, index) {
+    event.preventDefault();
+    const from = dragIndex >= 0 ? dragIndex : Number(event.dataTransfer.getData("text/plain"));
+    setDragIndex(-1);
+    setDropIndex(-1);
+    if (!Number.isInteger(from) || from < 0 || from === index || from >= items.length) return;
+    const list = items.slice();
+    const moved = list.splice(from, 1)[0];
+    list.splice(index, 0, moved);
+    save(list);
+  }
+
+  function handleDragEnd() {
+    setDragIndex(-1);
+    setDropIndex(-1);
+  }
+
   async function saveDraft() {
     if (!draft) return;
     const exists = items.some(function(item) { return item.id === draft.id; });
@@ -115,7 +162,10 @@ export default function SliderClient({ initial }) {
       ? items.map(function(item) { return item.id === draft.id ? draft : item; })
       : items.concat([draft]);
     const ok = await save(list);
-    if (ok) setDraft(null);
+    if (ok) {
+      setDraft(null);
+      setDraftBase(null);
+    }
   }
 
   return (
@@ -129,13 +179,19 @@ export default function SliderClient({ initial }) {
           </div>
           <div className="min-w-0">
             <div className="page-header-title">اسلایدر صفحه اصلی</div>
-            <div className="page-header-sub">{items.length} اسلاید</div>
+            <div className="page-header-sub">{items.length} اسلاید · برای جابه‌جایی، ردیف را بکشید یا از دکمه‌های فلش استفاده کنید</div>
           </div>
         </div>
         <button onClick={add} className="btn-add">
           <Icon name="plus" /> اسلاید جدید
         </button>
       </div>
+
+      {draftDirty && (
+        <div className="msg anim-in" role="status" style={{ background: "#FFF9E6", color: "#8A6508" }}>
+          <Icon name="alert" /> تغییرات این اسلاید هنوز ذخیره نشده است.
+        </div>
+      )}
 
       {msg.text && (
         <div className={"msg anim-in " + (msg.type === "success" ? "msg-success" : "msg-error")}>
@@ -168,11 +224,22 @@ export default function SliderClient({ initial }) {
         <div>
           {items.map(function(s, i) {
             const isEditing = draft !== null && draft.id === s.id;
+            const dropClass = dropIndex === i && dragIndex !== i ? " row-drop-target" : "";
             return (
               <div key={s.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className={"row" + (isEditing ? " row-editing" : "")}>
+                <div
+                  className={"row" + (isEditing ? " row-editing" : "") + (dragIndex === i ? " row-dragging" : "") + dropClass}
+                  draggable
+                  onDragStart={function(event) { handleDragStart(event, i); }}
+                  onDragOver={function(event) { handleDragOver(event, i); }}
+                  onDrop={function(event) { handleDrop(event, i); }}
+                  onDragEnd={handleDragEnd}
+                >
+                  <span className="row-drag-handle" title="برای جابه‌جایی بکشید" aria-hidden="true">
+                    <Icon name="menu" size={14} />
+                  </span>
                   <div className="row-thumb" style={{ width: 80, height: 52, borderRadius: 9 }}>
-                    {s.image ? <img src={s.image} alt="" /> : <Icon name="image" size={20} />}
+                    {s.image ? <img src={s.image} alt="" draggable={false} /> : <Icon name="image" size={20} />}
                   </div>
 
                   <div className="row-body">

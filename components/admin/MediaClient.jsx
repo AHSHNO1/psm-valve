@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "./AdminIcons";
 import { DeleteBtn, EditBtn, SaveBtn, CancelBtn, ToggleBtn } from "./Actions";
 import ContentStudioNav from "./ContentStudioNav";
 import EditorPanel, { FormSection, FormGrid, Field } from "./EditorPanel";
 import UploadDropzone from "./UploadDropzone";
 import { useToast, Toast } from "./useToast";
+import { useUnsavedChanges, confirmDiscard, isDirty } from "./useUnsavedChanges";
 
 const TABS = [
   { id: "gallery", label: "تصاویر", noun: "تصویر", icon: "image" },
@@ -17,6 +18,10 @@ export default function MediaClient({ initial }) {
   const [media, setMedia] = useState(initial || { videos: [], catalogs: [], gallery: [], introVideoUrl: "" });
   const [tab, setTab] = useState("gallery");
   const [editing, setEditing] = useState(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const [query, setQuery] = useState("");
+  const [dragId, setDragId] = useState("");
+  const [dropId, setDropId] = useState("");
   const [introUrl, setIntroUrl] = useState(media.introVideoUrl || "");
   const [savingIntro, setSavingIntro] = useState(false);
   const { notify, toast } = useToast();
@@ -26,6 +31,49 @@ export default function MediaClient({ initial }) {
   const editingItem = editing && editing !== "new"
     ? activeList.find((item) => item.id === editing)
     : null;
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const visibleList = activeList.filter((item) => {
+    if (!normalizedQuery) return true;
+    const title = typeof item.title === "string" ? item.title : (item.title?.fa || item.title?.en || "");
+    const description = typeof item.description === "string"
+      ? item.description
+      : (item.description?.fa || item.description?.en || "");
+    return String(title).toLocaleLowerCase().includes(normalizedQuery) ||
+      String(description).toLocaleLowerCase().includes(normalizedQuery);
+  });
+  const introDirty = introUrl !== (media.introVideoUrl || "");
+  useUnsavedChanges(introDirty || formDirty);
+
+  function closeEditor() {
+    if (!confirmDiscard(formDirty)) return;
+    setFormDirty(false);
+    setEditing(null);
+  }
+
+  function changeTab(nextTab) {
+    if (nextTab === tab) {
+      setEditing(null);
+      return;
+    }
+    if (!confirmDiscard(formDirty)) return;
+    setFormDirty(false);
+    setEditing(null);
+    setQuery("");
+    setTab(nextTab);
+  }
+
+  function startCreate() {
+    if (!confirmDiscard(formDirty)) return;
+    setFormDirty(false);
+    setEditing("new");
+  }
+
+  function startEdit(id) {
+    if (editing === id) return;
+    if (!confirmDiscard(formDirty)) return;
+    setFormDirty(false);
+    setEditing(id);
+  }
 
   async function refresh() {
     const res = await fetch("/api/media");
@@ -106,6 +154,32 @@ export default function MediaClient({ initial }) {
     }
   }
 
+  async function moveGalleryItem(fromId, toId) {
+    if (tab !== "gallery" || normalizedQuery || !fromId || fromId === toId) return;
+    const list = media.gallery || [];
+    const from = list.findIndex(function (item) { return item.id === fromId; });
+    const to = list.findIndex(function (item) { return item.id === toId; });
+    if (from < 0 || to < 0) return;
+    const next = list.slice();
+    const moved = next.splice(from, 1)[0];
+    next.splice(to, 0, moved);
+    const previous = list;
+    setMedia(function (current) { return { ...current, gallery: next }; });
+    try {
+      const res = await fetch("/api/media", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "gallery", order: next.map(function (item) { return item.id; }) })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "ذخیره ترتیب ناموفق بود");
+      notify("ترتیب تصاویر گالری ذخیره شد");
+    } catch (error) {
+      setMedia(function (current) { return { ...current, gallery: previous }; });
+      notify(error.message || "ذخیره ترتیب ناموفق بود", true);
+    }
+  }
+
   return (
     <div>
       <ContentStudioNav />
@@ -159,7 +233,7 @@ export default function MediaClient({ initial }) {
         {TABS.map(function (t) {
           const count = (media[t.id] || []).length;
           return (
-            <button key={t.id} onClick={function () { setTab(t.id); setEditing(null); }}
+            <button key={t.id} onClick={function () { changeTab(t.id); }}
               className={"tab" + (tab === t.id ? " tab-active" : "")}>
               <Icon name={t.icon} size={13} />
               {t.label}
@@ -167,10 +241,37 @@ export default function MediaClient({ initial }) {
             </button>
           );
         })}
-        <button onClick={function () { setEditing("new"); }}
+        <button onClick={startCreate}
           className="btn-add" style={{ marginInlineStart: "auto", fontSize: 12, padding: "7px 14px" }}>
           <Icon name="plus" size={14} /> افزودن {tabMeta.noun}
         </button>
+      </div>
+
+      <div className="media-toolbar anim-in">
+        <div className="media-search">
+          <Icon name="search" size={15} />
+          <input
+            type="search"
+            value={query}
+            onChange={function (event) { setQuery(event.target.value); }}
+            placeholder={"جستجو در " + tabMeta.label + "..."}
+            aria-label={"جستجو در " + tabMeta.label}
+          />
+          {query && (
+            <button type="button" onClick={function () { setQuery(""); }} aria-label="پاک کردن جستجو" title="پاک کردن">
+              <Icon name="x" size={13} />
+            </button>
+          )}
+        </div>
+        <span className="media-toolbar-count">
+          {normalizedQuery
+            ? visibleList.length + " از " + activeList.length + " مورد"
+            : activeList.length + " مورد"}
+        </span>
+        {tab === "gallery" && !normalizedQuery && activeList.length > 1 && (
+          <span className="media-toolbar-count">برای تغییر ترتیب، کارت‌ها را بکشید</span>
+        )}
+        {introDirty && <span className="chip chip-gold">ویدئوی معرفی ذخیره نشده</span>}
       </div>
 
       {editing === "new" && (
@@ -179,15 +280,17 @@ export default function MediaClient({ initial }) {
           subtitle="اطلاعات و فایل آیتم جدید را وارد کنید؛ پس از ذخیره در فهرست نمایش داده می‌شود."
           icon={<Icon name={tabMeta.icon} size={17} />}
           badge={<span className="chip chip-blue">{tabMeta.label}</span>}
-          onClose={function () { setEditing(null); }}
+          onClose={closeEditor}
         >
           <MediaForm type={tab}
+            onDirtyChange={setFormDirty}
             onSave={async function () {
+              setFormDirty(false);
               await refresh();
               setEditing(null);
               notify("ذخیره شد");
             }}
-            onCancel={function () { setEditing(null); }} />
+            onCancel={closeEditor} />
         </EditorPanel>
       )}
 
@@ -197,18 +300,20 @@ export default function MediaClient({ initial }) {
           subtitle="تغییرات پس از ذخیره روی سایت اعمال می‌شود."
           icon={<Icon name={tabMeta.icon} size={17} />}
           badge={<span className="chip chip-gold">در حال ویرایش</span>}
-          onClose={function () { setEditing(null); }}
+          onClose={closeEditor}
         >
           <MediaForm
             key={editingItem.id}
             type={tab}
             initialItem={editingItem}
+            onDirtyChange={setFormDirty}
             onSave={async function () {
+              setFormDirty(false);
               await refresh();
               setEditing(null);
               notify("تغییرات ذخیره شد");
             }}
-            onCancel={function () { setEditing(null); }}
+            onCancel={closeEditor}
           />
         </EditorPanel>
       )}
@@ -219,15 +324,59 @@ export default function MediaClient({ initial }) {
           <div className="empty-title">هنوز {tabMeta.noun}ی اضافه نشده</div>
           <div className="empty-desc">از دکمه افزودن {tabMeta.noun} بالا استفاده کنید</div>
         </div>
+      ) : visibleList.length === 0 ? (
+        <div className="empty anim-in">
+          <div className="empty-icon"><Icon name="search" size={30} /></div>
+          <div className="empty-title">نتیجه‌ای پیدا نشد</div>
+          <div className="empty-desc">عبارت دیگری جستجو کنید یا جستجو را پاک کنید.</div>
+          <button type="button" onClick={function () { setQuery(""); }} className="btn-outline">
+            <Icon name="x" size={14} /> پاک کردن جستجو
+          </button>
+        </div>
       ) : (
         <div className="card-grid">
-          {activeList.map(function (item, i) {
+          {visibleList.map(function (item, i) {
+            const itemTitle = (typeof item.title === "string" ? item.title : (item.title && item.title.fa)) || "بدون عنوان";
+            const canDrag = tab === "gallery" && !normalizedQuery;
+            const dragClass = dragId === item.id
+              ? " card-item-dragging"
+              : (dropId === item.id && dragId ? " card-item-drop" : "");
             return (
               <div
                 key={item.id}
-                className={"card-item anim-in" + (editing === item.id ? " card-item-editing" : "")}
+                className={"card-item anim-in" + (editing === item.id ? " card-item-editing" : "") + (canDrag ? " card-item-draggable" : "") + dragClass}
                 style={{ animationDelay: (i * 25) + "ms" }}
+                draggable={canDrag}
+                onDragStart={function (event) {
+                  if (!canDrag) return;
+                  setDragId(item.id);
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", item.id);
+                }}
+                onDragOver={function (event) {
+                  if (!canDrag) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (dropId !== item.id) setDropId(item.id);
+                }}
+                onDrop={function (event) {
+                  if (!canDrag) return;
+                  event.preventDefault();
+                  const fromId = event.dataTransfer.getData("text/plain") || dragId;
+                  setDragId("");
+                  setDropId("");
+                  moveGalleryItem(fromId, item.id);
+                }}
+                onDragEnd={function () {
+                  setDragId("");
+                  setDropId("");
+                }}
               >
+                {canDrag && activeList.length > 1 && (
+                  <span className="card-drag-handle" title="برای جابه‌جایی بکشید" aria-hidden="true">
+                    <Icon name="menu" size={13} />
+                  </span>
+                )}
                 <div style={{
                   aspectRatio: tab === "gallery" ? "1" : "16/9",
                   borderRadius: 10,
@@ -238,11 +387,11 @@ export default function MediaClient({ initial }) {
                   placeItems: "center"
                 }}>
                   {tab === "gallery" && item.url && (
-                    <img src={item.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={item.url} alt={item.alt || itemTitle} draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   )}
                   {tab === "videos" && (
                     item.poster ? (
-                      <img src={item.poster} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={item.poster} alt={itemTitle} draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <Icon name="package" size={26} />
                     )
@@ -250,7 +399,8 @@ export default function MediaClient({ initial }) {
                   {tab === "catalogs" && (
                     <img
                       src={item.cover || "/images/media/catalog-cover.svg"}
-                      alt=""
+                      alt={itemTitle}
+                      draggable={false}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   )}
@@ -260,7 +410,7 @@ export default function MediaClient({ initial }) {
                   fontSize: 12, overflow: "hidden",
                   textOverflow: "ellipsis", whiteSpace: "nowrap"
                 }}>
-                  {(typeof item.title === "string" ? item.title : (item.title && item.title.fa)) || "بدون عنوان"}
+                  {itemTitle}
                 </div>
                 {editing === item.id && (
                   <div style={{ marginTop: 4 }}>
@@ -277,11 +427,11 @@ export default function MediaClient({ initial }) {
                 )}
 
                 <div className="card-item-foot">
-                  <a href={item.url} target="_blank" rel="noopener noreferrer"
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" draggable={false}
                     className="act-btn act-btn-view" title="باز کردن">
                     <Icon name="external" />
                   </a>
-                  <EditBtn onClick={function () { setEditing(item.id); }} title="ویرایش" />
+                  <EditBtn onClick={function () { startEdit(item.id); }} title="ویرایش" />
                   <ToggleBtn active={item.active !== false}
                     onClick={function () { toggleItem(item, tab); }}
                     title={item.active === false ? "نمایش در سایت" : "پنهان کردن از سایت"} />
@@ -298,7 +448,7 @@ export default function MediaClient({ initial }) {
   );
 }
 
-function MediaForm({ type, initialItem, onSave, onCancel }) {
+function MediaForm({ type, initialItem, onSave, onCancel, onDirtyChange }) {
   const initialTitle = initialItem && typeof initialItem.title === "object"
     ? initialItem.title.fa || initialItem.title.en || ""
     : (initialItem && initialItem.title) || "";
@@ -312,9 +462,26 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
       ? initialDescription
       : initialDescription?.fa || initialDescription?.en || ""
   );
+  const [alt, setAlt] = useState((initialItem && initialItem.alt) || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isEditing = Boolean(initialItem);
+  const initialSnapshot = {
+    url: (initialItem && initialItem.url) || "",
+    poster: (initialItem && initialItem.poster) || "",
+    cover: (initialItem && initialItem.cover) || "",
+    title: initialTitle,
+    description: typeof initialDescription === "string"
+      ? initialDescription
+      : initialDescription?.fa || initialDescription?.en || "",
+    alt: (initialItem && initialItem.alt) || ""
+  };
+  const dirty = isDirty({ url, poster, cover, title, description, alt }, initialSnapshot);
+  useUnsavedChanges(dirty);
+
+  useEffect(function () {
+    if (onDirtyChange) onDirtyChange(dirty);
+  }, [dirty, onDirtyChange]);
 
   const labels = {
     gallery: { title: "تصویر", noun: "تصویر", uploadType: "images", accept: "image/*", guidelineKey: "galleryImage" },
@@ -353,6 +520,7 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
       };
       if (type === "videos") item.poster = poster;
       if (type === "catalogs") item.cover = cover;
+      if (type === "gallery") item.alt = alt.trim();
       const res = await fetch("/api/media", {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -418,16 +586,32 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
 
       {type === "gallery" && (
         <FormSection title="فایل تصویر" description="تصویر گالری سایت">
-          <Field as="div" label="بارگذاری تصویر" hint="پس از آپلود، تصویر بهینه‌سازی و ذخیره می‌شود.">
-            <UploadDropzone
-              type="images"
-              guidelineKey="galleryImage"
-              value={url}
-              onChange={function (next) { setUrl(next || ""); }}
-              accept="image/*"
-              label=""
-            />
-          </Field>
+          <FormGrid>
+            <Field as="div" label="بارگذاری تصویر" hint="پس از آپلود، تصویر بهینه‌سازی و ذخیره می‌شود." wide>
+              <UploadDropzone
+                type="images"
+                guidelineKey="galleryImage"
+                value={url}
+                onChange={function (next) { setUrl(next || ""); }}
+                accept="image/*"
+                label=""
+              />
+            </Field>
+            <Field
+              label="متن جایگزین تصویر (alt)"
+              hint="توصیف کوتاه و دقیق تصویر برای موتورهای جستجو و صفحه‌خوان‌ها."
+              wide
+            >
+              <input
+                type="text"
+                value={alt}
+                maxLength={300}
+                onChange={function (e) { setAlt(e.target.value); }}
+                className="form-input"
+                placeholder="مثلاً: نمای خط تولید شیرهای صنعتی پتروسازه میهن"
+              />
+            </Field>
+          </FormGrid>
         </FormSection>
       )}
 

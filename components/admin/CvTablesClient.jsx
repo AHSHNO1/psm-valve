@@ -1,6 +1,9 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
 import { DeleteBtn, SaveBtn } from "./Actions";
+import { Icon } from "./AdminIcons";
+import ContentStudioNav from "./ContentStudioNav";
+import { useUnsavedChanges, confirmDiscard, isDirty } from "./useUnsavedChanges";
 import {
   DN_RE,
   SERIES_RE,
@@ -679,6 +682,15 @@ export default function CvTablesClient({ products = [], initial = {}, catalog = 
     };
   }, [pasteText, openSeries]);
 
+  const savedRows = useMemo(() => {
+    if (!openSeries) return [];
+    const table = tables[openSeries];
+    return (table && Array.isArray(table.sizes) ? table.sizes : []).map(normalizeRow);
+  }, [tables, openSeries]);
+
+  const dirty = Boolean(openSeries) && isDirty(rows, savedRows);
+  useUnsavedChanges(dirty);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return list.filter(function (item) {
@@ -719,11 +731,13 @@ export default function CvTablesClient({ products = [], initial = {}, catalog = 
 
   function toggleSeries(series) {
     if (openSeries === series) {
+      if (!confirmDiscard(dirty)) return;
       setOpenSeries(null);
       setRows([]);
       setPasteText("");
       return;
     }
+    if (!confirmDiscard(dirty)) return;
     setOpenSeries(series);
     setPasteText("");
     setMessage({ tone: "", text: "" });
@@ -923,7 +937,8 @@ export default function CvTablesClient({ products = [], initial = {}, catalog = 
       return;
     }
     const note = bulkPreview.errors.length ? " (" + bulkPreview.errors.length + " خط نامعتبر نادیده گرفته می‌شود)" : "";
-    if (!window.confirm(ids.length + " سری با " + bulkPreview.rows + " سایز ذخیره شود؟" + note)) return;
+    const dirtyNote = dirty ? " تغییرات ذخیره‌نشدهٔ سری باز هم دور ریخته می‌شود." : "";
+    if (!window.confirm(ids.length + " سری با " + bulkPreview.rows + " سایز ذخیره شود؟" + note + dirtyNote)) return;
 
     setOpenSeries(null);
     setRows([]);
@@ -1032,24 +1047,30 @@ export default function CvTablesClient({ products = [], initial = {}, catalog = 
   };
 
   return (
-    <div style={{ padding: "20px 22px", maxWidth: 1120 }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#1A1D21" }}>جدول Cv سایزینگ</h1>
-          <p style={{ margin: "6px 0 0", fontSize: 11.5, color: "#6B7280", lineHeight: 2, maxWidth: 640 }}>
-            Cv هر سری را اینجا وارد یا بازنویسی کنید؛ صفحهٔ سایزینگ بدون بیلد از همین داده استفاده می‌کند. کارت هر سری را باز
-            کنید تا سایزها را ببینید یا اضافه کنید — بستن کارت، تغییرات ذخیره‌نشده را دور می‌ریزد.
-          </p>
+    <div>
+      <ContentStudioNav />
+
+      <div className="page-header anim-in">
+        <div className="page-header-left">
+          <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #0F766E, #115E59)" }}>
+            <Icon name="table" size={22} />
+          </div>
+          <div>
+            <div className="page-header-title">جدول Cv سایزینگ</div>
+            <div className="page-header-sub">
+              پوشش داده، ورود گروهی از اکسل و ویرایش Cv هر سری — سایزینگ بدون بیلد از همین داده استفاده می‌کند.
+            </div>
+          </div>
         </div>
-        <div style={{ marginInlineStart: "auto" }}>
-          <button
-            type="button"
-            onClick={() => setShowGuide(!showGuide)}
-            style={smallBtn(showGuide ? { background: "#1A1D21", color: "#FFFFFF", borderColor: "#1A1D21" } : null)}
-          >
-            {showGuide ? "بستن راهنما" : "راهنما"}
-          </button>
-        </div>
+        {dirty && <span className="chip chip-gold">تغییرات ذخیره‌نشده</span>}
+        <button
+          type="button"
+          onClick={() => setShowGuide(!showGuide)}
+          className="btn-add"
+          style={showGuide ? { background: "#1A1D21", boxShadow: "none" } : { background: "#FFFFFF", color: "#8A6508", borderColor: "#E7D9B0", boxShadow: "none" }}
+        >
+          <Icon name={showGuide ? "x" : "info"} size={15} /> {showGuide ? "بستن راهنما" : "راهنما"}
+        </button>
       </div>
 
       <CoverageCard summary={summary} onExport={downloadJson} onCopy={copyJson} />

@@ -8,7 +8,8 @@ import {
   updateMedia,
   updateMediaItem,
   findMediaReferences,
-  deleteMediaFile
+  deleteMediaFile,
+  reorderMediaItems
 } from "@/lib/media";
 import { guard, readJson, json, err, isResponse, revalidatePublic } from "@/lib/api-helpers";
 
@@ -19,6 +20,7 @@ const VALID_TYPES = ["videos", "catalogs", "gallery"];
 
 function isValidMediaItem(type, item) {
   if (typeof item.url !== "string" || !item.url.trim() || item.url.length > 2048) return false;
+  if (item.alt !== undefined && (typeof item.alt !== "string" || item.alt.length > 300)) return false;
   if (type === "catalogs") {
     return /^\/uploads\/catalogs\/[a-zA-Z0-9._-]+\.pdf$/i.test(item.url) &&
       (item.cover === undefined ||
@@ -128,6 +130,20 @@ export async function PATCH(request) {
 
   const body = await readJson(request);
   if (isResponse(body)) return body;
+  if (body && Array.isArray(body.order)) {
+    if (!VALID_TYPES.includes(body.type) || body.type === "videos") {
+      return err("نوع مرتب‌سازی نامعتبر است", 400);
+    }
+    if (!body.order.every((id) => typeof id === "string" && id)) {
+      return err("فهرست ترتیب نامعتبر است", 400);
+    }
+    const ordered = reorderMediaItems(body.type, body.order);
+    if (!ordered) {
+      return err("ترتیب ارسال‌شده با فهرست فعلی هم‌خوان نیست", 409);
+    }
+    revalidatePublic(["", "media", "products"]);
+    return json({ items: ordered });
+  }
   if (body && typeof body === "object" && "introVideoUrl" in body &&
       typeof body.introVideoUrl !== "string") {
     return err("آدرس ویدئوی معرفی معتبر نیست", 400);

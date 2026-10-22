@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
 
 export const ADMIN_LANGUAGES = [
@@ -14,14 +15,62 @@ export function languageDir(code) {
 }
 
 export default function EditorPanel({ title, subtitle, icon, badge, onClose, children, className = "" }) {
+  const panelRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = useId();
+  const subtitleId = useId();
+  const closable = Boolean(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!closable) return undefined;
+    const panel = panelRef.current;
+    const previous = document.activeElement;
+    const focusable = panel?.querySelector(
+      "input:not([type=hidden]), textarea, select, button:not(.editor-close), a[href]"
+    );
+    const focusTarget = focusable || panel;
+    if (focusTarget && typeof focusTarget.focus === "function") {
+      focusTarget.focus({ preventScroll: true });
+    }
+
+    function handleKeyDown(event) {
+      if (event.key !== "Escape") return;
+      const currentPanel = panelRef.current;
+      if (!currentPanel) return;
+      if (currentPanel.contains(document.activeElement) || document.activeElement === document.body) {
+        event.stopPropagation();
+        if (onCloseRef.current) onCloseRef.current();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previous && typeof previous.focus === "function" && document.contains(previous)) {
+        previous.focus({ preventScroll: true });
+      }
+    };
+  }, [closable]);
+
   return (
-    <section className={"editor-panel anim-in " + className} aria-label={title || "ویرایش"}>
+    <section
+      ref={panelRef}
+      role={closable ? "dialog" : "region"}
+      aria-labelledby={titleId}
+      aria-describedby={subtitle ? subtitleId : undefined}
+      tabIndex={closable ? -1 : undefined}
+      className={"editor-panel anim-in " + className}
+    >
       <header className="editor-panel-head">
         <div className="editor-panel-heading">
           {icon && <span className="editor-panel-icon" aria-hidden="true">{icon}</span>}
           <div className="editor-panel-heading-text">
-            <h3 className="editor-panel-title">{title || "ویرایش"}</h3>
-            {subtitle && <p className="editor-panel-sub">{subtitle}</p>}
+            <h3 className="editor-panel-title" id={titleId}>{title || "ویرایش"}</h3>
+            {subtitle && <p className="editor-panel-sub" id={subtitleId}>{subtitle}</p>}
           </div>
         </div>
         <div className="editor-panel-head-actions">

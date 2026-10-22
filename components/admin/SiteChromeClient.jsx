@@ -3,13 +3,8 @@
 import { useState } from "react";
 import { Check, ChevronDown, ChevronUp, Eye, Layout, Save } from "lucide-react";
 import ContentStudioNav from "./ContentStudioNav";
-
-const LANGUAGES = [
-  { id: "fa", label: "فارسی", dir: "rtl" },
-  { id: "en", label: "English", dir: "ltr" },
-  { id: "ar", label: "العربية", dir: "rtl" },
-  { id: "ru", label: "Русский", dir: "ltr" }
-];
+import EditorPanel, { FormSection, FormGrid, Field, LocaleTabs, ADMIN_LANGUAGES } from "./EditorPanel";
+import { useUnsavedChanges, isDirty } from "./useUnsavedChanges";
 
 const TEXT_FIELDS = {
   header: [
@@ -83,6 +78,17 @@ const DEFAULT_SETTINGS = {
   }
 };
 
+const LONG_TEXT_FIELDS = /footer\.(desc|rights|knowledgeType|designCredit|hoursValue)/i;
+
+function normalizeSettings(value) {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...value,
+    header: { ...DEFAULT_SETTINGS.header, ...value?.header },
+    footer: { ...DEFAULT_SETTINGS.footer, ...value?.footer }
+  };
+}
+
 function readPath(source, path) {
   return path.split(".").reduce((value, part) => value?.[part], source) || "";
 }
@@ -99,16 +105,20 @@ function updatePath(source, path, value) {
 export default function SiteChromeClient({ initialTranslations, initialSettings, categories = [] }) {
   const headerCategories = categories.filter((category) => !category.parentId);
   const [translations, setTranslations] = useState(initialTranslations);
-  const [settings, setSettings] = useState({
-    ...DEFAULT_SETTINGS,
-    ...initialSettings,
-    header: { ...DEFAULT_SETTINGS.header, ...initialSettings?.header },
-    footer: { ...DEFAULT_SETTINGS.footer, ...initialSettings?.footer }
-  });
+  const [savedTranslations, setSavedTranslations] = useState(initialTranslations);
+  const [settings, setSettings] = useState(() => normalizeSettings(initialSettings));
+  const [savedSettings, setSavedSettings] = useState(() => normalizeSettings(initialSettings));
   const [language, setLanguage] = useState("fa");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
-  const currentLanguage = LANGUAGES.find((item) => item.id === language) || LANGUAGES[0];
+  const currentLanguage = ADMIN_LANGUAGES.find((item) => item.code === language) || ADMIN_LANGUAGES[0];
+  const dirty = isDirty(translations, savedTranslations) || isDirty(settings, savedSettings);
+  useUnsavedChanges(dirty);
+
+  const languageFilled = {};
+  ADMIN_LANGUAGES.forEach(function (item) {
+    languageFilled[item.code] = Object.keys(translations?.[item.code] || {}).length > 0;
+  });
 
   function updateText(path, value) {
     setTranslations((previous) => ({
@@ -155,6 +165,7 @@ export default function SiteChromeClient({ initialTranslations, initialSettings,
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || "ذخیرهٔ متن‌ها ناموفق بود");
       setTranslations(result.translations);
+      setSavedTranslations(result.translations);
       setMessage("متن‌های هدر و فوتر ذخیره شد.");
     } catch (error) {
       setMessage(error.message || "ارتباط با سرور برقرار نشد.");
@@ -174,7 +185,9 @@ export default function SiteChromeClient({ initialTranslations, initialSettings,
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || "ذخیرهٔ چیدمان ناموفق بود");
-      setSettings(result.settings);
+      const nextSettings = normalizeSettings(result.settings);
+      setSettings(nextSettings);
+      setSavedSettings(nextSettings);
       setMessage("چیدمان هدر و فوتر ذخیره شد.");
     } catch (error) {
       setMessage(error.message || "ارتباط با سرور برقرار نشد.");
@@ -196,6 +209,7 @@ export default function SiteChromeClient({ initialTranslations, initialSettings,
             <div className="page-header-sub">متن‌های چندزبانه، نمایش اجزا و چیدمان بخش‌های ثابت سایت را مدیریت کنید.</div>
           </div>
         </div>
+        {dirty && <span className="chip chip-gold">تغییرات ذخیره‌نشده</span>}
       </div>
 
       {message && (
@@ -204,14 +218,12 @@ export default function SiteChromeClient({ initialTranslations, initialSettings,
         </div>
       )}
 
-      <section className="anim-in" style={panelStyle}>
-        <SectionTitle icon={<Eye size={17} />} title="پیش‌نمایش چیدمان" />
-        <div style={{
-          border: "1px solid #D1D5DB",
-          borderRadius: 12,
-          overflow: "hidden",
-          background: "#F8FAFC"
-        }}>
+      <EditorPanel
+        title="پیش‌نمایش چیدمان"
+        subtitle="نمای ساده از ترتیب و نمایش اجزای هدر و فوتر."
+        icon={<Eye size={17} />}
+      >
+        <div style={{ border: "1px solid #D1D5DB", borderRadius: 12, overflow: "hidden", background: "#F8FAFC" }}>
           <div style={{
             minHeight: settings.header.layout === "compact" ? 46 : 60,
             display: "flex",
@@ -250,238 +262,182 @@ export default function SiteChromeClient({ initialTranslations, initialSettings,
             ))}
           </div>
         </div>
-      </section>
+      </EditorPanel>
 
-      <section className="anim-in" style={panelStyle}>
-        <SectionTitle title="چیدمان و اجزای قابل‌نمایش" />
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h3 style={subTitleStyle}>هدر</h3>
-            <SelectField
-              label="ارتفاع هدر"
-              value={settings.header.layout}
-              options={[["standard", "استاندارد"], ["compact", "فشرده"]]}
-              onChange={(value) => updateSettings("header", "layout", value)}
-            />
-            <SelectField
-              label="تراز منوی اصلی"
-              value={settings.header.navAlignment}
-              options={[["center", "وسط"], ["start", "ابتدای نوار"]]}
-              onChange={(value) => updateSettings("header", "navAlignment", value)}
-            />
-            <div className="grid sm:grid-cols-2 gap-2">
+      <EditorPanel
+        title="چیدمان و اجزای قابل‌نمایش"
+        subtitle="ارتفاع هدر، منوی اصلی و بخش‌های فوتر را تنظیم کنید."
+        icon={<Layout size={17} />}
+      >
+        <div className="site-chrome-columns">
+          <FormSection title="هدر" description="ساختار و اجزای نوار بالای سایت.">
+            <FormGrid>
+              <Field label="ارتفاع هدر">
+                <select value={settings.header.layout} onChange={(event) => updateSettings("header", "layout", event.target.value)} className="form-input">
+                  <option value="standard">استاندارد</option>
+                  <option value="compact">فشرده</option>
+                </select>
+              </Field>
+              <Field label="تراز منوی اصلی">
+                <select value={settings.header.navAlignment} onChange={(event) => updateSettings("header", "navAlignment", event.target.value)} className="form-input">
+                  <option value="center">وسط</option>
+                  <option value="start">ابتدای نوار</option>
+                </select>
+              </Field>
+            </FormGrid>
+            <div className="site-chrome-toggles">
               <Toggle label="نمایش شعار کنار لوگو" checked={settings.header.showTagline} onChange={(value) => updateSettings("header", "showTagline", value)} />
               <Toggle label="نمایش جستجو" checked={settings.header.showSearch} onChange={(value) => updateSettings("header", "showSearch", value)} />
               <Toggle label="نمایش تغییر پوسته" checked={settings.header.showTheme} onChange={(value) => updateSettings("header", "showTheme", value)} />
               <Toggle label="نمایش انتخاب زبان" checked={settings.header.showLocale} onChange={(value) => updateSettings("header", "showLocale", value)} />
             </div>
-            <div style={{ marginTop: 14 }}>
-              <div style={subTitleStyle}>نمایش لینک‌های منو</div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                {NAV_ITEMS.map(([id, label]) => (
-                  <Toggle
-                    key={id}
-                    label={label}
-                    checked={!settings.header.hiddenNavItems.includes(id)}
-                    onChange={(checked) => updateSettings(
-                      "header",
-                      "hiddenNavItems",
-                      checked
-                        ? settings.header.hiddenNavItems.filter((item) => item !== id)
-                        : [...settings.header.hiddenNavItems, id]
-                    )}
-                  />
-                ))}
-              </div>
+            <div className="site-chrome-subtitle">نمایش لینک‌های منو</div>
+            <div className="site-chrome-toggles">
+              {NAV_ITEMS.map(([id, label]) => (
+                <Toggle
+                  key={id}
+                  label={label}
+                  checked={!settings.header.hiddenNavItems.includes(id)}
+                  onChange={(checked) => updateSettings(
+                    "header",
+                    "hiddenNavItems",
+                    checked
+                      ? settings.header.hiddenNavItems.filter((item) => item !== id)
+                      : [...settings.header.hiddenNavItems, id]
+                  )}
+                />
+              ))}
             </div>
-            <div style={{ marginTop: 18 }}>
-              <div style={subTitleStyle}>دسته‌بندی‌های منوی محصولات</div>
-              <p className="text-xs mb-3" style={{ color: "#64748B" }}>
-                عنوان هر دسته در زبان فعال را تغییر دهید، ترتیب نمایش را جابه‌جا کنید یا آن را از منوی هدر مخفی کنید.
-              </p>
-              <div className="tabs mb-3" role="group" aria-label="زبان نام دسته‌بندی">
-                {LANGUAGES.map((item) => (
-                  <button key={item.id} type="button" onClick={() => setLanguage(item.id)}
-                    className={"tab" + (language === item.id ? " tab-active" : "")}
-                    aria-pressed={language === item.id}>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-2">
-                {settings.header.categoryOrder.map((categoryId, index) => {
-                  const category = headerCategories.find((item) => item.id === categoryId);
-                  if (!category) return null;
-                  const hidden = settings.header.hiddenCategoryIds.includes(categoryId);
-                  const categoryLabel =
-                    settings.header.categoryNames[categoryId]?.[language] ||
-                    category.name[language] ||
-                    category.name.en ||
-                    category.name.fa;
-                  return (
-                    <div key={categoryId} className="flex flex-wrap items-center gap-2 rounded-lg p-2"
-                      style={{ border: "1px solid #E2E8F0", background: "#F8FAFC" }}>
-                      <div className="flex gap-1">
-                        <button type="button" disabled={index === 0} onClick={() => moveCategory(categoryId, -1)}
-                          className="grid h-8 w-8 place-items-center rounded border disabled:opacity-40"
-                          style={{ borderColor: "#CBD5E1", color: "#475569" }} aria-label="انتقال دسته به بالا">
-                          <ChevronUp size={15} />
-                        </button>
-                        <button type="button" disabled={index === settings.header.categoryOrder.length - 1}
-                          onClick={() => moveCategory(categoryId, 1)}
-                          className="grid h-8 w-8 place-items-center rounded border disabled:opacity-40"
-                          style={{ borderColor: "#CBD5E1", color: "#475569" }} aria-label="انتقال دسته به پایین">
-                          <ChevronDown size={15} />
-                        </button>
-                      </div>
-                      <input type="text" value={categoryLabel} dir={currentLanguage.dir}
-                        onChange={(event) => updateCategoryName(categoryId, event.target.value)}
-                        className="form-input min-w-[180px] flex-1" aria-label={`نام دسته ${category.name.fa}`} />
-                      <Toggle
-                        label={hidden ? "مخفی" : "نمایش"}
-                        checked={!hidden}
-                        onChange={(visible) => updateSettings(
-                          "header",
-                          "hiddenCategoryIds",
-                          visible
-                            ? settings.header.hiddenCategoryIds.filter((id) => id !== categoryId)
-                            : [...settings.header.hiddenCategoryIds, categoryId]
-                        )}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          </FormSection>
 
-          <div>
-            <h3 style={subTitleStyle}>فوتر</h3>
-            <SelectField
-              label="الگوی چیدمان"
-              value={settings.footer.layout}
-              options={[
-                ["balanced", "چهارستونه متعادل"],
-                ["brand-focus", "تأکید بر معرفی شرکت"],
-                ["compact", "فشرده"]
-              ]}
-              onChange={(value) => updateSettings("footer", "layout", value)}
-            />
-            <div className="grid sm:grid-cols-2 gap-2">
+          <FormSection title="فوتر" description="الگوی چیدمان و بخش‌های پایین سایت.">
+            <FormGrid>
+              <Field label="الگوی چیدمان">
+                <select value={settings.footer.layout} onChange={(event) => updateSettings("footer", "layout", event.target.value)} className="form-input">
+                  <option value="balanced">چهارستونه متعادل</option>
+                  <option value="brand-focus">تأکید بر معرفی شرکت</option>
+                  <option value="compact">فشرده</option>
+                </select>
+              </Field>
+            </FormGrid>
+            <div className="site-chrome-toggles">
               <Toggle label="معرفی شرکت" checked={settings.footer.showBrand} onChange={(value) => updateSettings("footer", "showBrand", value)} />
               <Toggle label="دسترسی سریع" checked={settings.footer.showLinks} onChange={(value) => updateSettings("footer", "showLinks", value)} />
               <Toggle label="اطلاعات تماس" checked={settings.footer.showContact} onChange={(value) => updateSettings("footer", "showContact", value)} />
               <Toggle label="شبکه‌های اجتماعی" checked={settings.footer.showSocial} onChange={(value) => updateSettings("footer", "showSocial", value)} />
               <Toggle label="نوار حقوق و اعتبار" checked={settings.footer.showBottom} onChange={(value) => updateSettings("footer", "showBottom", value)} />
             </div>
-          </div>
+          </FormSection>
         </div>
+
+        <FormSection
+          title="دسته‌بندی‌های منوی محصولات"
+          description="عنوان هر دسته در زبان فعال را تغییر دهید، ترتیب نمایش را جابه‌جا کنید یا آن را از منوی هدر مخفی کنید."
+        >
+          <LocaleTabs lang={language} onChange={setLanguage} filled={languageFilled} hint="" />
+          <div className="site-chrome-categories">
+            {settings.header.categoryOrder.map((categoryId, index) => {
+              const category = headerCategories.find((item) => item.id === categoryId);
+              if (!category) return null;
+              const hidden = settings.header.hiddenCategoryIds.includes(categoryId);
+              const categoryLabel =
+                settings.header.categoryNames[categoryId]?.[language] ||
+                category.name[language] ||
+                category.name.en ||
+                category.name.fa;
+              return (
+                <div key={categoryId} className="site-chrome-category">
+                  <div className="site-chrome-order">
+                    <button type="button" disabled={index === 0} onClick={() => moveCategory(categoryId, -1)}
+                      className="site-chrome-order-btn" aria-label="انتقال دسته به بالا">
+                      <ChevronUp size={15} />
+                    </button>
+                    <button type="button" disabled={index === settings.header.categoryOrder.length - 1}
+                      onClick={() => moveCategory(categoryId, 1)}
+                      className="site-chrome-order-btn" aria-label="انتقال دسته به پایین">
+                      <ChevronDown size={15} />
+                    </button>
+                  </div>
+                  <input type="text" value={categoryLabel} dir={currentLanguage.dir}
+                    onChange={(event) => updateCategoryName(categoryId, event.target.value)}
+                    className="form-input site-chrome-category-input" aria-label={`نام دسته ${category.name.fa}`} />
+                  <Toggle
+                    label={hidden ? "مخفی" : "نمایش"}
+                    checked={!hidden}
+                    onChange={(visible) => updateSettings(
+                      "header",
+                      "hiddenCategoryIds",
+                      visible
+                        ? settings.header.hiddenCategoryIds.filter((id) => id !== categoryId)
+                        : [...settings.header.hiddenCategoryIds, categoryId]
+                    )}
+                  />
+                </div>
+              );
+            })}
+            {settings.header.categoryOrder.length === 0 && (
+              <p className="text-soft" style={{ fontSize: 12, margin: 0 }}>دسته‌بندی محصولی برای نمایش در منو وجود ندارد.</p>
+            )}
+          </div>
+        </FormSection>
+
         <div className="save-bar">
           <button className="btn-add" type="button" disabled={Boolean(busy)} onClick={saveLayout}>
             <Save size={16} /> {busy === "layout" ? "در حال ذخیره..." : "ذخیرهٔ چیدمان"}
           </button>
         </div>
-      </section>
+      </EditorPanel>
 
-      <section className="anim-in" style={panelStyle}>
-        <SectionTitle title="متن‌های هدر و فوتر" />
-        <div className="tabs" role="group" aria-label="زبان متن">
-          {LANGUAGES.map((item) => (
-            <button key={item.id} type="button" onClick={() => setLanguage(item.id)}
-              className={"tab" + (language === item.id ? " tab-active" : "")} aria-pressed={language === item.id}>
-              {item.label}
-            </button>
-          ))}
-        </div>
+      <EditorPanel
+        title="متن‌های هدر و فوتر"
+        subtitle="برای هر زبان، متن همان زبان را وارد کنید."
+        icon={<Layout size={17} />}
+      >
+        <LocaleTabs lang={language} onChange={setLanguage} filled={languageFilled} hint="زبان موردنظر را انتخاب کنید." />
         {["header", "footer"].map((section) => (
-          <div key={section} className="grid md:grid-cols-2 gap-x-5">
-            {TEXT_FIELDS[section].map(([path, label]) => {
-              const value = readPath(translations[language], path);
-              const isLong = value.length > 120;
-              return (
-                <label key={path} className="block mb-4">
-                  <span className="form-label">{label} · {section === "header" ? "هدر" : "فوتر"}</span>
-                  {isLong ? (
-                    <textarea
-                      rows={3}
-                      value={value}
-                      dir={currentLanguage.dir}
-                      onChange={(event) => updateText(path, event.target.value)}
-                      className="form-input"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={value}
-                      dir={currentLanguage.dir}
-                      onChange={(event) => updateText(path, event.target.value)}
-                      className="form-input"
-                    />
-                  )}
-                </label>
-              );
-            })}
-          </div>
+          <FormSection key={section} title={section === "header" ? "متن‌های هدر" : "متن‌های فوتر"}>
+            <FormGrid>
+              {TEXT_FIELDS[section].map(([path, label]) => {
+                const value = readPath(translations[language], path);
+                const isLong = LONG_TEXT_FIELDS.test(path);
+                return (
+                  <Field key={path} label={label} wide={isLong}>
+                    {isLong ? (
+                      <textarea
+                        rows={3}
+                        value={value}
+                        dir={currentLanguage.dir}
+                        onChange={(event) => updateText(path, event.target.value)}
+                        className="form-input"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={value}
+                        dir={currentLanguage.dir}
+                        onChange={(event) => updateText(path, event.target.value)}
+                        className="form-input"
+                      />
+                    )}
+                  </Field>
+                );
+              })}
+            </FormGrid>
+          </FormSection>
         ))}
         <div className="save-bar">
           <button className="btn-add" type="button" disabled={Boolean(busy)} onClick={saveTexts}>
             <Save size={16} /> {busy === "texts" ? "در حال ذخیره..." : "ذخیرهٔ متن‌ها"}
           </button>
         </div>
-      </section>
+      </EditorPanel>
     </div>
-  );
-}
-
-const panelStyle = {
-  background: "#FFFFFF",
-  border: "1px solid #D1D5DB",
-  borderRadius: 14,
-  padding: 18,
-  marginBottom: 16
-};
-
-const subTitleStyle = {
-  margin: "0 0 12px",
-  color: "#1A1D21",
-  fontSize: 13,
-  fontWeight: 900
-};
-
-function SectionTitle({ icon, title }) {
-  return (
-    <h2 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 16px", fontSize: 15, fontWeight: 900, color: "#1A1D21" }}>
-      {icon || <Layout size={17} />} {title}
-    </h2>
-  );
-}
-
-function SelectField({ label, value, options, onChange }) {
-  return (
-    <label className="block mb-4">
-      <span className="form-label">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="form-input">
-        {options.map(([option, title]) => <option key={option} value={option}>{title}</option>)}
-      </select>
-    </label>
   );
 }
 
 function Toggle({ label, checked, onChange }) {
   return (
-    <label style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 9,
-      minHeight: 40,
-      padding: "8px 10px",
-      border: "1px solid #E2E8F0",
-      borderRadius: 9,
-      color: "#334155",
-      fontSize: 12,
-      fontWeight: 700,
-      cursor: "pointer"
-    }}>
+    <label className="site-chrome-toggle">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
     </label>

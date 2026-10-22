@@ -2,13 +2,9 @@
 import { useMemo, useState } from "react";
 import { Icon } from "./AdminIcons";
 import { SaveBtn } from "./Actions";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
+import ContentStudioNav from "./ContentStudioNav";
+import EditorPanel, { FormSection, FormGrid, Field, LocaleTabs } from "./EditorPanel";
+import { useUnsavedChanges, isDirty } from "./useUnsavedChanges";
 
 const SECTION_LABELS = {
   common: "متن‌های عمومی",
@@ -69,19 +65,27 @@ function isLongText(path, value) {
 
 export default function TranslationsClient({ initial }) {
   const [translations, setTranslations] = useState(initial || {});
+  const [saved, setSaved] = useState(initial || {});
   const [lang, setLang] = useState("fa");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
-  const current = translations[lang] || {};
+  const dirty = isDirty(translations, saved);
+  useUnsavedChanges(dirty);
+
+  const filled = {};
+  Object.keys(translations).forEach((code) => {
+    filled[code] = flattenStrings(translations[code] || {}).some((field) => field.value.trim());
+  });
 
   const fields = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
+    const current = translations[lang] || {};
     return flattenStrings(current).filter((field) => !normalizedQuery ||
       formatPath(field.path).toLocaleLowerCase().includes(normalizedQuery) ||
       field.value.toLocaleLowerCase().includes(normalizedQuery)
     );
-  }, [current, query]);
+  }, [translations, lang, query]);
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text });
@@ -106,6 +110,7 @@ export default function TranslationsClient({ initial }) {
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "ذخیرهٔ ترجمه‌ها ناموفق بود");
       setTranslations(data.translations);
+      setSaved(data.translations);
       notify("ترجمه‌ها ذخیره شدند؛ برای مشاهده در سایت، صفحه را دوباره بارگذاری کنید");
     } catch (error) {
       notify(error.message || "ارتباط با سرور برقرار نشد؛ تغییرات ذخیره نشد", true);
@@ -123,6 +128,8 @@ export default function TranslationsClient({ initial }) {
 
   return (
     <div>
+      <ContentStudioNav />
+
       <div className="page-header anim-in">
         <div className="page-header-left">
           <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #3674C8, #23519A)" }}>
@@ -133,6 +140,7 @@ export default function TranslationsClient({ initial }) {
             <div className="page-header-sub">ویرایش متن‌های ثابت رابط سایت؛ ترجمه‌ها پس از ذخیره در صفحات و اطلاعات متا استفاده می‌شوند</div>
           </div>
         </div>
+        {dirty && <span className="chip chip-gold">تغییرات ذخیره‌نشده</span>}
       </div>
 
       {msg.text && (
@@ -141,31 +149,23 @@ export default function TranslationsClient({ initial }) {
         </div>
       )}
 
-      <div className="tabs anim-in" role="group" aria-label="زبان ترجمه">
-        {LANGS.map((language) => (
-          <button
-            key={language.code}
-            type="button"
-            onClick={() => setLang(language.code)}
-            aria-pressed={lang === language.code}
-            className={"tab" + (lang === language.code ? " tab-active" : "")}
-          >
-            {language.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label className="form-label" htmlFor="translation-search">جستجو در کلیدها و متن ترجمه</label>
-        <input
-          id="translation-search"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="form-input"
-          placeholder="عبارت یا نام بخش..."
-        />
-      </div>
+      <EditorPanel
+        title="انتخاب زبان و جستجو"
+        subtitle="کلید یا متن موردنظر را پیدا کنید؛ تغییرات فقط پس از ذخیره اعمال می‌شود."
+        icon={<Icon name="search" size={17} />}
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} hint="زبان موردنظر را انتخاب کنید." />
+        <Field as="div" label="جستجو در کلیدها و متن ترجمه">
+          <input
+            id="translation-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="form-input"
+            placeholder="عبارت یا نام بخش..."
+          />
+        </Field>
+      </EditorPanel>
 
       {Object.keys(groups).length === 0 ? (
         <div className="empty" role="status">
@@ -173,38 +173,40 @@ export default function TranslationsClient({ initial }) {
         </div>
       ) : (
         Object.entries(groups).map(([section, sectionFields]) => (
-          <section
+          <EditorPanel
             key={section}
-            aria-label={section}
-            className="anim-in"
-            style={{ background: "#FFFFFF", border: "1px solid #D1D5DB", borderRadius: 12, padding: 16, marginBottom: 14 }}
+            title={formatPath(section)}
+            subtitle={`${sectionFields.length} کلید در این بخش`}
+            icon={<Icon name="file" size={17} />}
           >
-            <h2 style={{ fontSize: 14, fontWeight: 900, margin: "0 0 14px", color: "#1A1D21" }}>
-              {formatPath(section)} <span style={{ color: "#7A8290", fontWeight: 600 }}>({sectionFields.length})</span>
-            </h2>
-            {sectionFields.map((field) => (
-              <div key={field.path} style={{ marginBottom: 14 }}>
-                <label className="form-label" htmlFor={"translation-" + field.path}>{formatPath(field.path)}</label>
-                {isLongText(field.path, field.value) ? (
-                  <textarea
-                    id={"translation-" + field.path}
-                    rows={4}
-                    value={field.value}
-                    onChange={(event) => updateValue(field.path, event.target.value)}
-                    className="form-input"
-                  />
-                ) : (
-                  <input
-                    id={"translation-" + field.path}
-                    type="text"
-                    value={field.value}
-                    onChange={(event) => updateValue(field.path, event.target.value)}
-                    className="form-input"
-                  />
-                )}
-              </div>
-            ))}
-          </section>
+            <FormSection>
+              <FormGrid>
+                {sectionFields.map((field) => (
+                  <Field key={field.path} label={formatPath(field.path)} wide>
+                    {isLongText(field.path, field.value) ? (
+                      <textarea
+                        id={"translation-" + field.path}
+                        rows={4}
+                        value={field.value}
+                        onChange={(event) => updateValue(field.path, event.target.value)}
+                        className="form-input"
+                        dir={lang === "en" || lang === "ru" ? "ltr" : "rtl"}
+                      />
+                    ) : (
+                      <input
+                        id={"translation-" + field.path}
+                        type="text"
+                        value={field.value}
+                        onChange={(event) => updateValue(field.path, event.target.value)}
+                        className="form-input"
+                        dir={lang === "en" || lang === "ru" ? "ltr" : "rtl"}
+                      />
+                    )}
+                  </Field>
+                ))}
+              </FormGrid>
+            </FormSection>
+          </EditorPanel>
         ))
       )}
 
