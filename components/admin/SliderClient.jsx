@@ -1,8 +1,10 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import UploadDropzone from "./UploadDropzone";
 import ContentStudioNav from "./ContentStudioNav";
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, Field, LocaleTabs } from "./EditorPanel";
 
 function pick(obj) {
   if (!obj) return "—";
@@ -10,12 +12,9 @@ function pick(obj) {
   return obj.fa || obj.en || "—";
 }
 
-const LANGUAGES = [
-  { code: "fa", label: "فارسی", dir: "rtl" },
-  { code: "en", label: "English", dir: "ltr" },
-  { code: "ar", label: "العربية", dir: "rtl" },
-  { code: "ru", label: "Русский", dir: "ltr" }
-];
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 
 function localizedValue(value, language) {
   if (typeof value === "string") return value;
@@ -38,8 +37,10 @@ function blank() {
 
 export default function SliderClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -68,13 +69,20 @@ export default function SliderClient({ initial }) {
   }
 
   function add() {
-    const s = blank();
-    setItems(items.concat([s]));
-    setEditing(s.id);
+    setDraft(blank());
+  }
+
+  function edit(slide) {
+    setDraft(copy(slide));
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این اسلاید حذف شود؟")) return;
+    if (draft && draft.id === id) setDraft(null);
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -95,7 +103,19 @@ export default function SliderClient({ initial }) {
   }
 
   function update(id, patch) {
-    setItems(items.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; }));
+    setDraft(function(current) {
+      return current && current.id === id ? Object.assign({}, current, patch) : current;
+    });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    const exists = items.some(function(item) { return item.id === draft.id; });
+    const list = exists
+      ? items.map(function(item) { return item.id === draft.id ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -123,6 +143,18 @@ export default function SliderClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "اسلاید جدید" : "ویرایش اسلاید"}
+          subtitle={pick(draft.title) !== "—" ? pick(draft.title) : "تیتر، توضیح، دکمه و تصویر اسلاید را تنظیم کنید"}
+          icon={<Icon name="sparkles" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <SlideForm slide={draft} update={update} onSave={saveDraft} onCancel={cancel} />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="sparkles" size={30} /></div>
@@ -135,10 +167,10 @@ export default function SliderClient({ initial }) {
       ) : (
         <div>
           {items.map(function(s, i) {
-            const isEditing = editing === s.id;
+            const isEditing = draft !== null && draft.id === s.id;
             return (
               <div key={s.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="row">
+                <div className={"row" + (isEditing ? " row-editing" : "")}>
                   <div className="row-thumb" style={{ width: 80, height: 52, borderRadius: 9 }}>
                     {s.image ? <img src={s.image} alt="" /> : <Icon name="image" size={20} />}
                   </div>
@@ -146,6 +178,7 @@ export default function SliderClient({ initial }) {
                   <div className="row-body">
                     <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
                       <span className="chip chip-blue">اسلاید {i + 1}</span>
+                      {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
                       {s.active !== false ? (
                         <span className="chip chip-green"><Icon name="check" /> فعال</span>
                       ) : (
@@ -158,36 +191,19 @@ export default function SliderClient({ initial }) {
 
                   <div className="row-actions">
                     <button className="act-btn act-btn-gold" onClick={function() { move(s.id, -1); }}
-                      disabled={i === 0} title="بالا" style={{ opacity: i === 0 ? 0.35 : 1 }}>
+                      disabled={i === 0} title="بالا" aria-label="انتقال به بالا" style={{ opacity: i === 0 ? 0.35 : 1 }}>
                       <Icon name="arrowLeft" size={14} style={{ transform: "rotate(90deg)" }} />
                     </button>
                     <button className="act-btn act-btn-gold" onClick={function() { move(s.id, 1); }}
-                      disabled={i === items.length - 1} title="پایین"
+                      disabled={i === items.length - 1} title="پایین" aria-label="انتقال به پایین"
                       style={{ opacity: i === items.length - 1 ? 0.35 : 1 }}>
                       <Icon name="arrowLeft" size={14} style={{ transform: "rotate(-90deg)" }} />
                     </button>
                     <ToggleBtn active={s.active !== false} onClick={function() { toggle(s.id); }} />
-                    <EditBtn onClick={function() { setEditing(isEditing ? null : s.id); }} />
+                    <EditBtn onClick={function() { if (isEditing) cancel(); else edit(s); }} />
                     <DeleteBtn onClick={function() { remove(s.id); }} />
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 16,
-                    marginTop: -4,
-                    marginBottom: 10
-                  }}>
-                    <SlideForm slide={s} update={update}
-                      onSave={async function() {
-                        if (await save(items)) setEditing(null);
-                      }}
-                      onCancel={function() { setEditing(null); }} />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -198,11 +214,14 @@ export default function SliderClient({ initial }) {
 }
 
 function SlideForm({ slide, update, onSave, onCancel }) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
   const [language, setLanguage] = useState("fa");
-  const inputRef = useRef(null);
-  const currentLanguage = LANGUAGES.find((item) => item.code === language) || LANGUAGES[0];
+  const currentLanguage = ADMIN_LANGUAGES.find((item) => item.code === language) || ADMIN_LANGUAGES[0];
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(
+      localizedValue(slide.title, item.code) || localizedValue(slide.subtitle, item.code)
+    );
+  });
 
   function updateLocalized(field, value) {
     const current = slide[field];
@@ -212,85 +231,40 @@ function SlideForm({ slide, update, onSave, onCancel }) {
     update(slide.id, { [field]: { ...localized, [language]: value } });
   }
 
-  async function upload(file) {
-    if (!file) return;
-    setUploading(true);
-    setUploadError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "images");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || !data.ok || !data.url) {
-        setUploadError(data.error || "بارگذاری تصویر انجام نشد.");
-        return;
-      }
-      update(slide.id, { image: data.url });
-    } catch (e) {
-      setUploadError("خطای شبکه هنگام بارگذاری تصویر. دوباره تلاش کنید.");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
-
   return (
     <div className="slide-editor">
-      <div className="slide-editor-heading">
-        <div>
-          <h3>محتوای اسلاید</h3>
-          <p>عنوان، توضیح و دکمه را برای زبان‌های سایت ویرایش کنید.</p>
-        </div>
-        <span className="chip chip-blue">پیش‌نمایش زنده</span>
-      </div>
-
       <div className="slide-editor-grid">
-        <div className="slide-editor-fields">
-          <div className="slide-language-tabs" role="tablist" aria-label="زبان متن اسلاید">
-            {LANGUAGES.map((item) => (
-              <button
-                key={item.code}
-                type="button"
-                role="tab"
-                aria-selected={language === item.code}
-                className={"slide-language-tab" + (language === item.code ? " slide-language-tab-active" : "")}
-                onClick={() => setLanguage(item.code)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <FormSection
+          title="متن اسلاید"
+          description="تیتر، توضیح و دکمه را برای هر زبان ویرایش کنید."
+        >
+          <LocaleTabs lang={language} onChange={setLanguage} filled={filled} hint="" />
 
-          <label className="form-label" htmlFor={"slide-title-" + slide.id}>تیتر اسلاید · {currentLanguage.label}</label>
-          <input
-            id={"slide-title-" + slide.id}
-            type="text"
-            dir={currentLanguage.dir}
-            value={localizedValue(slide.title, language)}
-            onChange={(event) => updateLocalized("title", event.target.value)}
-            className="form-input"
-            placeholder="تیتر اصلی که روی تصویر نمایش داده می‌شود"
-          />
+          <Field label={"تیتر اسلاید · " + currentLanguage.label}>
+            <input
+              type="text"
+              dir={currentLanguage.dir}
+              value={localizedValue(slide.title, language)}
+              onChange={(event) => updateLocalized("title", event.target.value)}
+              className="form-input"
+              placeholder="تیتر اصلی که روی تصویر نمایش داده می‌شود"
+            />
+          </Field>
 
-          <label className="form-label slide-editor-label" htmlFor={"slide-subtitle-" + slide.id}>
-            توضیح زیر تیتر · {currentLanguage.label}
-          </label>
-          <textarea
-            id={"slide-subtitle-" + slide.id}
-            dir={currentLanguage.dir}
-            value={localizedValue(slide.subtitle, language)}
-            onChange={(event) => updateLocalized("subtitle", event.target.value)}
-            className="form-input"
-            rows={3}
-            placeholder="توضیح کوتاهی که زیر تیتر اسلاید دیده می‌شود"
-          />
+          <Field label={"توضیح زیر تیتر · " + currentLanguage.label} className="slide-editor-label">
+            <textarea
+              dir={currentLanguage.dir}
+              value={localizedValue(slide.subtitle, language)}
+              onChange={(event) => updateLocalized("subtitle", event.target.value)}
+              className="form-input"
+              rows={3}
+              placeholder="توضیح کوتاهی که زیر تیتر اسلاید دیده می‌شود"
+            />
+          </Field>
 
           <div className="slide-editor-cta">
-            <div>
-              <label className="form-label" htmlFor={"slide-cta-" + slide.id}>متن دکمه · {currentLanguage.label}</label>
+            <Field label={"متن دکمه · " + currentLanguage.label}>
               <input
-                id={"slide-cta-" + slide.id}
                 type="text"
                 dir={currentLanguage.dir}
                 value={localizedValue(slide.ctaText, language)}
@@ -298,11 +272,9 @@ function SlideForm({ slide, update, onSave, onCancel }) {
                 className="form-input"
                 placeholder="مثلاً مشاهده محصولات"
               />
-            </div>
-            <div>
-              <label className="form-label" htmlFor={"slide-cta-href-" + slide.id}>لینک دکمه</label>
+            </Field>
+            <Field label="لینک دکمه">
               <input
-                id={"slide-cta-href-" + slide.id}
                 type="text"
                 dir="ltr"
                 value={slide.ctaHref || ""}
@@ -310,9 +282,9 @@ function SlideForm({ slide, update, onSave, onCancel }) {
                 className="form-input"
                 placeholder="/products"
               />
-            </div>
+            </Field>
           </div>
-        </div>
+        </FormSection>
 
         <div className="slide-editor-preview" dir={currentLanguage.dir}>
           {slide.image && <img src={slide.image} alt="" className="slide-preview-image" />}
@@ -328,63 +300,19 @@ function SlideForm({ slide, update, onSave, onCancel }) {
         </div>
       </div>
 
-      <div className="slide-image-editor">
-        <label className="form-label">تصویر اسلاید</label>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        style={{ display: "none" }}
-        onChange={function(e) { upload(e.target.files[0]); }}
-      />
-      {slide.image ? (
-        <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #D1D5DB" }}>
-          <img src={slide.image} alt="" style={{ width: "100%", display: "block", maxHeight: 360, objectFit: "contain", background: "#F4F5F7" }} />
-        </div>
-      ) : (
-        <div style={{
-          border: "2px dashed #D1D5DB",
-          background: "#F4F5F7",
-          borderRadius: 10,
-          padding: 30,
-          textAlign: "center"
-        }}>
-          <Icon name="image" size={28} />
-          <div style={{ fontSize: 12, fontWeight: 800, marginTop: 8, color: "#4B5563" }}>
-            هنوز تصویری برای این اسلاید انتخاب نشده است
-          </div>
-        </div>
-      )}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <button
-          type="button"
-          className="btn-add"
-          disabled={uploading}
-          onClick={function() { inputRef.current && inputRef.current.click(); }}
-        >
-          <Icon name={uploading ? "loader" : "upload"} size={16} />
-          {uploading ? "در حال بارگذاری..." : slide.image ? "تغییر تصویر" : "انتخاب تصویر"}
-        </button>
-        {slide.image && (
-          <button
-            type="button"
-            className="act-btn act-btn-delete"
-            disabled={uploading}
-            onClick={function() { update(slide.id, { image: "" }); }}
-          >
-            <Icon name="x" size={16} /> حذف تصویر
-          </button>
-        )}
-      </div>
-      {uploadError && (
-        <div role="alert" style={{ marginTop: 8, color: "#B91C1C", fontSize: 12 }}>
-          {uploadError}
-        </div>
-      )}
-      <div style={{ marginTop: 7, color: "#6B7280", fontSize: 11 }}>
-        فرمت‌های مجاز: JPG، PNG، WebP و GIF؛ حداکثر حجم ۵۰ مگابایت.
-      </div>
-      </div>
+      <FormSection
+        title="تصویر اسلاید"
+        description="تصویر با کیفیت و سبک، سرعت بارگذاری صفحه اصلی را حفظ می‌کند."
+      >
+        <UploadDropzone
+          type="images"
+          guidelineKey="heroImage"
+          value={slide.image || ""}
+          onChange={(url) => update(slide.id, { image: url })}
+          label=""
+          accept="image/jpeg,image/png,image/webp,image/gif"
+        />
+      </FormSection>
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} />

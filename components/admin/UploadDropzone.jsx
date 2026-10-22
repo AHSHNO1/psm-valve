@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
-import { UploadCloud, X, Loader2, Image as ImageIcon, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { UploadCloud, X, Loader2, CheckCircle2, AlertCircle, Info, FileVideo } from "lucide-react";
 import { GUIDELINES } from "@/lib/upload-guidelines";
 
 export default function UploadDropzone({
@@ -9,14 +9,16 @@ export default function UploadDropzone({
   value = "",
   onChange,
   label,
-  accept = "image/*"
+  accept = "image/*",
+  hint = "",
+  showHelp: showHelpDefault = false
 }) {
   const guide = GUIDELINES[guidelineKey] || GUIDELINES.galleryImage;
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
-  const [showHelp, setShowHelp] = useState(true);
+  const [showHelp, setShowHelp] = useState(showHelpDefault);
   const inputRef = useRef(null);
 
   const upload = useCallback(
@@ -62,41 +64,35 @@ export default function UploadDropzone({
     setError("");
   };
   const isPdf = typeof value === "string" && value.toLowerCase().endsWith(".pdf");
-  const changeLabel = type === "catalogs" || isPdf ? "تغییر فایل" : "تغییر تصویر";
+  const isVideo = type === "videos" || (typeof value === "string" && /\.(mp4|webm|mov)(\?|$)/i.test(value));
+  const isFile = isPdf || isVideo;
+  const changeLabel = isFile ? "تغییر فایل" : "تغییر تصویر";
+  const fileName = typeof value === "string" ? value.split("/").pop()?.split("?")[0] : "";
 
   return (
-    <div>
-      {label && (
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-bold" style={{ color: "#1A1D21" }}>{label}</span>
-          <button
-            type="button"
-            onClick={() => setShowHelp(!showHelp)}
-            className="text-xs font-bold flex items-center gap-1"
-            style={{ color: "#B8860B" }}
-          >
-            <Info size={12} /> راهنما
-          </button>
-        </div>
-      )}
+    <div className="upload-field">
+      <div className="upload-field-head">
+        {label ? <span className="upload-field-label">{label}</span> : <span />}
+        <button
+          type="button"
+          onClick={() => setShowHelp(!showHelp)}
+          aria-expanded={showHelp}
+          className="upload-help-toggle"
+        >
+          <Info size={12} /> {showHelp ? "بستن راهنما" : "مشخصات فایل"}
+        </button>
+      </div>
 
       {showHelp && (
-        <div
-          className="rounded-xl p-3 mb-3 text-xs space-y-1"
-          style={{ background: "#FEF9E7", border: "1px solid #F5C518" }}
-        >
-          <div className="font-bold" style={{ color: "#B8860B" }}>
-            {guide.label}
+        <div className="upload-help">
+          <div className="upload-help-title">{guide.label}</div>
+          <div className="upload-help-grid">
+            <div><strong>ابعاد:</strong> {guide.dimensions}</div>
+            <div><strong>حجم:</strong> {guide.maxSize}</div>
+            <div><strong>فرمت:</strong> {guide.formats}</div>
+            <div><strong>نسبت:</strong> {guide.ratio}</div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-[11px]" style={{ color: "#5C6370" }}>
-            <div>📐 <strong>ابعاد:</strong> {guide.dimensions}</div>
-            <div>📦 <strong>حجم:</strong> {guide.maxSize}</div>
-            <div>🎨 <strong>فرمت:</strong> {guide.formats}</div>
-            <div>📊 <strong>نسبت:</strong> {guide.ratio}</div>
-          </div>
-          <div className="text-[11px] pt-1" style={{ color: "#5C6370" }}>
-            💡 {guide.tip}
-          </div>
+          <div className="upload-help-tip">{guide.tip}</div>
         </div>
       )}
 
@@ -104,7 +100,7 @@ export default function UploadDropzone({
         ref={inputRef}
         type="file"
         accept={accept}
-        className="hidden"
+        className="upload-input-hidden"
         onChange={(event) => {
           upload(event.target.files?.[0]);
           event.target.value = "";
@@ -112,59 +108,51 @@ export default function UploadDropzone({
       />
 
       {value ? (
-        <div
-          className="relative rounded-xl overflow-hidden group"
-          style={{ border: "1px solid rgba(26, 29, 33, 0.15)", background: "#F1F3F5" }}
-        >
-          {type === "catalogs" || isPdf ? (
-            <div className="aspect-video grid place-items-center">
-              <div className="text-center">
-                <div
-                  className="w-16 h-16 rounded-xl mx-auto grid place-items-center mb-2"
-                  style={{ background: "rgba(184, 134, 11, 0.15)", color: "#B8860B" }}
-                >
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
+        <div className="upload-preview">
+          {isFile ? (
+            <div className="upload-preview-file">
+              <div>
+                <div className="upload-file-icon">
+                  {isVideo ? <FileVideo size={30} /> : (
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  )}
                 </div>
-                <div className="text-sm font-bold">فایل PDF</div>
-                <div className="text-[10px] font-mono mt-1" style={{ color: "#5C6370" }} dir="ltr">{value}</div>
+                <div className="upload-preview-file-title">{isVideo ? "فایل ویدئو" : "فایل PDF"}</div>
+                <div className="upload-preview-file-name" dir="ltr" title={value}>{fileName}</div>
               </div>
             </div>
           ) : (
-            <img src={value} alt="" className="w-full max-h-56 object-contain" />
+            <img src={value} alt="" className="upload-preview-media" />
           )}
 
-          <div className="absolute top-2 left-2 flex gap-2">
+          <div className="upload-preview-actions">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={uploading}
-              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-bold disabled:opacity-60"
-              style={{ background: "rgba(201, 149, 13, 0.95)", color: "white" }}
+              className="upload-preview-btn"
             >
-              {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+              {uploading ? <Loader2 size={14} className="upload-spin" /> : <UploadCloud size={14} />}
               {uploading ? "در حال بارگذاری..." : changeLabel}
             </button>
             <button
               type="button"
               onClick={clear}
               disabled={uploading}
-              className="w-9 h-9 rounded-lg grid place-items-center disabled:opacity-60"
-              style={{ background: "rgba(220, 38, 38, 0.9)", color: "white" }}
-              aria-label="حذف تصویر"
-              title="حذف تصویر"
+              className="upload-preview-btn upload-preview-btn-danger"
+              aria-label={isFile ? "حذف فایل" : "حذف تصویر"}
+              title={isFile ? "حذف فایل" : "حذف تصویر"}
             >
               <X size={14} />
             </button>
           </div>
 
-          <div
-            className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur text-white text-[10px] px-3 py-1.5 flex items-center gap-1.5"
-          >
-            <CheckCircle2 size={12} style={{ color: "#10B981" }} />
-            آپلود شد
+          <div className="upload-preview-badge">
+            <CheckCircle2 size={12} style={{ color: "#34D399" }} />
+            {isFile ? "فایل بارگذاری شده" : "تصویر بارگذاری شده"}
           </div>
         </div>
       ) : (
@@ -173,32 +161,22 @@ export default function UploadDropzone({
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           onClick={() => { if (!uploading) inputRef.current?.click(); }}
-          className="rounded-xl p-6 text-center cursor-pointer transition"
-          style={{
-            background: dragging ? "#FEF9E7" : "#F8F9FA",
-            border: dragging ? "2px dashed #C9950D" : "2px dashed rgba(26, 29, 33, 0.2)",
-            minHeight: "140px"
-          }}
+          className={"upload-dropzone" + (dragging ? " upload-dropzone-drag" : "")}
         >
           {uploading ? (
-            <div>
-              <Loader2 size={32} className="mx-auto mb-2 animate-spin" style={{ color: "#C9950D" }} />
-              <div className="text-sm font-bold">در حال آپلود...</div>
-              <div className="w-full h-1.5 rounded-full mt-3 overflow-hidden" style={{ background: "#E5E7EB" }}>
-                <div
-                  className="h-full transition-all"
-                  style={{ width: progress + "%", background: "linear-gradient(90deg, #C9950D, #F5C518)" }}
-                />
+            <div className="upload-progress-wrap">
+              <Loader2 size={26} className="upload-spin upload-dropzone-icon" style={{ margin: "0 auto 8px" }} />
+              <div className="upload-dropzone-title">در حال آپلود...</div>
+              <div className="upload-progress-bar">
+                <div className="upload-progress-fill" style={{ width: progress + "%" }} />
               </div>
             </div>
           ) : (
             <div>
-              <UploadCloud size={32} className="mx-auto mb-2" style={{ color: "#B8860B" }} />
-              <div className="text-sm font-bold mb-1" style={{ color: "#1A1D21" }}>
-                فایل را اینجا رها کنید یا کلیک کنید
-              </div>
-              <div className="text-xs" style={{ color: "#5C6370" }}>
-                {guide.formats} · حداکثر {guide.maxSize}
+              <UploadCloud size={26} className="upload-dropzone-icon" />
+              <div className="upload-dropzone-title">فایل را رها کنید یا برای انتخاب کلیک کنید</div>
+              <div className="upload-dropzone-hint">
+                {hint || (guide.formats + " · حداکثر " + guide.maxSize)}
               </div>
             </div>
           )}
@@ -206,10 +184,7 @@ export default function UploadDropzone({
       )}
 
       {error && (
-        <div
-          className="mt-2 flex items-center gap-2 text-xs p-2 rounded-lg"
-          style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B" }}
-        >
+        <div className="upload-error">
           <AlertCircle size={14} /> {error}
         </div>
       )}

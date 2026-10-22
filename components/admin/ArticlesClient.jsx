@@ -1,16 +1,10 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
 import UploadDropzone from "./UploadDropzone";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 function pick(value) {
   if (!value) return "—";
@@ -22,10 +16,15 @@ function articleKey(article) {
   return article.id || article.slug;
 }
 
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function blankArticle() {
+  const suffix = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
   return {
-    id: "new-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7),
-    slug: "",
+    id: "new-" + suffix,
+    slug: "article-" + suffix,
     title: { fa: "", en: "", ar: "", ru: "" },
     excerpt: { fa: "", en: "", ar: "", ru: "" },
     body: { fa: "", en: "", ar: "", ru: "" },
@@ -45,8 +44,10 @@ export default function ArticlesClient({ initial }) {
       id: article.id || "article-" + article.slug
     }))
   );
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some((article) => articleKey(article) === articleKey(draft));
 
   function notify(text, isError) {
     setMessage({ type: isError ? "error" : "success", text });
@@ -80,29 +81,36 @@ export default function ArticlesClient({ initial }) {
   }
 
   function add() {
-    const article = blankArticle();
-    setItems((current) => [...current, article]);
-    setEditing(articleKey(article));
+    setDraft(blankArticle());
+  }
+
+  function edit(article) {
+    setDraft(copy(article));
   }
 
   function clone(article) {
-    const c = Object.assign({}, article, { slug: "article-" + Date.now().toString(36) });
-    setItems((current) => [...current, c]);
-    setEditing(articleKey(c));
+    const next = copy(article);
+    next.id = "new-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
+    next.slug = "article-" + Date.now().toString(36);
+    next.title.fa = (next.title.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function update(slug, patch) {
-    setItems((current) =>
-      current.map((article) =>
-        articleKey(article) === slug ? { ...article, ...patch } : article
-      )
+    setDraft((current) =>
+      current && articleKey(current) === slug ? { ...current, ...patch } : current
     );
   }
 
   async function remove(slug) {
     if (!confirm("این مقاله حذف شود؟")) return;
+    if (draft && draft.slug === slug) setDraft(null);
     const next = items.filter((article) => article.slug !== slug);
-    if (await save(next)) setEditing(null);
+    await save(next);
   }
 
   async function toggle(slug) {
@@ -115,15 +123,12 @@ export default function ArticlesClient({ initial }) {
   }
 
   async function saveEditor() {
-    if (await save(items)) setEditing(null);
-  }
-
-  function cancelEditor(article) {
-    if (!article.slug) {
-      const key = articleKey(article);
-      setItems((current) => current.filter((item) => articleKey(item) !== key));
-    }
-    setEditing(null);
+    if (!draft) return;
+    const exists = items.some((article) => articleKey(article) === articleKey(draft));
+    const list = exists
+      ? items.map((article) => articleKey(article) === articleKey(draft) ? draft : article)
+      : items.concat([draft]);
+    if (await save(list)) setDraft(null);
   }
 
   return (
@@ -152,6 +157,24 @@ export default function ArticlesClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "مقالهٔ جدید" : "ویرایش مقاله"}
+          subtitle={pick(draft.title) !== "—" ? pick(draft.title) : "عنوان، متن، فایل PDF و تصویر مقاله را وارد کنید"}
+          icon={<Icon name="file" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <ArticleForm
+            article={draft}
+            articleId={articleKey(draft)}
+            update={update}
+            onSave={saveEditor}
+            onCancel={cancel}
+          />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="file" size={30} /></div>
@@ -164,14 +187,15 @@ export default function ArticlesClient({ initial }) {
       ) : (
         <div className="card-grid">
           {items.map((article) => {
-            const isEditing = editing === articleKey(article);
+            const isEditing = draft !== null && articleKey(draft) === articleKey(article);
             return (
               <div key={articleKey(article)} className="anim-in">
-                <div className="card-item">
+                <div className={"card-item" + (isEditing ? " card-item-editing" : "")}>
                   <div className="card-item-title">{pick(article.title)}</div>
                   <div className="card-item-desc">{pick(article.excerpt)}</div>
                   <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                     <span className="chip chip-gray">{article.slug || "شناسه تعیین نشده"}</span>
+                    {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
                     {article.status === "pending" && <span className="chip chip-teal">در انتظار تأیید مدیر</span>}
                     {article.pdfUrl && <span className="chip chip-blue">PDF پیوست شده</span>}
                   </div>
@@ -183,35 +207,14 @@ export default function ArticlesClient({ initial }) {
                           <Icon name="external" />
                         </Link>
                       )}
-                      <EditBtn onClick={() => setEditing(isEditing ? null : articleKey(article))} />
-                      <button type="button" onClick={() => clone(article)} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                      <EditBtn onClick={() => { if (isEditing) cancel(); else edit(article); }} />
+                      <button type="button" onClick={() => clone(article)} className="act-btn" title="کپی" aria-label="کپی مقاله" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
                         +
                       </button>
                       {article.slug && <DeleteBtn onClick={() => remove(article.slug)} />}
                     </div>
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div
-                    className="anim-in"
-                    style={{
-                      background: "#FFFFFF",
-                      border: "1px solid #D1D5DB",
-                      borderRadius: 12,
-                      padding: 14,
-                      marginTop: 8
-                    }}
-                  >
-                    <ArticleForm
-                      article={article}
-                      articleId={articleKey(article)}
-                      update={update}
-                      onSave={saveEditor}
-                      onCancel={() => cancelEditor(article)}
-                    />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -221,11 +224,14 @@ export default function ArticlesClient({ initial }) {
   );
 }
 
-function ArticleForm({ article, articleId, update, onSave, onCancel }) {
+function ArticleForm({ article, articleId, update, onCancel, onSave }) {
   const [lang, setLang] = useState("fa");
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const inputRef = useRef(null);
+  const currentDir = languageDir(lang);
+  const currentLabel = ADMIN_LANGUAGES.find((item) => item.code === lang)?.label || "فارسی";
+  const filled = {};
+  ADMIN_LANGUAGES.forEach((item) => {
+    filled[item.code] = Boolean(article.title?.[item.code] || article.body?.[item.code]);
+  });
 
   function updateLocalized(field, value) {
     const existing = article[field];
@@ -235,125 +241,109 @@ function ArticleForm({ article, articleId, update, onSave, onCancel }) {
     update(articleId, { [field]: localized });
   }
 
-  async function upload(file) {
-    if (!file) return;
-    setUploadError("");
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "catalogs");
-      const response = await fetch("/api/upload", { method: "POST", body: formData });
-      const result = await response.json();
-      if (!response.ok || !result.ok) {
-        setUploadError(result.error || "آپلود PDF ناموفق بود");
-        return;
-      }
-      update(articleId, { pdfUrl: result.url });
-    } catch {
-      setUploadError("ارتباط با سرور برقرار نشد؛ فایل آپلود نشد");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+  function val(field) {
+    if (typeof article[field] === "string") return lang === "fa" ? article[field] : "";
+    return article[field]?.[lang] || "";
   }
 
   return (
     <div>
-      <label className="form-label">شناسهٔ انگلیسی مقاله (بدون فاصله)</label>
-      <input
-        type="text"
-        dir="ltr"
-        value={article.slug || ""}
-        onChange={(event) => update(articleId, { slug: event.target.value })}
-        className="form-input"
-        placeholder="example-article"
-      />
+      <FormSection
+        title="متن مقاله"
+        description="عنوان، دسته‌بندی، تاریخ، خلاصه و متن کامل را برای هر زبان وارد کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <div className="tabs" style={{ marginTop: 12 }}>
-        {LANGS.map((item) => (
-          <button
-            key={item.code}
-            type="button"
-            onClick={() => setLang(item.code)}
-            className={"tab" + (lang === item.code ? " tab-active" : "")}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+        <FormGrid>
+          <Field label="عنوان مقاله" required>
+            <input type="text" dir={currentDir} value={val("title")}
+              onChange={(event) => updateLocalized("title", event.target.value)}
+              className="form-input" placeholder="عنوان مقاله" />
+          </Field>
 
-      {[
-        ["title", "عنوان"],
-        ["category", "دسته‌بندی"],
-        ["date", "تاریخ"],
-        ["excerpt", "خلاصه"],
-        ["body", "متن کامل"]
-      ].map(([field, label]) => (
-        <div key={field}>
-          <label className="form-label" style={{ marginTop: 10 }}>{label}</label>
-          {field === "excerpt" || field === "body" ? (
-            <textarea
-              rows={field === "body" ? 8 : 3}
-              value={article[field]?.[lang] || (typeof article[field] === "string" && lang === "fa" ? article[field] : "")}
-              onChange={(event) => updateLocalized(field, event.target.value)}
+          <Field label="دسته‌بندی">
+            <input type="text" dir={currentDir} value={val("category")}
+              onChange={(event) => updateLocalized("category", event.target.value)}
+              className="form-input" placeholder="مثلاً دانش فنی" />
+          </Field>
+
+          <Field label="تاریخ">
+            <input type="text" dir="auto" value={val("date")}
+              onChange={(event) => updateLocalized("date", event.target.value)}
+              className="form-input" placeholder="۱۴۰۴/۰۱/۰۱" />
+          </Field>
+
+          <Field label="زمان مطالعه (دقیقه)">
+            <input
+              type="number"
+              min="1"
+              value={article.readMinutes || ""}
+              onChange={(event) => update(articleId, { readMinutes: Number(event.target.value) || "" })}
               className="form-input"
             />
-          ) : (
+          </Field>
+
+          <Field label="خلاصه مقاله" wide>
+            <textarea rows={3} dir={currentDir} value={val("excerpt")}
+              onChange={(event) => updateLocalized("excerpt", event.target.value)}
+              className="form-input" placeholder="خلاصه‌ای که در فهرست مقاله‌ها نمایش داده می‌شود" />
+          </Field>
+
+          <Field
+            label={"متن کامل مقاله · " + currentLabel}
+            wide
+            hint={(article.body?.[lang] || "").length.toLocaleString("fa-IR") + " کاراکتر"}
+          >
+            <textarea rows={8} dir={currentDir} value={val("body")}
+              onChange={(event) => updateLocalized("body", event.target.value)}
+              className="form-input" style={{ lineHeight: 2, minHeight: 180 }} />
+          </Field>
+        </FormGrid>
+      </FormSection>
+
+      <FormSection
+        title="نشانی، فایل و تصویر"
+        description="نامک در آدرس صفحه استفاده می‌شود. فایل PDF و تصویر مقاله اختیاری است."
+      >
+        <FormGrid>
+          <Field label="شناسهٔ انگلیسی (slug)" hint={"آدرس صفحه: /fa/articles/" + (article.slug || "…")}>
             <input
               type="text"
-              value={article[field]?.[lang] || (typeof article[field] === "string" && lang === "fa" ? article[field] : "")}
-              onChange={(event) => updateLocalized(field, event.target.value)}
+              dir="ltr"
+              value={article.slug || ""}
+              onChange={(event) => update(articleId, { slug: event.target.value })}
               className="form-input"
+              placeholder="example-article"
             />
-          )}
-        </div>
-      ))}
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>زمان مطالعه (دقیقه)</label>
-      <input
-        type="number"
-        min="1"
-        value={article.readMinutes || ""}
-        onChange={(event) => update(articleId, { readMinutes: Number(event.target.value) || "" })}
-        className="form-input"
-      />
+          <Field as="div" label="فایل PDF مقاله" wide>
+            <UploadDropzone
+              type="catalogs"
+              guidelineKey="catalog"
+              value={article.pdfUrl || ""}
+              onChange={(url) => update(articleId, { pdfUrl: url })}
+              label=""
+              accept="application/pdf,.pdf"
+              hint="PDF · حداکثر ۱۰ مگابایت"
+            />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>فایل PDF محلی</label>
-      {article.pdfUrl ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <a href={article.pdfUrl} target="_blank" rel="noreferrer" className="form-input" dir="ltr">
-            {article.pdfUrl}
-          </a>
-          <button type="button" onClick={() => update(articleId, { pdfUrl: "" })} className="act-btn act-btn-delete">
-            <Icon name="x" />
-          </button>
-        </div>
-      ) : (
-        <div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf,.pdf"
-            onChange={(event) => upload(event.target.files?.[0])}
-            className="form-input"
-          />
-          {uploading && <div className="form-label">در حال آپلود فایل…</div>}
-        </div>
-      )}
-      {uploadError && <div className="msg msg-error" style={{ marginTop: 8 }}>{uploadError}</div>}
-
-      <label className="form-label" style={{ marginTop: 10 }}>تصویر مقاله</label>
-      <UploadDropzone
-        type="images"
-        value={article.image || ""}
-        onChange={(url) => update(articleId, { image: url })}
-        label="آپلود تصویر"
-        accept="image/*"
-      />
+          <Field as="div" label="تصویر مقاله" wide>
+            <UploadDropzone
+              type="images"
+              guidelineKey="newsImage"
+              value={article.image || ""}
+              onChange={(url) => update(articleId, { image: url })}
+              label=""
+              accept="image/*"
+            />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
       <div className="save-bar">
-        <SaveBtn onClick={onSave} busy={uploading} />
+        <SaveBtn onClick={onSave} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

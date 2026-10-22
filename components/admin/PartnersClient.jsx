@@ -1,12 +1,18 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import UploadDropzone from "./UploadDropzone";
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function blank() {
@@ -22,8 +28,10 @@ function blank() {
 
 export default function PartnersClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -52,13 +60,27 @@ export default function PartnersClient({ initial }) {
   }
 
   function add() {
-    const p = blank();
-    setItems(items.concat([p]));
-    setEditing(p.id);
+    setDraft(blank());
+  }
+
+  function edit(partner) {
+    setDraft(copy(partner));
+  }
+
+  function clone(partner) {
+    const next = copy(partner);
+    next.id = "p-" + Date.now().toString(36);
+    next.name.fa = (next.name.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این شریک حذف شود؟")) return;
+    if (draft && draft.id === id) setDraft(null);
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -68,7 +90,19 @@ export default function PartnersClient({ initial }) {
   }
 
   function update(id, patch) {
-    setItems(items.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; }));
+    setDraft(function(current) {
+      return current && current.id === id ? Object.assign({}, current, patch) : current;
+    });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    const exists = items.some(function(item) { return item.id === draft.id; });
+    const list = exists
+      ? items.map(function(item) { return item.id === draft.id ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -94,6 +128,18 @@ export default function PartnersClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "شریک جدید" : "ویرایش شریک"}
+          subtitle={pick(draft.name) !== "—" ? pick(draft.name) : "نام، لینک و لوگوی شریک تجاری را وارد کنید"}
+          icon={<Icon name="building" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <PartnerForm partner={draft} update={update} onSave={saveDraft} onCancel={cancel} />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="building" size={30} /></div>
@@ -106,10 +152,10 @@ export default function PartnersClient({ initial }) {
       ) : (
         <div className="card-grid">
           {items.map(function(p, i) {
-            const isEditing = editing === p.id;
+            const isEditing = draft !== null && draft.id === p.id;
             return (
               <div key={p.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="card-item">
+                <div className={"card-item" + (isEditing ? " card-item-editing" : "")}>
                   <div style={{
                     aspectRatio: "2/1",
                     borderRadius: 10,
@@ -131,30 +177,19 @@ export default function PartnersClient({ initial }) {
                     {pick(p.name)}
                   </div>
 
+                  {isEditing && <span className="chip chip-gold" style={{ alignSelf: "center" }}>در حال ویرایش</span>}
+
                   <div className="card-item-foot">
                     <ToggleBtn active={p.active !== false} onClick={function() { toggle(p.id); }} />
                     <div style={{ display: "flex", gap: 6 }}>
-                      <EditBtn onClick={function() { setEditing(isEditing ? null : p.id); }} />
+                      <EditBtn onClick={function() { if (isEditing) cancel(); else edit(p); }} />
+                      <button type="button" onClick={function() { clone(p); }} className="act-btn" title="کپی" aria-label="کپی شریک" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                        <Icon name="plus" size={14} />
+                      </button>
                       <DeleteBtn onClick={function() { remove(p.id); }} />
                     </div>
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 14,
-                    marginTop: 8
-                  }}>
-                    <PartnerForm partner={p} update={update}
-                      onSave={async function() {
-                        if (await save(items)) setEditing(null);
-                      }}
-                      onCancel={function() { setEditing(null); }} />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -165,78 +200,58 @@ export default function PartnersClient({ initial }) {
 }
 
 function PartnerForm({ partner, update, onSave, onCancel }) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const inputRef = useRef(null);
+  const [lang, setLang] = useState("fa");
+  const currentDir = languageDir(lang);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(partner.name?.[item.code]);
+  });
 
-  function updName(lang, val) {
+  function updName(val) {
     const nf = Object.assign({}, partner.name);
     nf[lang] = val;
     update(partner.id, { name: nf });
   }
 
-  async function upload(file) {
-    if (!file) return;
-    setUploadError("");
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "images");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        setUploadError(data.error || "آپلود لوگو ناموفق بود");
-        return;
-      }
-      update(partner.id, { logo: data.url });
-    } catch {
-      setUploadError("ارتباط با سرور برقرار نشد؛ لوگو آپلود نشد");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
-
   return (
     <div>
-      <label className="form-label">نام (فارسی)</label>
-      <input type="text" value={partner.name.fa || ""}
-        onChange={function(e) { updName("fa", e.target.value); }} className="form-input" />
+      <FormSection
+        title="نام و لینک"
+        description="نام شریک تجاری را برای هر زبان وارد کنید و در صورت وجود، نشانی وب‌سایت را ثبت کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <label className="form-label" style={{ marginTop: 10 }}>نام (انگلیسی)</label>
-      <input type="text" dir="ltr" value={partner.name.en || ""}
-        onChange={function(e) { updName("en", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="نام شریک" required>
+            <input type="text" dir={currentDir} value={partner.name?.[lang] || ""}
+              onChange={function(e) { updName(e.target.value); }} className="form-input"
+              placeholder="نام شرکت" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>لینک وب‌سایت</label>
-      <input type="text" dir="ltr" value={partner.url || ""}
-        onChange={function(e) { update(partner.id, { url: e.target.value }); }} className="form-input" />
+          <Field label="لینک وب‌سایت" hint="اختیاری — با https:// شروع شود">
+            <input type="text" dir="ltr" value={partner.url || ""}
+              onChange={function(e) { update(partner.id, { url: e.target.value }); }} className="form-input"
+              placeholder="https://example.com" />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-      <label className="form-label" style={{ marginTop: 10 }}>لوگو (400×200)</label>
-      {partner.logo ? (
-        <div style={{ position: "relative", background: "#F4F5F7", borderRadius: 10, padding: 12, textAlign: "center", border: "1px solid #D1D5DB" }}>
-          <img src={partner.logo} alt="" style={{ maxHeight: 60 }} />
-          <button type="button" onClick={function() { update(partner.id, { logo: "" }); }}
-            className="act-btn act-btn-delete"
-            style={{ position: "absolute", top: 6, insetInlineStart: 6 }}>
-            <Icon name="x" />
-          </button>
-        </div>
-      ) : (
-        <div onClick={function() { inputRef.current && inputRef.current.click(); }}
-          style={{
-            border: "2px dashed #D1D5DB", background: "#F4F5F7", borderRadius: 10,
-            padding: 20, textAlign: "center", cursor: "pointer"
-          }}>
-          <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-            onChange={function(e) { upload(e.target.files[0]); }} />
-          {uploading ? <Icon name="loader" size={20} /> : <Icon name="upload" size={22} />}
-        </div>
-      )}
-      {uploadError && <div className="msg msg-error" style={{ marginTop: 8 }}>{uploadError}</div>}
+      <FormSection
+        title="لوگوی شریک"
+        description="لوگو با پس‌زمینه شفاف نمایش بهتری در صفحه اصلی دارد."
+      >
+        <UploadDropzone
+          type="images"
+          guidelineKey="partnerLogo"
+          value={partner.logo || ""}
+          onChange={function(url) { update(partner.id, { logo: url }); }}
+          label=""
+          accept="image/*"
+        />
+      </FormSection>
 
       <div className="save-bar">
-        <SaveBtn onClick={onSave} busy={uploading} />
+        <SaveBtn onClick={onSave} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

@@ -3,13 +3,7 @@ import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
 import UploadDropzone from "./UploadDropzone";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 const ICON_OPTIONS = ["Cog", "Gauge", "Wrench", "Circle", "Flame", "Truck", "Package", "Settings"];
 
@@ -22,6 +16,10 @@ function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function blank() {
@@ -38,8 +36,10 @@ function blank() {
 
 export default function ServicesClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.slug === draft.slug; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -54,25 +54,41 @@ export default function ServicesClient({ initial }) {
         body: JSON.stringify({ services: list })
       });
       const data = await res.json();
-      if (data.ok) { setItems(list); notify("ذخیره شد"); }
-      else notify("خطا", true);
-    } catch (e) { notify("خطای شبکه", true); }
+      if (!res.ok || !data.ok) {
+        notify(data.error || "ذخیره خدمت ناموفق بود", true);
+        return false;
+      }
+      setItems(list);
+      notify("ذخیره شد");
+      return true;
+    } catch (e) {
+      notify("خطای شبکه", true);
+      return false;
+    }
   }
 
   function add() {
-    const s = blank();
-    setItems(items.concat([s]));
-    setEditing(s.slug);
+    setDraft(blank());
   }
 
-  function clone(s) {
-    const c = Object.assign({}, s, { slug: "service-" + Date.now().toString(36), name: Object.assign({}, s.name) });
-    setItems(items.concat([c]));
-    setEditing(c.slug);
+  function edit(service) {
+    setDraft(copy(service));
+  }
+
+  function clone(service) {
+    const next = copy(service);
+    next.slug = "service-" + Date.now().toString(36);
+    next.name.fa = (next.name.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این خدمت حذف شود؟")) return;
+    if (draft && draft.slug === id) setDraft(null);
     save(items.filter(function(x) { return x.slug !== id; }));
   }
 
@@ -82,7 +98,19 @@ export default function ServicesClient({ initial }) {
   }
 
   function update(slug, patch) {
-    setItems(items.map(function(x) { return x.slug === slug ? Object.assign({}, x, patch) : x; }));
+    setDraft(function(current) {
+      return current && current.slug === slug ? Object.assign({}, current, patch) : current;
+    });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    const exists = items.some(function(item) { return item.slug === draft.slug; });
+    const list = exists
+      ? items.map(function(item) { return item.slug === draft.slug ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -108,15 +136,27 @@ export default function ServicesClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "خدمت جدید" : "ویرایش خدمت"}
+          subtitle={pick(draft.name) !== "—" ? pick(draft.name) : "عنوان و توضیح خدمت را در زبان‌های سایت وارد کنید"}
+          icon={<Icon name="cog" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <ServiceForm service={draft} update={update} onSave={saveDraft} onCancel={cancel} />
+        </EditorPanel>
+      )}
+
       <div className="card-grid">
         {items.map(function(s, i) {
           const isFeatured = s.slug === "hvf-coating" || s.slug === "lop-test";
-          const isEditing = editing === s.slug;
+          const isEditing = draft !== null && draft.slug === s.slug;
           const iconName = ICON_MAP[s.icon] || "cog";
 
           return (
             <div key={s.slug} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-              <div className={"card-item" + (isFeatured ? " card-item-featured" : "")}>
+              <div className={"card-item" + (isFeatured ? " card-item-featured" : "") + (isEditing ? " card-item-editing" : "")}>
                 <div className="card-item-head">
                   {s.image && <img src={s.image} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, marginLeft: 8 }} />}
                   <div className="card-item-icon" style={{
@@ -127,6 +167,7 @@ export default function ServicesClient({ initial }) {
                     <Icon name={iconName} size={18} />
                   </div>
                   {isFeatured && <span className="chip chip-gold"><Icon name="sparkles" /> ویژه</span>}
+                  {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
                 </div>
 
                 <div className="card-item-title">{pick(s.name)}</div>
@@ -135,28 +176,14 @@ export default function ServicesClient({ initial }) {
                 <div className="card-item-foot">
                   <ToggleBtn active={s.active !== false} onClick={function() { toggle(s.slug); }} />
                   <div style={{ display: "flex", gap: 6 }}>
-                    <EditBtn onClick={function() { setEditing(isEditing ? null : s.slug); }} />
-                    <button type="button" onClick={function() { clone(s); }} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                    <EditBtn onClick={function() { if (isEditing) cancel(); else edit(s); }} />
+                    <button type="button" onClick={function() { clone(s); }} className="act-btn" title="کپی" aria-label="کپی خدمت" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
                       <Icon name="plus" size={14} />
                     </button>
                     <DeleteBtn onClick={function() { remove(s.slug); }} />
                   </div>
                 </div>
               </div>
-
-              {isEditing && (
-                <div className="anim-in" style={{
-                  background: "#FFFFFF",
-                  border: "1px solid #D1D5DB",
-                  borderRadius: 12,
-                  padding: 16,
-                  marginTop: 8
-                }}>
-                  <ServiceForm service={s} update={update}
-                    onSave={function() { save(items); setEditing(null); }}
-                    onCancel={function() { setEditing(null); }} />
-                </div>
-              )}
             </div>
           );
         })}
@@ -178,6 +205,11 @@ export default function ServicesClient({ initial }) {
 
 function ServiceForm({ service, update, onSave, onCancel }) {
   const [lang, setLang] = useState("fa");
+  const currentDir = languageDir(lang);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(service.name?.[item.code] || service.short?.[item.code]);
+  });
 
   function upd(field, val) {
     const nf = Object.assign({}, service[field]);
@@ -189,46 +221,59 @@ function ServiceForm({ service, update, onSave, onCancel }) {
 
   return (
     <div>
-      <div className="tabs">
-        {LANGS.map(function(l) {
-          return (
-            <button key={l.code} type="button" onClick={function() { setLang(l.code); }}
-              className={"tab" + (lang === l.code ? " tab-active" : "")}>
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="متن خدمت"
+        description="عنوان و توضیح کوتاه کارت خدمت را برای هر زبان ویرایش کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <label className="form-label">عنوان</label>
-      <input type="text" value={service.name[lang] || ""}
-        onChange={function(e) { upd("name", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="عنوان خدمت" required>
+            <input type="text" dir={currentDir} value={service.name?.[lang] || ""}
+              onChange={function(e) { upd("name", e.target.value); }} className="form-input"
+              placeholder="مثلاً پوشش HVOF" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>توضیح کوتاه</label>
-      <textarea rows={2} value={service.short[lang] || ""}
-        onChange={function(e) { upd("short", e.target.value); }} className="form-input" />
+          <Field label="توضیح کوتاه" wide>
+            <textarea rows={3} dir={currentDir} value={service.short?.[lang] || ""}
+              onChange={function(e) { upd("short", e.target.value); }} className="form-input"
+              placeholder="توضیح یک تا دو خطی که روی کارت خدمت نمایش داده می‌شود" />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-      <label className="form-label" style={{ marginTop: 10 }}>آیکون</label>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {ICON_OPTIONS.map(function(ic) {
-          return (
-            <button key={ic} type="button" onClick={function() { update(service.slug, { icon: ic }); }}
-              className={"act-btn" + (service.icon === ic ? " act-btn-gold" : "")}
-              style={service.icon !== ic ? { background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" } : {}}
-              title={ic}>
-              <Icon name={ICON_MAP[ic]} />
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="ظاهر کارت"
+        description="آیکون و تصویر شاخص خدمت را انتخاب کنید."
+      >
+        <FormGrid>
+          <Field as="div" label="آیکون خدمت" wide>
+            <div className="choice-grid">
+              {ICON_OPTIONS.map(function(ic) {
+                const active = service.icon === ic;
+                return (
+                  <button key={ic} type="button" onClick={function() { update(service.slug, { icon: ic }); }}
+                    className={"choice-btn" + (active ? " choice-btn-active" : "")}
+                    title={ic} aria-label={"آیکون " + ic} aria-pressed={active}>
+                    <Icon name={ICON_MAP[ic]} />
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
 
-      <UploadDropzone
-        type="images"
-        value={service.image || ""}
-        onChange={function(url) { update(service.slug, { image: url }); }}
-        label="تصویر خدمت"
-        accept="image/*"
-      />
+          <Field as="div" label="تصویر شاخص خدمت" wide>
+            <UploadDropzone
+              type="images"
+              guidelineKey="productImage"
+              value={service.image || ""}
+              onChange={function(url) { update(service.slug, { image: url }); }}
+              label=""
+              accept="image/*"
+            />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} />

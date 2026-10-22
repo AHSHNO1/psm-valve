@@ -1,19 +1,18 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
+import UploadDropzone from "./UploadDropzone";
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function blank() {
@@ -29,8 +28,10 @@ function blank() {
 
 export default function CertificatesClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -45,19 +46,41 @@ export default function CertificatesClient({ initial }) {
         body: JSON.stringify({ certificates: list })
       });
       const data = await res.json();
-      if (data.ok) { setItems(list); notify("ذخیره شد"); }
-      else notify("خطا", true);
-    } catch (e) { notify("خطای شبکه", true); }
+      if (!res.ok || !data.ok) {
+        notify(data.error || "ذخیره گواهینامه ناموفق بود", true);
+        return false;
+      }
+      setItems(list);
+      notify("ذخیره شد");
+      return true;
+    } catch (e) {
+      notify("خطای شبکه", true);
+      return false;
+    }
   }
 
   function add() {
-    const c = blank();
-    setItems(items.concat([c]));
-    setEditing(c.id);
+    setDraft(blank());
+  }
+
+  function edit(cert) {
+    setDraft(copy(cert));
+  }
+
+  function clone(cert) {
+    const next = copy(cert);
+    next.id = "cert-" + Date.now().toString(36);
+    next.title.fa = (next.title.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این گواهینامه حذف شود؟")) return;
+    if (draft && draft.id === id) setDraft(null);
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -67,7 +90,19 @@ export default function CertificatesClient({ initial }) {
   }
 
   function update(id, patch) {
-    setItems(items.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; }));
+    setDraft(function(current) {
+      return current && current.id === id ? Object.assign({}, current, patch) : current;
+    });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    const exists = items.some(function(item) { return item.id === draft.id; });
+    const list = exists
+      ? items.map(function(item) { return item.id === draft.id ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -93,6 +128,18 @@ export default function CertificatesClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "گواهینامه جدید" : "ویرایش گواهینامه"}
+          subtitle={pick(draft.title) !== "—" ? pick(draft.title) : "عنوان، صادرکننده و تصویر گواهینامه را وارد کنید"}
+          icon={<Icon name="award" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <CertForm cert={draft} update={update} onSave={saveDraft} onCancel={cancel} />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="award" size={30} /></div>
@@ -105,10 +152,10 @@ export default function CertificatesClient({ initial }) {
       ) : (
         <div className="card-grid">
           {items.map(function(c, i) {
-            const isEditing = editing === c.id;
+            const isEditing = draft !== null && draft.id === c.id;
             return (
               <div key={c.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="card-item">
+                <div className={"card-item" + (isEditing ? " card-item-editing" : "")}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <div style={{
                       width: 56, height: 56, borderRadius: 12,
@@ -131,30 +178,20 @@ export default function CertificatesClient({ initial }) {
                         {pick(c.issuer)}
                       </div>
                     </div>
+                    {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
                   </div>
 
                   <div className="card-item-foot">
                     <ToggleBtn active={c.active !== false} onClick={function() { toggle(c.id); }} />
                     <div style={{ display: "flex", gap: 6 }}>
-                      <EditBtn onClick={function() { setEditing(isEditing ? null : c.id); }} />
+                      <EditBtn onClick={function() { if (isEditing) cancel(); else edit(c); }} />
+                      <button type="button" onClick={function() { clone(c); }} className="act-btn" title="کپی" aria-label="کپی گواهینامه" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                        <Icon name="plus" size={14} />
+                      </button>
                       <DeleteBtn onClick={function() { remove(c.id); }} />
                     </div>
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 14,
-                    marginTop: 8
-                  }}>
-                    <CertForm cert={c} update={update}
-                      onSave={function() { save(items); setEditing(null); }}
-                      onCancel={function() { setEditing(null); }} />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -166,8 +203,11 @@ export default function CertificatesClient({ initial }) {
 
 function CertForm({ cert, update, onSave, onCancel }) {
   const [lang, setLang] = useState("fa");
-  const [uploading, setUploading] = useState(false);
-  const inputRef = useRef(null);
+  const currentDir = languageDir(lang);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(cert.title?.[item.code] || cert.issuer?.[item.code]);
+  });
 
   function upd(field, val) {
     const nf = Object.assign({}, cert[field]);
@@ -177,67 +217,42 @@ function CertForm({ cert, update, onSave, onCancel }) {
     update(cert.id, patch);
   }
 
-  async function upload(file) {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "images");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.ok) update(cert.id, { image: data.url });
-    } catch (e) {}
-    setUploading(false);
-  }
-
   return (
     <div>
-      <div className="tabs">
-        {LANGS.map(function(l) {
-          return (
-            <button key={l.code} type="button" onClick={function() { setLang(l.code); }}
-              className={"tab" + (lang === l.code ? " tab-active" : "")}>
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="متن گواهینامه"
+        description="عنوان گواهینامه و نام صادرکننده را برای هر زبان وارد کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <label className="form-label">عنوان</label>
-      <input type="text" value={cert.title[lang] || ""}
-        onChange={function(e) { upd("title", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="عنوان گواهینامه" required>
+            <input type="text" dir={currentDir} value={cert.title?.[lang] || ""}
+              onChange={function(e) { upd("title", e.target.value); }} className="form-input"
+              placeholder="مثلاً ISO 9001:2015" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>صادرکننده</label>
-      <input type="text" value={cert.issuer[lang] || ""}
-        onChange={function(e) { upd("issuer", e.target.value); }} className="form-input" />
+          <Field label="صادرکننده">
+            <input type="text" dir={currentDir} value={cert.issuer?.[lang] || ""}
+              onChange={function(e) { upd("issuer", e.target.value); }} className="form-input"
+              placeholder="نام سازمان صادرکننده" />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-      <label className="form-label" style={{ marginTop: 10 }}>تصویر (300×300)</label>
-      {cert.image ? (
-        <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid #D1D5DB", background: "#F4F5F7", padding: 12, textAlign: "center" }}>
-          <img src={cert.image} alt="" style={{ maxHeight: 100, maxWidth: "100%" }} />
-          <button type="button" onClick={function() { update(cert.id, { image: "" }); }}
-            className="act-btn act-btn-delete"
-            style={{ position: "absolute", top: 8, insetInlineStart: 8 }}>
-            <Icon name="x" />
-          </button>
-        </div>
-      ) : (
-        <div onClick={function() { inputRef.current && inputRef.current.click(); }}
-          style={{
-            border: "2px dashed #D1D5DB", background: "#F4F5F7", borderRadius: 10,
-            padding: 20, textAlign: "center", cursor: "pointer"
-          }}>
-          <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-            onChange={function(e) { upload(e.target.files[0]); }} />
-          {uploading ? <Icon name="loader" size={20} /> : (
-            <>
-              <Icon name="upload" size={22} />
-              <div style={{ fontSize: 11, fontWeight: 900, marginTop: 6, color: "#1A1D21" }}>کلیک کنید</div>
-            </>
-          )}
-        </div>
-      )}
+      <FormSection
+        title="تصویر گواهینامه"
+        description="تصویر اسکن‌شده گواهینامه را بارگذاری کنید."
+      >
+        <UploadDropzone
+          type="images"
+          guidelineKey="certificateImage"
+          value={cert.image || ""}
+          onChange={function(url) { update(cert.id, { image: url }); }}
+          label=""
+          accept="image/*"
+        />
+      </FormSection>
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} />

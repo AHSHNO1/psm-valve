@@ -1,19 +1,18 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
+import UploadDropzone from "./UploadDropzone";
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function blank() {
@@ -32,8 +31,10 @@ function blank() {
 
 export default function ProjectsClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -66,25 +67,27 @@ export default function ProjectsClient({ initial }) {
   }
 
   function add() {
-    const p = blank();
-    setItems(items.concat([p]));
-    setEditing(p.id);
+    setDraft(blank());
   }
 
-  function clone(p) {
-    const c = Object.assign({}, p, {
-      id: "proj-" + Date.now().toString(36),
-      title: Object.assign({}, p.title || {}),
-      client: Object.assign({}, p.client || {}),
-      industry: Object.assign({}, p.industry || {}),
-      description: Object.assign({}, p.description || {})
-    });
-    setItems(items.concat([c]));
-    setEditing(c.id);
+  function edit(project) {
+    setDraft(copy(project));
+  }
+
+  function clone(project) {
+    const next = copy(project);
+    next.id = "proj-" + Date.now().toString(36);
+    next.title.fa = (next.title.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این پروژه حذف شود؟")) return;
+    if (draft && draft.id === id) setDraft(null);
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -94,7 +97,23 @@ export default function ProjectsClient({ initial }) {
   }
 
   function update(id, patch) {
-    setItems(items.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; }));
+    setDraft(function(current) {
+      return current && current.id === id ? Object.assign({}, current, patch) : current;
+    });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    if (!draft.image) {
+      notify("برای هر پروژه بارگذاری تصویر الزامی است", true);
+      return;
+    }
+    const exists = items.some(function(item) { return item.id === draft.id; });
+    const list = exists
+      ? items.map(function(item) { return item.id === draft.id ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -120,6 +139,18 @@ export default function ProjectsClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "پروژه جدید" : "ویرایش پروژه"}
+          subtitle={pick(draft.title) !== "—" ? pick(draft.title) : "مشخصات پروژه و تصویر آن را وارد کنید"}
+          icon={<Icon name="package" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <ProjectForm project={draft} update={update} onSave={saveDraft} onCancel={cancel} />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="package" size={30} /></div>
@@ -132,10 +163,10 @@ export default function ProjectsClient({ initial }) {
       ) : (
         <div className="card-grid">
           {items.map(function(p, i) {
-            const isEditing = editing === p.id;
+            const isEditing = draft !== null && draft.id === p.id;
             return (
               <div key={p.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="card-item">
+                <div className={"card-item" + (isEditing ? " card-item-editing" : "")}>
                   <div style={{
                     aspectRatio: "16/10",
                     borderRadius: 10,
@@ -157,6 +188,7 @@ export default function ProjectsClient({ initial }) {
                       <span className="chip chip-blue">{pick(p.industry)}</span>
                     )}
                     {p.year && <span className="chip chip-gray">{p.year}</span>}
+                    {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
                   </div>
 
                   <div className="card-item-title">{pick(p.title)}</div>
@@ -165,30 +197,14 @@ export default function ProjectsClient({ initial }) {
                   <div className="card-item-foot">
                     <ToggleBtn active={p.active !== false} onClick={function() { toggle(p.id); }} />
                     <div style={{ display: "flex", gap: 6 }}>
-                      <EditBtn onClick={function() { setEditing(isEditing ? null : p.id); }} />
-                      <button type="button" onClick={function() { clone(p); }} className="act-btn" title="کپی" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
-                        +
+                      <EditBtn onClick={function() { if (isEditing) cancel(); else edit(p); }} />
+                      <button type="button" onClick={function() { clone(p); }} className="act-btn" title="کپی" aria-label="کپی پروژه" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                        <Icon name="plus" size={14} />
                       </button>
                       <DeleteBtn onClick={function() { remove(p.id); }} />
                     </div>
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 14,
-                    marginTop: 8
-                  }}>
-                    <ProjectForm project={p} update={update}
-                      onSave={async function() {
-                        if (await save(items)) setEditing(null);
-                      }}
-                      onCancel={function() { setEditing(null); }} />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -200,9 +216,11 @@ export default function ProjectsClient({ initial }) {
 
 function ProjectForm({ project, update, onSave, onCancel }) {
   const [lang, setLang] = useState("fa");
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const inputRef = useRef(null);
+  const currentDir = languageDir(lang);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(project.title?.[item.code] || project.description?.[item.code]);
+  });
 
   function upd(field, val) {
     const nf = Object.assign({}, project[field]);
@@ -212,97 +230,67 @@ function ProjectForm({ project, update, onSave, onCancel }) {
     update(project.id, patch);
   }
 
-  async function upload(file) {
-    if (!file) return;
-    setUploadError("");
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "images");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        setUploadError(data.error || "آپلود تصویر ناموفق بود");
-        return;
-      }
-      update(project.id, { image: data.url });
-    } catch {
-      setUploadError("ارتباط با سرور برقرار نشد؛ تصویر آپلود نشد");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
-
-  async function saveProject() {
-    if (!project.image) {
-      setUploadError("برای هر پروژه بارگذاری تصویر الزامی است");
-      return;
-    }
-    await onSave();
-  }
-
   return (
     <div>
-      <div className="tabs">
-        {LANGS.map(function(l) {
-          return (
-            <button key={l.code} type="button" onClick={function() { setLang(l.code); }}
-              className={"tab" + (lang === l.code ? " tab-active" : "")}>
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="مشخصات پروژه"
+        description="عنوان، مشتری، صنعت و توضیحات پروژه را برای هر زبان وارد کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <label className="form-label">عنوان پروژه</label>
-      <input type="text" value={(project.title || {})[lang] || ""}
-        onChange={function(e) { upd("title", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="عنوان پروژه" required>
+            <input type="text" dir={currentDir} value={project.title?.[lang] || ""}
+              onChange={function(e) { upd("title", e.target.value); }} className="form-input"
+              placeholder="نام پروژه" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>مشتری</label>
-      <input type="text" value={(project.client || {})[lang] || ""}
-        onChange={function(e) { upd("client", e.target.value); }} className="form-input" />
+          <Field label="مشتری">
+            <input type="text" dir={currentDir} value={project.client?.[lang] || ""}
+              onChange={function(e) { upd("client", e.target.value); }} className="form-input"
+              placeholder="نام کارفرما" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>صنعت</label>
-      <input type="text" value={(project.industry || {})[lang] || ""}
-        onChange={function(e) { upd("industry", e.target.value); }} className="form-input" />
+          <Field label="صنعت">
+            <input type="text" dir={currentDir} value={project.industry?.[lang] || ""}
+              onChange={function(e) { upd("industry", e.target.value); }} className="form-input"
+              placeholder="مثلاً نفت و گاز" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>توضیحات</label>
-      <textarea rows={3} value={(project.description || {})[lang] || ""}
-        onChange={function(e) { upd("description", e.target.value); }} className="form-input" />
+          <Field label="توضیحات" wide>
+            <textarea rows={3} dir={currentDir} value={project.description?.[lang] || ""}
+              onChange={function(e) { upd("description", e.target.value); }} className="form-input"
+              placeholder="خلاصه‌ای از دستاورد و جزئیات پروژه" />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-        <div>
-          <label className="form-label">سال</label>
-          <input type="text" value={project.year || ""}
-            onChange={function(e) { update(project.id, { year: e.target.value }); }} className="form-input" />
-        </div>
-        <div>
-          <label className="form-label">تصویر پروژه</label>
-          {project.image ? (
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <img src={project.image} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", border: "1px solid #D1D5DB" }} />
-              <button type="button" onClick={function() { update(project.id, { image: "" }); }}
-                className="act-btn act-btn-delete">
-                <Icon name="x" />
-              </button>
-            </div>
-          ) : (
-            <button type="button" onClick={function() { inputRef.current && inputRef.current.click(); }}
-              className="act-btn act-btn-gold" style={{ width: "auto", padding: "0 12px", gap: 6 }}>
-              <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-                onChange={function(e) { upload(e.target.files[0]); }} />
-              {uploading ? <Icon name="loader" /> : <Icon name="upload" />}
-              <span style={{ fontSize: 11, fontWeight: 900 }}>آپلود</span>
-            </button>
-          )}
-        </div>
-      </div>
-      {uploadError && <div className="msg msg-error" style={{ marginTop: 8 }}>{uploadError}</div>}
+      <FormSection
+        title="انتشار و تصویر"
+        description="سال اجرا را ثبت کنید و تصویر شاخص پروژه را بارگذاری کنید."
+      >
+        <FormGrid>
+          <Field label="سال اجرا">
+            <input type="text" dir="ltr" value={project.year || ""}
+              onChange={function(e) { update(project.id, { year: e.target.value }); }} className="form-input"
+              placeholder="1403" />
+          </Field>
+
+          <Field as="div" label="تصویر پروژه" wide>
+            <UploadDropzone
+              type="images"
+              guidelineKey="projectImage"
+              value={project.image || ""}
+              onChange={function(url) { update(project.id, { image: url }); }}
+              label=""
+              accept="image/*"
+            />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
       <div className="save-bar">
-        <SaveBtn onClick={saveProject} busy={uploading} />
+        <SaveBtn onClick={onSave} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default function AdminCategoriesPage() {
   return (
-    <div className="space-y-6">
+    <div className="admin-page-stack">
       <ContentStudioNav />
       <CategoriesClient initialCatalog={getCatalog()} products={getProducts()} />
     </div>

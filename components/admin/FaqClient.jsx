@@ -2,14 +2,8 @@
 import { useState, useEffect } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 import { useToast, Toast } from "./useToast";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
 
 function pick(obj) {
   if (!obj) return "—";
@@ -98,7 +92,7 @@ export default function FaqClient({ initial }) {
       <div className="page-header anim-in">
         <div className="page-header-left">
           <div className="page-header-icon" style={{ background: "linear-gradient(135deg, #00A896, #007A6D)" }}>
-            <Icon name="help" size={22} />
+            <Icon name="info" size={22} />
           </div>
           <div className="min-w-0">
             <div className="page-header-title">سوالات متداول</div>
@@ -112,23 +106,21 @@ export default function FaqClient({ initial }) {
 
       <Toast toast={toast} />
 
-      {isNew && draft && (
-        <div className="anim-in" style={{
-          background: "#FFFFFF",
-          border: "1px solid #00A896",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 10
-        }}>
-          <FaqForm faq={draft} update={updateDraft}
-            onSave={commitSave}
-            onCancel={cancel} />
-        </div>
+      {draft && (
+        <EditorPanel
+          title={isNew ? "سوال جدید" : "ویرایش سوال"}
+          subtitle={pick(draft.question) !== "—" ? pick(draft.question) : "دسته، سوال و پاسخ را در زبان‌های سایت وارد کنید"}
+          icon={<Icon name="info" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <FaqForm faq={draft} update={updateDraft} onSave={commitSave} onCancel={cancel} />
+        </EditorPanel>
       )}
 
       {items.length === 0 && !isNew ? (
         <div className="empty anim-in">
-          <div className="empty-icon"><Icon name="help" size={30} /></div>
+          <div className="empty-icon"><Icon name="info" size={30} /></div>
           <div className="empty-title">هنوز سوالی اضافه نشده</div>
           <div className="empty-desc">سوالات متداول مشتریان را اضافه کنید</div>
           <button onClick={add} className="btn-add">
@@ -141,22 +133,23 @@ export default function FaqClient({ initial }) {
             const isEditing = draft !== null && draft.id === f.id;
             return (
               <div key={f.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="row">
+                <div className={"row" + (isEditing ? " row-editing" : "")}>
                   <div className="row-thumb" style={{ borderRadius: "50%" }}>
-                    <Icon name="help" size={18} />
+                    <Icon name="info" size={18} />
                   </div>
 
                   <div className="row-body">
                     <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span className="chip chip-teal">{pick(isEditing ? draft.category : f.category)}</span>
-                      {(isEditing ? draft.active : f.active) !== false ? (
+                      <span className="chip chip-teal">{pick(f.category)}</span>
+                      {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
+                      {f.active !== false ? (
                         <span className="chip chip-green"><Icon name="check" /> فعال</span>
                       ) : (
                         <span className="chip chip-gray">غیرفعال</span>
                       )}
                     </div>
-                    <div className="row-title">{pick(isEditing ? draft.question : f.question)}</div>
-                    <div className="row-meta">{pick(isEditing ? draft.answer : f.answer).substring(0, 70)}...</div>
+                    <div className="row-title">{pick(f.question)}</div>
+                    <div className="row-meta">{pick(f.answer).substring(0, 70)}...</div>
                   </div>
 
                   <div className="row-actions">
@@ -165,21 +158,6 @@ export default function FaqClient({ initial }) {
                     <DeleteBtn onClick={function() { remove(f.id); }} />
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 16,
-                    marginTop: -4,
-                    marginBottom: 10
-                  }}>
-                    <FaqForm faq={draft} update={updateDraft}
-                      onSave={commitSave}
-                      onCancel={cancel} />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -191,6 +169,11 @@ export default function FaqClient({ initial }) {
 
 function FaqForm({ faq, update, onSave, onCancel }) {
   const [lang, setLang] = useState("fa");
+  const currentDir = languageDir(lang);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(faq.question?.[item.code] || faq.answer?.[item.code]);
+  });
 
   function upd(field, val) {
     const nf = Object.assign({}, faq[field]);
@@ -202,28 +185,32 @@ function FaqForm({ faq, update, onSave, onCancel }) {
 
   return (
     <div>
-      <div className="tabs">
-        {LANGS.map(function(l) {
-          return (
-            <button key={l.code} type="button" onClick={function() { setLang(l.code); }}
-              className={"tab" + (lang === l.code ? " tab-active" : "")}>
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="متن سوال و پاسخ"
+        description="سوال و پاسخ را برای هر زبان ویرایش کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <label className="form-label">دسته</label>
-      <input type="text" value={faq.category[lang] || ""}
-        onChange={function(e) { upd("category", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="دسته">
+            <input type="text" dir={currentDir} value={faq.category?.[lang] || ""}
+              onChange={function(e) { upd("category", e.target.value); }} className="form-input"
+              placeholder="مثلاً عمومی" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>سوال</label>
-      <input type="text" value={faq.question[lang] || ""}
-        onChange={function(e) { upd("question", e.target.value); }} className="form-input" />
+          <Field label="سوال" required>
+            <input type="text" dir={currentDir} value={faq.question?.[lang] || ""}
+              onChange={function(e) { upd("question", e.target.value); }} className="form-input"
+              placeholder="سوال مشتری" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>پاسخ</label>
-      <textarea rows={4} value={faq.answer[lang] || ""}
-        onChange={function(e) { upd("answer", e.target.value); }} className="form-input" />
+          <Field label="پاسخ" wide>
+            <textarea rows={4} dir={currentDir} value={faq.answer?.[lang] || ""}
+              onChange={function(e) { upd("answer", e.target.value); }} className="form-input"
+              placeholder="پاسخ کامل و قابل فهم" />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} />

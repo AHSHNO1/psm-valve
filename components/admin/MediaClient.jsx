@@ -1,14 +1,16 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { DeleteBtn, EditBtn, SaveBtn, CancelBtn, ToggleBtn } from "./Actions";
 import ContentStudioNav from "./ContentStudioNav";
+import EditorPanel, { FormSection, FormGrid, Field } from "./EditorPanel";
+import UploadDropzone from "./UploadDropzone";
 import { useToast, Toast } from "./useToast";
 
 const TABS = [
-  { id: "gallery", label: "تصاویر", icon: "image" },
-  { id: "videos", label: "ویدئوها", icon: "package" },
-  { id: "catalogs", label: "کاتالوگ‌ها", icon: "file" }
+  { id: "gallery", label: "تصاویر", noun: "تصویر", icon: "image" },
+  { id: "videos", label: "ویدئوها", noun: "ویدئو", icon: "package" },
+  { id: "catalogs", label: "کاتالوگ‌ها", noun: "کاتالوگ", icon: "file" }
 ];
 
 export default function MediaClient({ initial }) {
@@ -16,7 +18,14 @@ export default function MediaClient({ initial }) {
   const [tab, setTab] = useState("gallery");
   const [editing, setEditing] = useState(null);
   const [introUrl, setIntroUrl] = useState(media.introVideoUrl || "");
+  const [savingIntro, setSavingIntro] = useState(false);
   const { notify, toast } = useToast();
+
+  const tabMeta = TABS.find((item) => item.id === tab) || TABS[0];
+  const activeList = media[tab] || [];
+  const editingItem = editing && editing !== "new"
+    ? activeList.find((item) => item.id === editing)
+    : null;
 
   async function refresh() {
     const res = await fetch("/api/media");
@@ -26,18 +35,25 @@ export default function MediaClient({ initial }) {
   }
 
   async function saveIntro() {
-    const res = await fetch("/api/media", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ introVideoUrl: introUrl })
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      notify(data.error || "ذخیره ویدئو ناموفق بود", true);
-      return;
+    setSavingIntro(true);
+    try {
+      const res = await fetch("/api/media", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ introVideoUrl: introUrl })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        notify(data.error || "ذخیره ویدئو ناموفق بود", true);
+        return;
+      }
+      notify("ویدئو معرفی ذخیره شد");
+      await refresh();
+    } catch (error) {
+      notify(error.message || "ذخیره ویدئو ناموفق بود", true);
+    } finally {
+      setSavingIntro(false);
     }
-    notify("ویدئو معرفی ذخیره شد");
-    refresh().catch((error) => notify(error.message, true));
   }
 
   async function removeItem(id, type, force) {
@@ -90,8 +106,6 @@ export default function MediaClient({ initial }) {
     }
   }
 
-  const activeList = media[tab] || [];
-
   return (
     <div>
       <ContentStudioNav />
@@ -110,31 +124,42 @@ export default function MediaClient({ initial }) {
 
       <Toast toast={toast} />
 
-      {/* Intro video tile */}
-      <div className="anim-in" style={{
-        background: "#FFFFFF",
-        border: "1px solid #D1D5DB",
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 16
-      }}>
-        <label className="form-label">
-          <Icon name="package" size={14} style={{ verticalAlign: "middle", marginInlineEnd: 4 }} />
-          ویدئو معرفی شرکت (صفحه اصلی)
-        </label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input type="text" dir="ltr" value={introUrl} onChange={function(e) { setIntroUrl(e.target.value); }}
-            placeholder="https://youtube.com/watch?v=..." className="form-input" style={{ flex: 1 }} />
-          <SaveBtn onClick={saveIntro} />
-        </div>
-      </div>
+      <EditorPanel
+        title="ویدئوی معرفی شرکت"
+        subtitle="ویدئویی که در صفحه اصلی سایت نمایش داده می‌شود"
+        icon={<Icon name="package" size={17} />}
+        badge={<span className="chip chip-gold">صفحه اصلی</span>}
+      >
+        <FormSection>
+          <FormGrid>
+            <Field
+              as="div"
+              wide
+              label="نشانی ویدئو"
+              hint="لینک آپارات، یوتیوب یا ویمئو را وارد کنید. برای تغییر، پس از ویرایش دکمه ذخیره را بزنید."
+            >
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={introUrl}
+                  onChange={function (e) { setIntroUrl(e.target.value); }}
+                  placeholder="https://www.aparat.com/v/..."
+                  className="form-input"
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <SaveBtn onClick={saveIntro} busy={savingIntro} />
+              </div>
+            </Field>
+          </FormGrid>
+        </FormSection>
+      </EditorPanel>
 
-      {/* Tabs */}
       <div className="tabs anim-in">
-        {TABS.map(function(t) {
+        {TABS.map(function (t) {
           const count = (media[t.id] || []).length;
           return (
-            <button key={t.id} onClick={function() { setTab(t.id); setEditing(null); }}
+            <button key={t.id} onClick={function () { setTab(t.id); setEditing(null); }}
               className={"tab" + (tab === t.id ? " tab-active" : "")}>
               <Icon name={t.icon} size={13} />
               {t.label}
@@ -142,73 +167,67 @@ export default function MediaClient({ initial }) {
             </button>
           );
         })}
-        <button onClick={function() { setEditing("new"); }}
+        <button onClick={function () { setEditing("new"); }}
           className="btn-add" style={{ marginInlineStart: "auto", fontSize: 12, padding: "7px 14px" }}>
-          <Icon name="plus" size={14} /> افزودن
+          <Icon name="plus" size={14} /> افزودن {tabMeta.noun}
         </button>
       </div>
 
-      {/* New item form */}
       {editing === "new" && (
-        <div className="anim-in" style={{
-          background: "#FFFFFF",
-          border: "1px solid #D1D5DB",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16
-        }}>
+        <EditorPanel
+          title={"افزودن " + tabMeta.noun}
+          subtitle="اطلاعات و فایل آیتم جدید را وارد کنید؛ پس از ذخیره در فهرست نمایش داده می‌شود."
+          icon={<Icon name={tabMeta.icon} size={17} />}
+          badge={<span className="chip chip-blue">{tabMeta.label}</span>}
+          onClose={function () { setEditing(null); }}
+        >
           <MediaForm type={tab}
-            onSave={async function() {
-              try {
-                await refresh();
-                setEditing(null);
-                notify("ذخیره شد");
-              } catch (error) {
-                notify(error.message, true);
-              }
+            onSave={async function () {
+              await refresh();
+              setEditing(null);
+              notify("ذخیره شد");
             }}
-            onCancel={function() { setEditing(null); }} />
-        </div>
+            onCancel={function () { setEditing(null); }} />
+        </EditorPanel>
       )}
 
-      {editing && editing !== "new" && activeList.some((item) => item.id === editing) && (
-        <div className="anim-in" style={{
-          background: "#FFFFFF",
-          border: "1px solid #D1D5DB",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16
-        }}>
+      {editingItem && (
+        <EditorPanel
+          title={"ویرایش " + tabMeta.noun}
+          subtitle="تغییرات پس از ذخیره روی سایت اعمال می‌شود."
+          icon={<Icon name={tabMeta.icon} size={17} />}
+          badge={<span className="chip chip-gold">در حال ویرایش</span>}
+          onClose={function () { setEditing(null); }}
+        >
           <MediaForm
-            key={editing}
+            key={editingItem.id}
             type={tab}
-            initialItem={activeList.find((item) => item.id === editing)}
-            onSave={async function() {
-              try {
-                await refresh();
-                setEditing(null);
-                notify("تغییرات ذخیره شد");
-              } catch (error) {
-                notify(error.message, true);
-              }
+            initialItem={editingItem}
+            onSave={async function () {
+              await refresh();
+              setEditing(null);
+              notify("تغییرات ذخیره شد");
             }}
-            onCancel={function() { setEditing(null); }}
+            onCancel={function () { setEditing(null); }}
           />
-        </div>
+        </EditorPanel>
       )}
 
-      {/* List */}
       {activeList.length === 0 ? (
         <div className="empty anim-in">
-          <div className="empty-icon"><Icon name="image" size={30} /></div>
-          <div className="empty-title">هنوز آیتمی اضافه نشده</div>
-          <div className="empty-desc">از دکمه افزودن بالا استفاده کنید</div>
+          <div className="empty-icon"><Icon name={tabMeta.icon} size={30} /></div>
+          <div className="empty-title">هنوز {tabMeta.noun}ی اضافه نشده</div>
+          <div className="empty-desc">از دکمه افزودن {tabMeta.noun} بالا استفاده کنید</div>
         </div>
       ) : (
         <div className="card-grid">
-          {activeList.map(function(item, i) {
+          {activeList.map(function (item, i) {
             return (
-              <div key={item.id} className="card-item anim-in" style={{ animationDelay: (i * 25) + "ms" }}>
+              <div
+                key={item.id}
+                className={"card-item anim-in" + (editing === item.id ? " card-item-editing" : "")}
+                style={{ animationDelay: (i * 25) + "ms" }}
+              >
                 <div style={{
                   aspectRatio: tab === "gallery" ? "1" : "16/9",
                   borderRadius: 10,
@@ -243,6 +262,11 @@ export default function MediaClient({ initial }) {
                 }}>
                   {(typeof item.title === "string" ? item.title : (item.title && item.title.fa)) || "بدون عنوان"}
                 </div>
+                {editing === item.id && (
+                  <div style={{ marginTop: 4 }}>
+                    <span className="chip chip-gold">در حال ویرایش</span>
+                  </div>
+                )}
                 {item.source === "aparat" && (
                   <div style={{ fontSize: 10, color: "#7A8290", marginTop: 4 }}>
                     همگام‌شده از کانال آپارات
@@ -257,12 +281,12 @@ export default function MediaClient({ initial }) {
                     className="act-btn act-btn-view" title="باز کردن">
                     <Icon name="external" />
                   </a>
-                  <EditBtn onClick={function() { setEditing(item.id); }} title="ویرایش" />
+                  <EditBtn onClick={function () { setEditing(item.id); }} title="ویرایش" />
                   <ToggleBtn active={item.active !== false}
-                    onClick={function() { toggleItem(item, tab); }}
+                    onClick={function () { toggleItem(item, tab); }}
                     title={item.active === false ? "نمایش در سایت" : "پنهان کردن از سایت"} />
                   {item.source !== "aparat" && (
-                    <DeleteBtn onClick={function() { removeItem(item.id, tab); }} />
+                    <DeleteBtn onClick={function () { removeItem(item.id, tab); }} />
                   )}
                 </div>
               </div>
@@ -288,43 +312,16 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
       ? initialDescription
       : initialDescription?.fa || initialDescription?.en || ""
   );
-  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const inputRef = useRef(null);
-  const posterInputRef = useRef(null);
-  const coverInputRef = useRef(null);
-
-  const labels = {
-    gallery: { title: "تصویر", accept: "image/*", uploadType: "images" },
-    videos: { title: "ویدئو", accept: "video/*", uploadType: "videos" },
-    catalogs: { title: "کاتالوگ PDF", accept: "application/pdf", uploadType: "catalogs" }
-  };
-  const label = labels[type];
   const isEditing = Boolean(initialItem);
 
-  async function upload(file, target) {
-    if (!file) return;
-    setUploading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", target === "poster" ? "posters" : target === "cover" ? "images" : label.uploadType);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || !data.ok || !data.url) {
-        throw new Error(data.error || "آپلود فایل انجام نشد");
-      }
-      if (target === "poster") setPoster(data.url);
-      else if (target === "cover") setCover(data.url);
-      else setUrl(data.url);
-    } catch (uploadError) {
-      setError(uploadError.message || "آپلود فایل انجام نشد");
-    } finally {
-      setUploading(false);
-    }
-  }
+  const labels = {
+    gallery: { title: "تصویر", noun: "تصویر", uploadType: "images", accept: "image/*", guidelineKey: "galleryImage" },
+    videos: { title: "ویدئو", noun: "ویدئو", uploadType: "videos", accept: "video/*", guidelineKey: "video" },
+    catalogs: { title: "کاتالوگ PDF", noun: "کاتالوگ", uploadType: "catalogs", accept: "application/pdf", guidelineKey: "catalog" }
+  };
+  const label = labels[type];
 
   async function save() {
     if (!title.trim()) {
@@ -373,76 +370,97 @@ function MediaForm({ type, initialItem, onSave, onCancel }) {
 
   return (
     <div>
-      <label className="form-label">عنوان {label.title}</label>
-      <input type="text" value={title} onChange={function(e) { setTitle(e.target.value); }}
-        className="form-input" required />
+      <FormSection title="اطلاعات آیتم" description="عنوان و توضیحی که در سایت نمایش داده می‌شود">
+        <FormGrid>
+          <Field label={"عنوان " + label.title} wide required>
+            <input type="text" value={title} onChange={function (e) { setTitle(e.target.value); }}
+              className="form-input" required />
+          </Field>
+          <Field label="توضیحات" wide required={type === "catalogs"}
+            hint={type === "catalogs" ? "توضیح کوتاه درباره محتوای کاتالوگ." : "اختیاری"}>
+            <textarea rows={2} value={description} onChange={function (e) { setDescription(e.target.value); }}
+              className="form-input" required={type === "catalogs"} />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
       {type === "videos" && (
-        <>
-          <label className="form-label" style={{ marginTop: 10 }}>لینک ویدئو (آپارات، یوتیوب یا ویمئو)</label>
-          <input type="url" dir="ltr" value={url.startsWith("/uploads/") ? "" : url}
-            onChange={function(e) { setUrl(e.target.value); }}
-            placeholder="https://www.aparat.com/v/..." className="form-input" />
-          <div style={{ fontSize: 11, color: "#7A8290", marginTop: 6, textAlign: "center", fontWeight: 900 }}>— یا آپلود فایل ویدئو —</div>
-        </>
+        <FormSection title="فایل ویدئو" description="یکی از دو روش لینک یا بارگذاری را انتخاب کنید">
+          <FormGrid>
+            <Field label="لینک ویدئو" hint="آپارات، یوتیوب یا ویمئو">
+              <input type="url" dir="ltr" value={url.startsWith("/uploads/") ? "" : url}
+                onChange={function (e) { setUrl(e.target.value); }}
+                placeholder="https://www.aparat.com/v/..." className="form-input" />
+            </Field>
+            <Field as="div" label="یا بارگذاری فایل ویدئو" hint="حداکثر ۵۰ مگابایت؛ برای فایل‌های سنگین از لینک استفاده کنید.">
+              <UploadDropzone
+                type="videos"
+                guidelineKey="video"
+                value={url.startsWith("/uploads/") ? url : ""}
+                onChange={function (next) { setUrl(next || ""); }}
+                accept="video/*"
+                label=""
+              />
+            </Field>
+          </FormGrid>
+          <Field as="div" label="تصویر کاور ویدئو" hint="اختیاری؛ تصویر پیش‌نمایش قبل از پخش." className="content-image-field">
+            <UploadDropzone
+              type="posters"
+              guidelineKey="videoPoster"
+              value={poster}
+              onChange={function (next) { setPoster(next || ""); }}
+              accept="image/jpeg,image/png,image/webp"
+              label=""
+            />
+          </Field>
+        </FormSection>
       )}
 
-      <label className="form-label" style={{ marginTop: 10 }}>
-        {type === "videos" ? "فایل ویدئو" : type === "catalogs" ? "فایل PDF کاتالوگ" : "فایل تصویر"}
-      </label>
-      <div onClick={function() { inputRef.current && inputRef.current.click(); }}
-        style={{
-          border: "2px dashed #D1D5DB", background: "#F4F5F7", borderRadius: 10,
-          padding: 18, textAlign: "center", cursor: "pointer"
-        }}>
-        <input ref={inputRef} type="file" accept={label.accept} style={{ display: "none" }}
-          onChange={function(e) {
-            upload(e.target.files[0]);
-            e.target.value = "";
-          }} />
-        {uploading ? <Icon name="loader" size={20} /> : <Icon name="upload" size={22} />}
-        {url && <div style={{ fontSize: 10, marginTop: 6, color: "#8A6508", fontWeight: 800 }}>فایل انتخاب شده است؛ برای جایگزینی انتخاب کنید</div>}
-      </div>
-
-      {type === "videos" && (
-        <div style={{ marginTop: 10 }}>
-          <label className="form-label">تصویر کاور ویدئو (اختیاری)</label>
-          <button type="button" className="btn-cancel" onClick={function() { posterInputRef.current && posterInputRef.current.click(); }}>
-            <Icon name="upload" size={14} /> انتخاب تصویر کاور
-          </button>
-          <input ref={posterInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }}
-            onChange={function(e) {
-              upload(e.target.files[0], "poster");
-              e.target.value = "";
-            }} />
-          {poster && <div style={{ fontSize: 11, marginTop: 6, color: "#8A6508" }}>کاور انتخاب شده است</div>}
-        </div>
+      {type === "gallery" && (
+        <FormSection title="فایل تصویر" description="تصویر گالری سایت">
+          <Field as="div" label="بارگذاری تصویر" hint="پس از آپلود، تصویر بهینه‌سازی و ذخیره می‌شود.">
+            <UploadDropzone
+              type="images"
+              guidelineKey="galleryImage"
+              value={url}
+              onChange={function (next) { setUrl(next || ""); }}
+              accept="image/*"
+              label=""
+            />
+          </Field>
+        </FormSection>
       )}
 
       {type === "catalogs" && (
-        <div style={{ marginTop: 10 }}>
-          <label className="form-label">تصویر روی جلد کاتالوگ *</label>
-          <button type="button" className="btn-cancel" onClick={function() { coverInputRef.current && coverInputRef.current.click(); }}>
-            <Icon name="upload" size={14} /> انتخاب تصویر کاور
-          </button>
-          <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }}
-            onChange={function(e) {
-              upload(e.target.files[0], "cover");
-              e.target.value = "";
-            }} />
-          {cover && <img src={cover} alt="پیش‌نمایش جلد کاتالوگ" style={{ width: "100%", maxWidth: 360, aspectRatio: "16/9", objectFit: "cover", borderRadius: 10, marginTop: 8 }} />}
-        </div>
+        <FormSection title="فایل کاتالوگ و جلد" description="فایل PDF و تصویر روی جلد آن">
+          <FormGrid>
+            <Field as="div" label="فایل PDF کاتالوگ" required>
+              <UploadDropzone
+                type="catalogs"
+                guidelineKey="catalog"
+                value={url}
+                onChange={function (next) { setUrl(next || ""); }}
+                accept="application/pdf"
+                label=""
+              />
+            </Field>
+            <Field as="div" label="تصویر روی جلد کاتالوگ" required>
+              <UploadDropzone
+                type="images"
+                guidelineKey="catalogCover"
+                value={cover}
+                onChange={function (next) { setCover(next || ""); }}
+                accept="image/*"
+                label=""
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
       )}
-
-      <label className="form-label" style={{ marginTop: 10 }}>
-        توضیحات {type === "catalogs" ? "*" : "(اختیاری)"}
-      </label>
-      <textarea rows={2} value={description} onChange={function(e) { setDescription(e.target.value); }}
-        className="form-input" required={type === "catalogs"} />
 
       {error && <div className="msg msg-error" role="alert">{error}</div>}
       <div className="save-bar">
-        <SaveBtn onClick={save} busy={busy || uploading} />
+        <SaveBtn onClick={save} busy={busy} />
         <CancelBtn onClick={onCancel} />
       </div>
     </div>

@@ -1,19 +1,18 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
-
-const LANGS = [
-  { code: "fa", label: "فارسی" },
-  { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
-  { code: "ru", label: "Русский" }
-];
+import UploadDropzone from "./UploadDropzone";
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function blank() {
@@ -31,8 +30,10 @@ function blank() {
 
 export default function TestimonialsClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -47,19 +48,41 @@ export default function TestimonialsClient({ initial }) {
         body: JSON.stringify({ testimonials: list })
       });
       const data = await res.json();
-      if (data.ok) { setItems(list); notify("ذخیره شد"); }
-      else notify("خطا", true);
-    } catch (e) { notify("خطای شبکه", true); }
+      if (!res.ok || !data.ok) {
+        notify(data.error || "ذخیره نظر ناموفق بود", true);
+        return false;
+      }
+      setItems(list);
+      notify("ذخیره شد");
+      return true;
+    } catch (e) {
+      notify("خطای شبکه", true);
+      return false;
+    }
   }
 
   function add() {
-    const t = blank();
-    setItems(items.concat([t]));
-    setEditing(t.id);
+    setDraft(blank());
+  }
+
+  function edit(test) {
+    setDraft(copy(test));
+  }
+
+  function clone(test) {
+    const next = copy(test);
+    next.id = "test-" + Date.now().toString(36);
+    next.name.fa = (next.name.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این نظر حذف شود؟")) return;
+    if (draft && draft.id === id) setDraft(null);
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -69,7 +92,19 @@ export default function TestimonialsClient({ initial }) {
   }
 
   function update(id, patch) {
-    setItems(items.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; }));
+    setDraft(function(current) {
+      return current && current.id === id ? Object.assign({}, current, patch) : current;
+    });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    const exists = items.some(function(item) { return item.id === draft.id; });
+    const list = exists
+      ? items.map(function(item) { return item.id === draft.id ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -95,6 +130,18 @@ export default function TestimonialsClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "نظر جدید" : "ویرایش نظر"}
+          subtitle={pick(draft.name) !== "—" ? pick(draft.name) : "نام، سمت و متن نظر مشتری را وارد کنید"}
+          icon={<Icon name="star" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <TestForm test={draft} update={update} onSave={saveDraft} onCancel={cancel} />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="star" size={30} /></div>
@@ -107,10 +154,10 @@ export default function TestimonialsClient({ initial }) {
       ) : (
         <div className="card-grid">
           {items.map(function(t, i) {
-            const isEditing = editing === t.id;
+            const isEditing = draft !== null && draft.id === t.id;
             return (
               <div key={t.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="card-item">
+                <div className={"card-item" + (isEditing ? " card-item-editing" : "")}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <div style={{
                       width: 44, height: 44, borderRadius: "50%",
@@ -141,6 +188,8 @@ export default function TestimonialsClient({ initial }) {
                     </div>
                   </div>
 
+                  {isEditing && <span className="chip chip-gold" style={{ alignSelf: "flex-start" }}>در حال ویرایش</span>}
+
                   <div className="card-item-desc" style={{
                     display: "-webkit-box", WebkitLineClamp: 3,
                     WebkitBoxOrient: "vertical", overflow: "hidden"
@@ -151,25 +200,14 @@ export default function TestimonialsClient({ initial }) {
                   <div className="card-item-foot">
                     <ToggleBtn active={t.active !== false} onClick={function() { toggle(t.id); }} />
                     <div style={{ display: "flex", gap: 6 }}>
-                      <EditBtn onClick={function() { setEditing(isEditing ? null : t.id); }} />
+                      <EditBtn onClick={function() { if (isEditing) cancel(); else edit(t); }} />
+                      <button type="button" onClick={function() { clone(t); }} className="act-btn" title="کپی" aria-label="کپی نظر" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
+                        <Icon name="plus" size={14} />
+                      </button>
                       <DeleteBtn onClick={function() { remove(t.id); }} />
                     </div>
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 14,
-                    marginTop: 8
-                  }}>
-                    <TestForm test={t} update={update}
-                      onSave={function() { save(items); setEditing(null); }}
-                      onCancel={function() { setEditing(null); }} />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -181,8 +219,11 @@ export default function TestimonialsClient({ initial }) {
 
 function TestForm({ test, update, onSave, onCancel }) {
   const [lang, setLang] = useState("fa");
-  const [uploading, setUploading] = useState(false);
-  const inputRef = useRef(null);
+  const currentDir = languageDir(lang);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(test.name?.[item.code] || test.text?.[item.code]);
+  });
 
   function upd(field, val) {
     const nf = Object.assign({}, test[field]);
@@ -192,86 +233,65 @@ function TestForm({ test, update, onSave, onCancel }) {
     update(test.id, patch);
   }
 
-  async function upload(file) {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "images");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.ok) update(test.id, { image: data.url });
-    } catch (e) {}
-    setUploading(false);
-  }
-
   return (
     <div>
-      <div className="tabs">
-        {LANGS.map(function(l) {
-          return (
-            <button key={l.code} type="button" onClick={function() { setLang(l.code); }}
-              className={"tab" + (lang === l.code ? " tab-active" : "")}>
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="متن نظر"
+        description="نام، سمت و متن نظر مشتری را برای هر زبان وارد کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <label className="form-label">نام</label>
-      <input type="text" value={test.name[lang] || ""}
-        onChange={function(e) { upd("name", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="نام مشتری" required>
+            <input type="text" dir={currentDir} value={test.name?.[lang] || ""}
+              onChange={function(e) { upd("name", e.target.value); }} className="form-input" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>سمت</label>
-      <input type="text" value={test.role[lang] || ""}
-        onChange={function(e) { upd("role", e.target.value); }} className="form-input" />
+          <Field label="سمت / شرکت">
+            <input type="text" dir={currentDir} value={test.role?.[lang] || ""}
+              onChange={function(e) { upd("role", e.target.value); }} className="form-input" />
+          </Field>
 
-      <label className="form-label" style={{ marginTop: 10 }}>متن نظر</label>
-      <textarea rows={3} value={test.text[lang] || ""}
-        onChange={function(e) { upd("text", e.target.value); }} className="form-input" />
+          <Field label="متن نظر" wide>
+            <textarea rows={4} dir={currentDir} value={test.text?.[lang] || ""}
+              onChange={function(e) { upd("text", e.target.value); }} className="form-input" />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-        <div>
-          <label className="form-label">امتیاز</label>
-          <div style={{ display: "flex", gap: 4 }}>
-            {[1, 2, 3, 4, 5].map(function(n) {
-              return (
-                <button key={n} type="button" onClick={function() { update(test.id, { rating: n }); }}
-                  className="act-btn"
-                  style={{
-                    background: n <= test.rating ? "rgba(245, 197, 24, 0.15)" : "#F1F3F6",
-                    borderColor: n <= test.rating ? "#F5C518" : "#D1D5DB",
-                    color: n <= test.rating ? "#D97706" : "#7A8290",
-                    fontSize: 16
-                  }}>
-                  ★
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <label className="form-label">تصویر</label>
-          {test.image ? (
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <img src={test.image} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", border: "1px solid #D1D5DB" }} />
-              <button type="button" onClick={function() { update(test.id, { image: "" }); }} className="act-btn act-btn-delete">
-                <Icon name="x" />
-              </button>
+      <FormSection
+        title="امتیاز و تصویر"
+        description="امتیاز نمایشی و تصویر مشتری را انتخاب کنید."
+      >
+        <FormGrid>
+          <Field as="div" label="امتیاز">
+            <div className="choice-grid" role="group" aria-label="امتیاز نظر">
+              {[1, 2, 3, 4, 5].map(function(n) {
+                const active = n <= (test.rating || 5);
+                return (
+                  <button key={n} type="button" onClick={function() { update(test.id, { rating: n }); }}
+                    className={"choice-btn" + (active ? " choice-btn-active" : "")}
+                    style={{ fontSize: 15, minWidth: 36 }}
+                    aria-pressed={n === test.rating} aria-label={n + " ستاره"}>
+                    ★
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <button type="button" onClick={function() { inputRef.current && inputRef.current.click(); }}
-              className="act-btn act-btn-gold" style={{ width: "auto", padding: "0 12px", gap: 6 }}>
-              <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-                onChange={function(e) { upload(e.target.files[0]); }} />
-              {uploading ? <Icon name="loader" /> : <Icon name="upload" />}
-              <span style={{ fontSize: 11, fontWeight: 900 }}>آپلود</span>
-            </button>
-          )}
-        </div>
-      </div>
+          </Field>
+
+          <Field as="div" label="تصویر مشتری" wide>
+            <UploadDropzone
+              type="images"
+              guidelineKey="testimonialImage"
+              value={test.image || ""}
+              onChange={function(url) { update(test.id, { image: url }); }}
+              label=""
+              accept="image/*"
+            />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
       <div className="save-bar">
         <SaveBtn onClick={onSave} />

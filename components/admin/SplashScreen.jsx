@@ -37,10 +37,10 @@ export default function SplashScreen({ duration = 1500 }) {
           <span className="text-white font-black text-3xl">PSM</span>
         </div>
         <div className="splash-text mb-8">
-          <div className="text-2xl font-black" style={{ color: "var(--m-text)" }}>
+          <div className="text-2xl font-black" style={{ color: "var(--text)" }}>
             پنل مدیریت
           </div>
-          <div className="text-sm font-bold mt-1" style={{ color: "var(--m-text-muted)" }}>
+          <div className="text-sm font-bold mt-1" style={{ color: "var(--text-muted)" }}>
             پترو سازه میهن · PSM VALVE
           </div>
         </div>

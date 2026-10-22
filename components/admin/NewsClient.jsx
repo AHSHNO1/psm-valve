@@ -4,13 +4,7 @@ import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
 import UploadDropzone from "./UploadDropzone";
 import GalleryUploader from "./GalleryUploader";
-
-const LANGS = [
-  { code: "fa", label: "فارسی", dir: "rtl" },
-  { code: "en", label: "English", dir: "ltr" },
-  { code: "ar", label: "العربية", dir: "rtl" },
-  { code: "ru", label: "Русский", dir: "ltr" }
-];
+import EditorPanel, { ADMIN_LANGUAGES, FormSection, FormGrid, Field, LocaleTabs, languageDir } from "./EditorPanel";
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -20,10 +14,15 @@ function pick(obj) {
   return obj.fa || obj.en || "—";
 }
 
+function copy(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function blank() {
+  const suffix = Date.now().toString(36);
   return {
-    id: "news-" + Date.now().toString(36),
-    slug: "news-" + Date.now().toString(36),
+    id: "news-" + suffix,
+    slug: "news-" + suffix,
     title: { fa: "", en: "", ar: "", ru: "" },
     excerpt: { fa: "", en: "", ar: "", ru: "" },
     content: { fa: "", en: "", ar: "", ru: "" },
@@ -44,9 +43,11 @@ export default function NewsClient({ initial }) {
   const [items, setItems] = useState((initial || []).map(function(item) {
     return { ...item, gallery: galleryOf(item) };
   }));
-  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
+
+  const isNew = Boolean(draft) && !items.some(function(item) { return item.id === draft.id; });
 
   function notify(text, isError) {
     setMsg({ type: isError ? "error" : "success", text: text });
@@ -107,28 +108,28 @@ export default function NewsClient({ initial }) {
   }
 
   function add() {
-    const n = blank();
-    setItems(items.concat([n]));
-    setEditing(n.id);
+    setDraft(blank());
   }
 
-  function clone(n) {
-    const c = {
-      ...n,
-      id: "news-" + Date.now().toString(36),
-      slug: n.slug + "-copy",
-      title: { ...n.title },
-      excerpt: { ...n.excerpt },
-      content: { ...n.content },
-      category: { ...n.category },
-      gallery: galleryOf(n).slice()
-    };
-    setItems(items.concat([c]));
-    setEditing(c.id);
+  function edit(item) {
+    setDraft(copy(item));
+  }
+
+  function clone(item) {
+    const next = copy(item);
+    next.id = "news-" + Date.now().toString(36);
+    next.slug = item.slug ? item.slug + "-copy" : "";
+    next.title.fa = (next.title.fa || "") + " (کپی)";
+    setDraft(next);
+  }
+
+  function cancel() {
+    setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این خبر حذف شود؟")) return;
+    if (draft && draft.id === id) setDraft(null);
     save(items.filter(function(x) { return x.id !== id; }));
   }
 
@@ -138,9 +139,19 @@ export default function NewsClient({ initial }) {
   }
 
   function update(id, patch) {
-    setItems(function(current) {
-      return current.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; });
+    setDraft(function(current) {
+      return current && current.id === id ? Object.assign({}, current, patch) : current;
     });
+  }
+
+  async function saveDraft() {
+    if (!draft) return;
+    const exists = items.some(function(item) { return item.id === draft.id; });
+    const list = exists
+      ? items.map(function(item) { return item.id === draft.id ? draft : item; })
+      : items.concat([draft]);
+    const ok = await save(list);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -167,6 +178,24 @@ export default function NewsClient({ initial }) {
         </div>
       )}
 
+      {draft && (
+        <EditorPanel
+          title={isNew ? "خبر جدید" : "ویرایش خبر"}
+          subtitle={pick(draft.title) !== "—" ? pick(draft.title) : "عنوان و متن خبر را در زبان‌های سایت وارد کنید"}
+          icon={<Icon name="newspaper" />}
+          badge={<span className={"chip " + (isNew ? "chip-gold" : "chip-teal")}>{isNew ? "ذخیره‌نشده" : "در حال ویرایش"}</span>}
+          onClose={cancel}
+        >
+          <NewsForm
+            news={draft}
+            update={update}
+            busy={busy}
+            onSave={saveDraft}
+            onCancel={cancel}
+          />
+        </EditorPanel>
+      )}
+
       {items.length === 0 ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="newspaper" size={30} /></div>
@@ -179,12 +208,12 @@ export default function NewsClient({ initial }) {
       ) : (
         <div>
           {items.map(function(n, i) {
-            const isEditing = editing === n.id;
+            const isEditing = draft !== null && draft.id === n.id;
             const gallery = galleryOf(n);
             const thumb = n.image || gallery[0];
             return (
               <div key={n.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
-                <div className="row">
+                <div className={"row" + (isEditing ? " row-editing" : "")}>
                   <div className="row-thumb">
                     {thumb ? <img src={thumb} alt="" /> : <Icon name="newspaper" size={20} />}
                   </div>
@@ -192,6 +221,7 @@ export default function NewsClient({ initial }) {
                   <div className="row-body">
                     <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
                       <span className="chip chip-teal">{pick(n.category)}</span>
+                      {isEditing && <span className="chip chip-gold">در حال ویرایش</span>}
                       {n.active !== false ? (
                         <span className="chip chip-green"><Icon name="check" /> فعال</span>
                       ) : (
@@ -212,35 +242,13 @@ export default function NewsClient({ initial }) {
 
                   <div className="row-actions">
                     <ToggleBtn active={n.active !== false} onClick={function() { toggle(n.id); }} />
-                    <EditBtn onClick={function() { setEditing(isEditing ? null : n.id); }} />
+                    <EditBtn onClick={function() { if (isEditing) cancel(); else edit(n); }} />
                     <button type="button" onClick={function() { clone(n); }} className="act-btn" title="کپی" aria-label="کپی خبر" style={{ background: "#F1F3F6", borderColor: "#D1D5DB", color: "#4B5160" }}>
                       +
                     </button>
                     <DeleteBtn onClick={function() { remove(n.id); }} />
                   </div>
                 </div>
-
-                {isEditing && (
-                  <div className="anim-in" style={{
-                    background: "#FFFFFF",
-                    border: "1px solid #D1D5DB",
-                    borderRadius: 12,
-                    padding: 18,
-                    marginBottom: 10,
-                    marginTop: -4
-                  }}>
-                    <NewsForm
-                      news={n}
-                      update={update}
-                      busy={busy}
-                      onSave={async function() {
-                        const ok = await save(items);
-                        if (ok) setEditing(null);
-                      }}
-                      onCancel={function() { setEditing(null); }}
-                    />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -252,8 +260,15 @@ export default function NewsClient({ initial }) {
 
 function NewsForm({ news, update, onSave, onCancel, busy }) {
   const [lang, setLang] = useState("fa");
-  const currentDir = LANGS.find(function(item) { return item.code === lang; })?.dir || "rtl";
+  const currentDir = languageDir(lang);
+  const currentLabel = ADMIN_LANGUAGES.find(function(item) { return item.code === lang; })?.label || "فارسی";
   const gallery = galleryOf(news);
+  const filled = {};
+  ADMIN_LANGUAGES.forEach(function(item) {
+    filled[item.code] = Boolean(
+      news.title?.[item.code] || news.excerpt?.[item.code] || news.content?.[item.code]
+    );
+  });
 
   function upd(field, val) {
     const newField = Object.assign({}, news[field]);
@@ -265,83 +280,92 @@ function NewsForm({ news, update, onSave, onCancel, busy }) {
 
   return (
     <div>
-      <div className="tabs">
-        {LANGS.map(function(l) {
-          return (
-            <button key={l.code} type="button" onClick={function() { setLang(l.code); }}
-              className={"tab" + (lang === l.code ? " tab-active" : "")}>
-              {l.label}
-            </button>
-          );
-        })}
-      </div>
+      <FormSection
+        title="متن خبر"
+        description="عنوان، خلاصه و متن کامل را برای هر زبان جداگانه وارد کنید."
+      >
+        <LocaleTabs lang={lang} onChange={setLang} filled={filled} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
-        <div>
-          <label className="form-label">عنوان خبر</label>
-          <input type="text" dir={currentDir} value={news.title[lang] || ""}
-            onChange={function(e) { upd("title", e.target.value); }} className="form-input" />
+        <FormGrid>
+          <Field label="عنوان خبر" required>
+            <input type="text" dir={currentDir} value={news.title?.[lang] || ""}
+              onChange={function(e) { upd("title", e.target.value); }} className="form-input"
+              placeholder="عنوان کوتاه و گویا" />
+          </Field>
 
-          <label className="form-label" style={{ marginTop: 12 }}>خلاصه خبر</label>
-          <textarea rows={2} dir={currentDir} value={news.excerpt[lang] || ""}
-            onChange={function(e) { upd("excerpt", e.target.value); }} className="form-input" />
+          <Field label="دسته‌بندی">
+            <input type="text" dir={currentDir} value={news.category?.[lang] || ""}
+              onChange={function(e) { upd("category", e.target.value); }} className="form-input"
+              placeholder="مثلاً اخبار شرکت" />
+          </Field>
 
-          <label className="form-label" style={{ marginTop: 12 }}>دسته‌بندی</label>
-          <input type="text" dir={currentDir} value={news.category[lang] || ""}
-            onChange={function(e) { upd("category", e.target.value); }} className="form-input" />
-        </div>
+          <Field label="خلاصه خبر" wide>
+            <textarea rows={2} dir={currentDir} value={news.excerpt?.[lang] || ""}
+              onChange={function(e) { upd("excerpt", e.target.value); }} className="form-input"
+              placeholder="خلاصه‌ای که در فهرست اخبار نمایش داده می‌شود" />
+          </Field>
 
-        <div>
-          <label className="form-label">نامک (slug)</label>
-          <input type="text" dir="ltr" value={news.slug || ""}
-            onChange={function(e) { update(news.id, { slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }); }}
-            className="form-input" />
-          <div className="form-hint">آدرس صفحه: /fa/news/{news.slug || "…"}</div>
+          <Field
+            label={"متن کامل خبر · " + currentLabel}
+            wide
+            hint={"هر خط خالی، پاراگراف جدید می‌سازد. متن به‌صورت امن و بدون HTML نمایش داده می‌شود. · " + (news.content?.[lang] || "").length.toLocaleString("fa-IR") + " کاراکتر"}
+          >
+            <textarea
+              rows={9}
+              dir={currentDir}
+              value={news.content?.[lang] || ""}
+              onChange={function(e) { upd("content", e.target.value); }}
+              className="form-input"
+              placeholder="متن خبر را در یک یا چند پاراگراف بنویسید."
+              style={{ lineHeight: 2, minHeight: 190 }}
+            />
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-          <label className="form-label" style={{ marginTop: 12 }}>تاریخ</label>
-          <input type="text" dir="auto" value={news.date || ""}
-            onChange={function(e) { update(news.id, { date: e.target.value }); }}
-            className="form-input" />
+      <FormSection
+        title="نشانی و تصویر کاور"
+        description="نامک در آدرس صفحه خبر استفاده می‌شود؛ تصویر کاور در فهرست و بالای خبر دیده می‌شود."
+      >
+        <FormGrid>
+          <Field label="نامک (slug)" hint={"آدرس صفحه: /fa/news/" + (news.slug || "…")}>
+            <input type="text" dir="ltr" value={news.slug || ""}
+              onChange={function(e) { update(news.id, { slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }); }}
+              className="form-input" placeholder="company-news-title" />
+          </Field>
 
-          <div style={{ marginTop: 12 }}>
+          <Field label="تاریخ">
+            <input type="text" dir="auto" value={news.date || ""}
+              onChange={function(e) { update(news.id, { date: e.target.value }); }}
+              className="form-input" />
+          </Field>
+
+          <Field as="div" label="تصویر کاور خبر" wide>
             <UploadDropzone
               type="images"
+              guidelineKey="newsImage"
               value={news.image || ""}
               onChange={function(url) { update(news.id, { image: url }); }}
-              label="تصویر کاور خبر"
+              label=""
               accept="image/*"
             />
-          </div>
-        </div>
-      </div>
+          </Field>
+        </FormGrid>
+      </FormSection>
 
-      <div style={{ marginTop: 16 }}>
-        <label className="form-label">متن کامل خبر ({LANGS.find(function(item) { return item.code === lang; })?.label})</label>
-        <textarea
-          rows={9}
-          dir={currentDir}
-          value={news.content?.[lang] || ""}
-          onChange={function(e) { upd("content", e.target.value); }}
-          className="form-input"
-          placeholder="متن خبر را در یک یا چند پاراگراف بنویسید. هر خط خالی، پاراگراف جدید می‌سازد."
-          style={{ lineHeight: 2, minHeight: 190 }}
-        />
-        <div className="form-hint" style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <span>هر خط خالی، پاراگراف جدید ایجاد می‌کند. متن به‌صورت امن (بدون HTML) نمایش داده می‌شود.</span>
-          <span>{(news.content?.[lang] || "").length.toLocaleString("fa-IR")} کاراکتر</span>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px dashed #D1D5DB" }}>
+      <FormSection
+        title="گالری تصاویر خبر"
+        description="تصاویر بیشتر خبر را اضافه کنید و یکی را به‌عنوان کاور انتخاب کنید."
+      >
         <GalleryUploader
           images={gallery}
           cover={news.image || ""}
           onChange={function(next) { update(news.id, { gallery: next }); }}
           onCoverChange={function(url) { update(news.id, { image: url }); }}
         />
-      </div>
+      </FormSection>
 
-      <div className="save-bar" style={{ marginTop: 16 }}>
+      <div className="save-bar">
         <SaveBtn onClick={onSave} disabled={busy} />
         <CancelBtn onClick={onCancel} />
         {news.slug && (
