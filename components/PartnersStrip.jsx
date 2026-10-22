@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Building2 } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -42,9 +43,12 @@ export default function PartnersStrip({ partners, locale }) {
               }}
             >
               {p.logo ? (
-                <img
+                <MediaImage
                   src={p.logo}
                   alt={pick(p.name, locale)}
+                  width={300}
+                  height={200}
+                  sizes="(max-width: 640px) 33vw, 16vw"
                   className="max-w-full max-h-16 object-contain grayscale hover:grayscale-0 transition"
                 />
               ) : (

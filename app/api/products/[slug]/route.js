@@ -1,64 +1,65 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { isProductCategory } from "@/lib/category-store";
 import { deleteProduct, getProduct, updateProduct } from "@/lib/product-store";
-import { isProductCategory } from "@/lib/categories";
+import { guard, readJson, json, err, isResponse, revalidatePublic } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function productPaths(slug) {
+  return ["", "products", `products/${slug}`, `products/${slug}/datasheet`, "sizing"];
+}
+
 export async function GET(request, { params }) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
   try {
     const product = getProduct(params.slug);
-    if (!product) return NextResponse.json({ ok: false, error: "محصول پیدا نشد." }, { status: 404 });
-    return NextResponse.json({ ok: true, product });
+    if (!product) return err("محصول پیدا نشد.", 404);
+    return json({ product });
   } catch (error) {
     console.error("Unable to load product:", error);
-    return NextResponse.json({ ok: false, error: "بارگذاری محصول ناموفق بود." }, { status: 500 });
+    return err("بارگذاری محصول ناموفق بود.", 500);
   }
 }
 
 export async function PATCH(request, { params }) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  let updates;
-  try {
-    updates = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست نامعتبر است." }, { status: 400 });
-  }
+  const updates = await readJson(request);
+  if (isResponse(updates)) return updates;
   if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
-    return NextResponse.json({ ok: false, error: "اطلاعات محصول معتبر نیست." }, { status: 400 });
+    return err("اطلاعات محصول معتبر نیست.", 400);
   }
   if (Object.prototype.hasOwnProperty.call(updates, "categoryId") && !isProductCategory(updates.categoryId)) {
-    return NextResponse.json({ ok: false, error: "دسته‌بندی محصول معتبر نیست." }, { status: 400 });
+    return err("دسته‌بندی محصول معتبر نیست.", 400);
   }
 
   try {
     if (!updateProduct(params.slug, updates)) {
-      return NextResponse.json({ ok: false, error: "محصول پیدا نشد." }, { status: 404 });
+      return err("محصول پیدا نشد.", 404);
     }
-    return NextResponse.json({ ok: true });
+    revalidatePublic(productPaths(params.slug));
+    return json();
   } catch (error) {
     console.error("Unable to update product:", error);
-    return NextResponse.json({ ok: false, error: "ذخیره تغییرات محصول ناموفق بود." }, { status: 500 });
+    return err("ذخیره تغییرات محصول ناموفق بود.", 500);
   }
 }
 
 export async function DELETE(request, { params }) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
   try {
     if (!deleteProduct(params.slug)) {
-      return NextResponse.json({ ok: false, error: "محصول پیدا نشد." }, { status: 404 });
+      return err("محصول پیدا نشد.", 404);
     }
-    return NextResponse.json({ ok: true });
+    revalidatePublic(productPaths(params.slug));
+    return json();
   } catch (error) {
     console.error("Unable to delete product:", error);
-    return NextResponse.json({ ok: false, error: "حذف محصول ناموفق بود." }, { status: 500 });
+    return err("حذف محصول ناموفق بود.", 500);
   }
 }

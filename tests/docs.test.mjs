@@ -49,8 +49,8 @@ test("راهنمای متنی، سند اصلی در ریشهٔ پروژه اس�
   const lines = text.split(/\r?\n/);
   assert.ok(lines.length >= 250, `راهنما کوتاه‌تر از انتظار است (${lines.length} خط)`);
 
-  // ۱۳ بخش شماره‌دار + پیوست
-  for (const n of ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۱۰", "۱۱", "۱۲"]) {
+  // ۱۴ بخش شماره‌دار (۰ تا ۱۳) + پیوست
+  for (const n of ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۱۰", "۱۱", "۱۲", "۱۳"]) {
     assert.match(text, new RegExp(`^${n}\\)`, "m"), `بخش «${n})» در ${RUNBOOK} پیدا نشد`);
   }
   assert.ok(text.includes("پیوست"), `پیوست فهرست اسکریپت‌ها در ${RUNBOOK} نیست`);
@@ -61,6 +61,8 @@ test("راهنمای متنی، سند اصلی در ریشهٔ پروژه اس�
     ".app-port",
     "deploy/install.sh",
     "deploy/install-remote.ps1",
+    "deploy/start-vps-ubuntu.sh",
+    "deploy/start-vps-windows.ps1",
     "deploy/update.sh",
     "deploy/deploy.sh",
     "deploy/bootstrap-server.sh",

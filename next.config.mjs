@@ -2,8 +2,12 @@
 const nextConfig = {
   reactStrictMode: false,
   poweredByHeader: false,
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30
+  },
   experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3"],
+    serverComponentsExternalPackages: ["better-sqlite3", "sharp"],
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",

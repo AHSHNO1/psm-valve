@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Download, Film, Library, Camera, Newspaper, ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import VideoEmbed from "./VideoEmbed";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -91,8 +92,8 @@ function NewsGrid({ items, locale, dict }) {
         return (
           <div key={n.id} className="card-glass overflow-hidden hover:border-gold-500/40 transition flex flex-col">
             {n.image && (
-              <div className="aspect-video overflow-hidden" style={{ background: "var(--bg-soft)" }}>
-                <img src={n.image} alt="" className="w-full h-full object-cover" />
+              <div className="relative aspect-video overflow-hidden" style={{ background: "var(--bg-soft)" }}>
+                <MediaImage src={n.image} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="w-full h-full object-cover" />
               </div>
             )}
             <div className="p-6 flex-1 flex flex-col">
@@ -194,9 +195,9 @@ function GalleryGrid({ items, dict }) {
           <a key={img.id} href={img.url} target="_blank" rel="noopener noreferrer"
             className="relative aspect-square rounded-xl overflow-hidden group"
             style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}>
-            <img src={img.url} alt={img.title || "Gallery"}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-              loading="lazy" />
+            <MediaImage src={img.url} alt={img.title || "Gallery"} fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
           </a>
         );
       })}

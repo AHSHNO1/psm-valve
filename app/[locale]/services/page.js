@@ -1,17 +1,30 @@
 import { getDictionary } from "@/lib/getDictionary";
-import { getServices } from "@/lib/content";
-import { services as fallbackServices } from "@/lib/services";
+import { getAllServices } from "@/lib/service-store";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 import Link from "next/link";
 import { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings, ArrowLeft } from "lucide-react";
+import MediaImage from "@/components/MediaImage";
 
 const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings };
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const seo = pageSeo(locale, "services");
+  return buildMetadata({
+    locale,
+    path: "/services",
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords
+  });
+}
 
 export default async function ServicesPage({ params }) {
   const { locale } = params;
   const dict = await getDictionary(locale);
 
-  const services = getServices();
-  const list = services && services.length ? services : fallbackServices;
+  const list = getAllServices();
 
   const t = {
     fa: { badge: "خدمات ما", title1: "خدمات", title2: "تخصصی", learnMore: "جزئیات" },
@@ -35,14 +48,15 @@ export default async function ServicesPage({ params }) {
             <div key={s.slug} className="card-glass p-6 sm:p-8 group hover:border-gold-500/50 transition">
               {s.image ? (
                 <div
-                  className="rounded-xl overflow-hidden bg-[var(--bg-soft)] mb-5 aspect-[4/3] grid place-items-center"
+                  className="relative rounded-xl overflow-hidden bg-[var(--bg-soft)] mb-5 aspect-[4/3] grid place-items-center"
                   style={{ border: "1px solid var(--border)" }}
                 >
-                  <img
+                  <MediaImage
                     src={s.image}
                     alt={s.name[locale] || s.name.fa}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="w-full h-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
                   />
                 </div>
               ) : (

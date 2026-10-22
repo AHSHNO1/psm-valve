@@ -1,6 +1,6 @@
 ===============================================================================
   PSM VALVE — راهنمای متنی راهاندازی، انتشار و نگهداری  (نسخهٔ TXT)
-  آخرین بهروزرسانی: ۲۰۲۶-۱۰-۱۹
+  آخرین بهروزرسانی: ۲۰۲۶-۱۰-۲۲
   نکته: این فایل مرجع اصلی است و در ریشهٔ پروژه قرار دارد (INSTALL-STEPS.txt)؛
   نسخهٔ داخل پوشهٔ deploy فقط یک اشاره‌گر به همین فایل است.
   نسخهٔ جدولی/کامل: deploy/README.md    ·    راهنمای دستی از صفر: DEPLOY.md
@@ -15,6 +15,8 @@
 ۰) انتخاب مسیر انتشار
 -------------------------------------------------------------------------------
   ۱) VPS تازه (توصیهشده) : sudo bash deploy/install.sh --domain <domain> --email <email>
+     • یک خط فرمان اوبونتو  : sudo bash deploy/start-vps-ubuntu.sh [--domain <domain>]
+     • یک خط فرمان ویندوز   : powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 [-Domain <domain>]
   ۲) همان کار از ویندوز   : .\deploy\install-remote.ps1 -Server <IP> -Domain <domain>
   ۳) Docker               : bash deploy/docker.sh
   ۴) هاست اشتراکی cPanel  : راهنمای deploy/cpanel/README.md (Node.js Selector)
@@ -28,6 +30,8 @@
   * پورتهای ۸۰ و ۴۴۳ باز (ufw را خود اسکریپت تنظیم میکند)
   * دسترسی سرور به GitHub برای git clone؛ در نصب اول لازم نیست کد را کپی کنی
   * رم ۱GB به بالا (روی سرورهای کمحافظه، اسکریپت ۲GB سواپ میسازد)
+  * Windows Server: PowerShell 5.1 + دسترسی Administrator + اینترنت برای Node.js
+    (گیت لازم نیست؛ کد را با -SourceDir یا -ZipPath بده) — بخش ۱۳
 
 -------------------------------------------------------------------------------
 ۲) نصب یکدستوری (۱۱ گام)
@@ -52,11 +56,14 @@
   --email <email>           ایمیل Let's Encrypt (پیشفرض admin@<domain>)
   --repo <git-url>          پیشفرض: https://github.com/AHSHNO1/psm-valve.git
   --branch <name>           پیشفرض: main
+  --source <path>           نصب از کدِ آماده در این مسیر (بدون گیت) — داده/آپلود/env
+                            سرور حفظ میشود و admin.json و SQLite منتقل نمیشوند
   --app-dir <path>          پیشفرض: /var/www/psm-valve
   --app-user <user>         پیشفرض: psm
   --port <number>           پیشفرض: 3000 — در .app-port ذخیره میشود
   --admin-user <user>       پیشفرض: admin
   --admin-password <pass>   اگر ندهید رمز تصادفی ساخته و یکبار نمایش داده میشود
+  --admin-password-file <path>  رمز را از خط اول فایل می‌خواند و پس از استفاده پاک می‌کند
   --no-ssl                  فقط HTTP (وقتی DNS/SSL آماده نیست)
   --no-firewall             بدون ufw و fail2ban
   --no-cron                 بدون cron بکاپ روزانه
@@ -69,7 +76,7 @@
   ۱) بررسی سیستمعامل و پیشنیازها
   ۲) نصب بستههای پایه + Node.js 20 LTS + PM2 (+ Certbot)
   ۳) ساخت کاربر psm، پوشههای پروژه/بکاپ و سواپ ۲GB
-  ۴) git clone در نصب اول یا git pull در اجرای دوباره
+  ۴) git clone در نصب اول · git pull در اجرای دوباره · rsync اگر --source داده باشی
   ۵) npm ci
   ۶) ساخت .env.production با اسرار تصادفی (deploy/make-env.sh — دسترسی 600)
   ۷) تنظیم رمز پنل بهصورت هش bcrypt در data/admin.json
@@ -266,6 +273,13 @@
   بیلد روی سرور کمحافظه (OOM)
     free -h  ·  swapon --show      # سواپ ۲GB که install.sh ساخته را چک کن
 
+  لانچر اوبونتو: «install.sh پیدا نشد»
+    از داخل پوشهٔ پروژه اجرا کن، یا --repo <git-url> بده، یا --source <path> را امتحان کن.
+
+  لانچر ویندوز: سایت فقط روی پورت ۳۰۰۰ بالا میآید
+    پورت ۸۰ احتمالاً دست IIS است؛ وبسایت را از سرویس‌ها ببند و لانچر را دوباره اجرا کن.
+    وضعیت سرویس‌ها: powershell -File "C:\ProgramData\PSMValve\manage.ps1" -Action status
+
 -------------------------------------------------------------------------------
 ۱۲) چکلیست امنیت و انتشار
 -------------------------------------------------------------------------------
@@ -280,6 +294,65 @@
   [ ] GO-LIVE.md علامت خورده است
 
 -------------------------------------------------------------------------------
+۱۳) لانچرهای یکخطی VPS (اوبونتو · Windows Server)
+-------------------------------------------------------------------------------
+دو اسکریپت بالا، همهٔ کارهای بخش ۲ را با یک خط فرمان انجام میدهند. اگر کد هنوز
+push نشده، از گزینهٔ منبع محلی (--source / -SourceDir) استفاده کن.
+
+اوبونتو ۲۲.۰۴ / ۲۴.۰۴ (install.sh را از کنار اسکریپت پیدا میکند یا از GitHub):
+
+  sudo bash deploy/start-vps-ubuntu.sh --domain psmvalve.com --email admin@psmvalve.com
+  sudo bash deploy/start-vps-ubuntu.sh                       # بدون دامنه: IP عمومی + فقط HTTP
+  sudo bash deploy/start-vps-ubuntu.sh --source /srv/psm-valve --domain 5.1.2.3
+  curl -fsSL https://raw.githubusercontent.com/AHSHNO1/psm-valve/main/deploy/start-vps-ubuntu.sh | sudo bash -s -- --domain psmvalve.com
+
+  گزینهها: --domain --email --source --repo --branch --port --app-dir --app-user
+           --admin-user --admin-password --admin-password-file --no-ssl --no-firewall
+           --no-cron --skip-build -h/--help   (هر گزینه به install.sh منتقل میشود)
+
+Windows Server 2012 R2 به بعد (PowerShell ۵.۱؛ گیت لازم نیست):
+
+  powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -Domain psmvalve.com -Email admin@psmvalve.com
+  powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -Domain 5.1.2.3
+  powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -SourceDir C:\psm-valve -Domain 5.1.2.3
+  powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -ZipPath C:\psm-valve.zip
+
+  گزینهها: -Domain -Email -AppDir -Port -AdminUser -AdminPassword -AdminPasswordFile
+           -SourceDir -ZipPath -Repo -Branch -NodeMajor -NoHttps -NoFirewall -SkipBuild
+           -ForceEnv -Help
+
+گامهای لانچر ویندوز (۱۱ گام):
+  ۱) پیشنیازها، توقف نسخهٔ قبلی و آزادکردن پورت
+  ۲) دریافت کد (-SourceDir · -ZipPath · پوشهٔ پروژه · ZIP گیت‌هاب · git clone)
+  ۳) نصب Node.js 20 LTS در صورت نبود (MSI رسمی nodejs.org)
+  ۴) npm ci --include=dev
+  ۵) ساخت .env.production با اسرار تصادفی (UTF-8 بدون BOM؛ -ForceEnv برای بازنویسی)
+  ۶) تنظیم رمز پنل (بدون گزینه، رمز تصادفی در C:\ProgramData\PSMValve\initial-admin-password.txt)
+  ۷) npm run build + node scripts/preflight.mjs
+  ۸) Caddy بهعنوان پروکسی HTTP/HTTPS + قواعد فایروال (در نبودش، اپ مستقیم روی پورت)
+  ۹) ثبت Scheduled Task با حساب SYSTEM (شروع در بوت + ریاستارت خودکار)
+  ۱۰) بررسی سلامت از مسیر پروکسی و ساخت manage.ps1
+  ۱۱) چاپ خلاصهٔ آدرس، کاربر و رمز پنل
+
+  مدیریت روزمره:
+    powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -Action status
+    powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -Action restart
+    powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -Action logs
+
+  ⚠️ نکات ویندوز:
+    • فایل ps1. باید UTF-8 با BOM باشد؛ بی‌آن PowerShell ۵.۱ متن فارسی را خراب میخواند.
+    • اگر IIS پورت ۸۰ را گرفته باشد، لانچر پروکسی را خاموش میکند و سایت مستقیم روی
+      پورت ۳۰۰۰ سرو میشود؛ برای آدرس تمیز، IIS را غیرفعال یا پورت ۸۰ را آزاد کن.
+    • گواهی HTTPS فقط با دامنه صادر میشود (روی IP نه)؛ DNS دامنه و www را به IP
+      سرور وصل کن و لانچر را دوباره اجرا کن.
+    • اگر npm ci روی better-sqlite3 شکست، Visual Studio Build Tools ۲۰۲۲
+      (Desktop development with C++) را نصب و دوباره اجرا کن.
+    • اسرار، رمز اولیه و دیتای Caddy در C:\ProgramData\PSMValve با ACL محدود به
+      SYSTEM و Administrators نگهداری میشوند؛ لاگ اپ در <AppDir>\logs است.
+    • اجرای دوباره بیخطر است: داده (data)، آپلودها (public\uploads) و
+      .env.production حفظ میشوند و فقط کد و بیلد جایگزین میشوند.
+
+-------------------------------------------------------------------------------
 پیوست — همهٔ اسکریپت‌ها و فایل‌های پوشهٔ deploy
 -------------------------------------------------------------------------------
 مسیر همهٔ فایل‌های زیر نسبت به ریشهٔ پروژه: deploy/<نام> — پرکاربردترین‌ها:
@@ -287,8 +360,11 @@
     deploy/update.sh · deploy/install.sh · deploy/backup.sh · deploy/make-env.sh
     deploy/backup-products-db.cjs · deploy/backup-docker.sh · deploy/push-assets.ps1
     deploy/nginx-psmvalve.conf · deploy/cpanel/README.md · deploy/install-remote.ps1
+    deploy/start-vps-ubuntu.sh · deploy/start-vps-windows.ps1
   install.sh              نصب کامل سرور تازه (۱۱ گام) — مسیر توصیه‌شده
-  install-remote.ps1      اجرای install.sh از ویندوز (scp + ssh) و انتقال داده
+  install-remote.ps1      اجرای install.sh روی سرور از ویندوز (scp + ssh) و انتقال داده
+  start-vps-ubuntu.sh     یک خط فرمان روی اوبونتو: sudo + IP خودکار + اجرا/دانلود install.sh
+  start-vps-windows.ps1   یک خط فرمان روی Windows Server: Node + بیلد + Caddy + Scheduled Task
   update.sh               انتشار نسخهٔ جدید: preflight → بکاپ → deploy → تست → سلامت
   deploy.sh               موتور انتشار (reset به origin/main + حفظ دادهٔ زنده)؛
                           update.sh همین را صدا می‌زند — مستقیم هم قابل اجراست

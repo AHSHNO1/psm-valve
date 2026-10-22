@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Award, Building2, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -208,7 +209,8 @@ export default function CredibilityCombined({ certificates, partners, content, l
                         boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.05)"
                       }}>
                         {c.image ? (
-                          <img src={c.image} alt={pick(c.title, locale)}
+                          <MediaImage src={c.image} alt={pick(c.title, locale)}
+                            width={400} height={300} sizes="200px"
                             style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                         ) : (
                           <div style={{ textAlign: "center", padding: "0 6px" }}>
@@ -335,12 +337,7 @@ export default function CredibilityCombined({ certificates, partners, content, l
 
           {/* Dots */}
           {totalPages > 1 && (
-            <div style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 6,
-              marginTop: 20
-            }}>
+            <div className="credibility-dots">
               {Array.from({ length: totalPages }).map(function(_, i) {
                 return (
                   <button
@@ -349,15 +346,7 @@ export default function CredibilityCombined({ certificates, partners, content, l
                     onClick={function() { setPage(i); }}
                     aria-label={L.certificateSlide + " " + (i + 1)}
                     aria-current={page === i ? "true" : undefined}
-                    style={{
-                      width: i === page ? 24 : 8,
-                      height: 8,
-                      borderRadius: 4,
-                      border: "none",
-                      cursor: "pointer",
-                      background: i === page ? "linear-gradient(135deg, #E0A81A, #B8850A)" : "var(--border-strong)",
-                      transition: "all 0.3s"
-                    }}
+                    className={"credibility-dot" + (page === i ? " is-active" : "")}
                   />
                 );
               })}
@@ -470,9 +459,12 @@ export default function CredibilityCombined({ certificates, partners, content, l
                       }}
                     >
                       {p.logo ? (
-                        <img
+                        <MediaImage
                           src={p.logo}
                           alt={pick(p.name, locale)}
+                          width={300}
+                          height={152}
+                          sizes="150px"
                           style={{ width: "100%", maxWidth: 150, height: 76, objectFit: "contain" }}
                         />
                       ) : (
@@ -565,7 +557,7 @@ export default function CredibilityCombined({ certificates, partners, content, l
                 >
                   <NextIcon size={20} />
                 </button>
-                <div style={{ display: "flex", justifyContent: "center", gap: 7, marginTop: 18 }}>
+                <div className="credibility-dots">
                   {Array.from({ length: partnerTotalPages }).map(function(_, index) {
                     return (
                       <button
@@ -574,16 +566,7 @@ export default function CredibilityCombined({ certificates, partners, content, l
                         onClick={function() { setPartnerPage(index); }}
                         aria-label={L.slide + " " + (index + 1)}
                         aria-current={partnerPage === index ? "true" : undefined}
-                        style={{
-                          width: partnerPage === index ? 24 : 8,
-                          height: 8,
-                          padding: 0,
-                          border: 0,
-                          borderRadius: 5,
-                          background: partnerPage === index ? "var(--gold)" : "var(--border-strong)",
-                          cursor: "pointer",
-                          transition: "all 0.25s ease"
-                        }}
+                        className={"credibility-dot" + (partnerPage === index ? " is-active" : "")}
                       />
                     );
                   })}

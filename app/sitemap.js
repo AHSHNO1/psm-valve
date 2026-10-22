@@ -1,6 +1,8 @@
 import { getProducts } from "@/lib/product-store";
 import { getArticles } from "@/lib/articles";
-import { getServices } from "@/lib/content";
+import { getAllServices } from "@/lib/service-store";
+import { getNews } from "@/lib/news";
+import { localizedDateIso } from "@/lib/jalali";
 import { locales } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +38,8 @@ export default function sitemap() {
   const now = new Date();
   const products = getProducts();
   const articles = getArticles().filter((article) => article.active !== false);
-  const services = getServices() || [];
+  const services = getAllServices();
+  const news = getNews();
 
   locales.forEach(function (locale) {
     STATIC_ROUTES.forEach(function (route) {
@@ -68,9 +71,21 @@ export default function sitemap() {
     });
 
     articles.forEach(function (a) {
+      const iso = localizedDateIso(a.date);
       entries.push({
         url: BASE + "/" + locale + "/articles/" + a.slug,
-        lastModified: now,
+        lastModified: iso ? new Date(iso) : now,
+        changeFrequency: "monthly",
+        priority: 0.6
+      });
+    });
+
+    news.forEach(function (item) {
+      if (!item || !item.slug) return;
+      const iso = localizedDateIso(item.date);
+      entries.push({
+        url: BASE + "/" + locale + "/news/" + item.slug,
+        lastModified: iso ? new Date(iso) : now,
         changeFrequency: "monthly",
         priority: 0.6
       });

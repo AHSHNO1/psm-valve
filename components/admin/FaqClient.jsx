@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "./AdminIcons";
 import { EditBtn, DeleteBtn, ToggleBtn, SaveBtn, CancelBtn } from "./Actions";
+import { useToast, Toast } from "./useToast";
 
 const LANGS = [
   { code: "fa", label: "فارسی" },
@@ -14,6 +15,10 @@ function pick(obj) {
   if (!obj) return "—";
   if (typeof obj === "string") return obj;
   return obj.fa || obj.en || "—";
+}
+
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
 }
 
 function blank() {
@@ -29,15 +34,23 @@ function blank() {
 
 export default function FaqClient({ initial }) {
   const [items, setItems] = useState(initial || []);
-  const [editing, setEditing] = useState(null);
-  const [msg, setMsg] = useState({ type: "", text: "" });
+  // پیش‌نویسِ در حال ویرایش؛ تا زمان ذخیره، فهرست زنده تغییر نمی‌کند.
+  const [draft, setDraft] = useState(null);
+  const { notify, toast } = useToast();
 
-  function notify(text, isError) {
-    setMsg({ type: isError ? "error" : "success", text: text });
-    setTimeout(function() { setMsg({ type: "", text: "" }); }, 3000);
-  }
+  const isNew = draft !== null && !items.some(function (x) { return x.id === draft.id; });
 
-  async function save(list) {
+  useEffect(function () {
+    if (!draft) return undefined;
+    function handler(e) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handler);
+    return function () { window.removeEventListener("beforeunload", handler); };
+  }, [draft]);
+
+  async function persist(list) {
     try {
       const res = await fetch("/api/faq", {
         method: "POST",
@@ -45,29 +58,39 @@ export default function FaqClient({ initial }) {
         body: JSON.stringify({ faqs: list })
       });
       const data = await res.json();
-      if (data.ok) { setItems(list); notify("ذخیره شد"); }
-      else notify("خطا", true);
-    } catch (e) { notify("خطای شبکه", true); }
+      if (data.ok) { setItems(list); notify("ذخیره شد"); return true; }
+      notify(data.error || "خطا در ذخیره", true);
+      return false;
+    } catch (e) {
+      notify("خطای شبکه", true);
+      return false;
+    }
   }
 
-  function add() {
-    const f = blank();
-    setItems(items.concat([f]));
-    setEditing(f.id);
+  function add() { setDraft(blank()); }
+  function edit(faq) { setDraft(deepCopy(faq)); }
+  function cancel() { setDraft(null); }
+  function updateDraft(patch) { setDraft(Object.assign({}, draft, patch)); }
+
+  async function commitSave() {
+    if (!draft) return;
+    const exists = items.some(function (x) { return x.id === draft.id; });
+    const nextList = exists
+      ? items.map(function (x) { return x.id === draft.id ? draft : x; })
+      : items.concat([draft]);
+    const ok = await persist(nextList);
+    if (ok) setDraft(null);
   }
 
   function remove(id) {
     if (!confirm("این سوال حذف شود؟")) return;
-    save(items.filter(function(x) { return x.id !== id; }));
+    if (draft && draft.id === id) setDraft(null);
+    persist(items.filter(function (x) { return x.id !== id; }));
   }
 
   function toggle(id) {
-    const list = items.map(function(x) { return x.id === id ? Object.assign({}, x, { active: !x.active }) : x; });
-    save(list);
-  }
-
-  function update(id, patch) {
-    setItems(items.map(function(x) { return x.id === id ? Object.assign({}, x, patch) : x; }));
+    const list = items.map(function (x) { return x.id === id ? Object.assign({}, x, { active: !x.active }) : x; });
+    persist(list);
   }
 
   return (
@@ -87,13 +110,23 @@ export default function FaqClient({ initial }) {
         </button>
       </div>
 
-      {msg.text && (
-        <div className={"msg anim-in " + (msg.type === "success" ? "msg-success" : "msg-error")}>
-          <Icon name={msg.type === "success" ? "check" : "alert"} /> {msg.text}
+      <Toast toast={toast} />
+
+      {isNew && draft && (
+        <div className="anim-in" style={{
+          background: "#FFFFFF",
+          border: "1px solid #00A896",
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 10
+        }}>
+          <FaqForm faq={draft} update={updateDraft}
+            onSave={commitSave}
+            onCancel={cancel} />
         </div>
       )}
 
-      {items.length === 0 ? (
+      {items.length === 0 && !isNew ? (
         <div className="empty anim-in">
           <div className="empty-icon"><Icon name="help" size={30} /></div>
           <div className="empty-title">هنوز سوالی اضافه نشده</div>
@@ -104,8 +137,8 @@ export default function FaqClient({ initial }) {
         </div>
       ) : (
         <div>
-          {items.map(function(f, i) {
-            const isEditing = editing === f.id;
+          {items.map(function (f, i) {
+            const isEditing = draft !== null && draft.id === f.id;
             return (
               <div key={f.id} className="anim-in" style={{ animationDelay: (i * 30) + "ms" }}>
                 <div className="row">
@@ -115,20 +148,20 @@ export default function FaqClient({ initial }) {
 
                   <div className="row-body">
                     <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span className="chip chip-teal">{pick(f.category)}</span>
-                      {f.active !== false ? (
+                      <span className="chip chip-teal">{pick(isEditing ? draft.category : f.category)}</span>
+                      {(isEditing ? draft.active : f.active) !== false ? (
                         <span className="chip chip-green"><Icon name="check" /> فعال</span>
                       ) : (
                         <span className="chip chip-gray">غیرفعال</span>
                       )}
                     </div>
-                    <div className="row-title">{pick(f.question)}</div>
-                    <div className="row-meta">{pick(f.answer).substring(0, 70)}...</div>
+                    <div className="row-title">{pick(isEditing ? draft.question : f.question)}</div>
+                    <div className="row-meta">{pick(isEditing ? draft.answer : f.answer).substring(0, 70)}...</div>
                   </div>
 
                   <div className="row-actions">
                     <ToggleBtn active={f.active !== false} onClick={function() { toggle(f.id); }} />
-                    <EditBtn onClick={function() { setEditing(isEditing ? null : f.id); }} />
+                    <EditBtn onClick={function() { if (isEditing) cancel(); else edit(f); }} />
                     <DeleteBtn onClick={function() { remove(f.id); }} />
                   </div>
                 </div>
@@ -142,9 +175,9 @@ export default function FaqClient({ initial }) {
                     marginTop: -4,
                     marginBottom: 10
                   }}>
-                    <FaqForm faq={f} update={update}
-                      onSave={function() { save(items); setEditing(null); }}
-                      onCancel={function() { setEditing(null); }} />
+                    <FaqForm faq={draft} update={updateDraft}
+                      onSave={commitSave}
+                      onCancel={cancel} />
                   </div>
                 )}
               </div>
@@ -164,7 +197,7 @@ function FaqForm({ faq, update, onSave, onCancel }) {
     nf[lang] = val;
     const patch = {};
     patch[field] = nf;
-    update(faq.id, patch);
+    update(patch);
   }
 
   return (

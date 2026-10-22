@@ -2,19 +2,19 @@
   {
     "slug": "ball-valve-overview",
     "title": {
-      "fa": "بررسی جامع شیرهای توپی",
+      "fa": "اصول طراحی شیرهای توپی ",
       "en": "A Comprehensive Guide to Ball Valves",
       "ar": "دليل شامل للصمامات الكروية",
       "ru": "Подробный обзор шаровых клапанов"
     },
     "excerpt": {
-      "fa": "شیرهای توپی از پرکاربردترین شیرهای صنعتی در صنایع نفت، گاز، پتروشیمی، آب و فرایند هستند؛ مکانیزم ساده، آب‌بندی مؤثر و عملکرد سریع، آن‌ها را به گزینه‌ای رایج در طراحی صنعتی تبدیل کرده است.",
+      "fa": "شیرهای توپی از پرکاربردترین شیرهای صنعتی در صنایع نفت، گاز، پتروشیمی، آب و فرایند هستند؛ مکانیزم ، آب‌بندی مؤثر و عملکرد سریع، آن‌ها را به گزینه‌ای رایج در طراحی صنعتی تبدیل کرده است.",
       "en": "Ball valves are widely used in oil, gas, petrochemical, water and process industries. Their simple mechanism, effective sealing and quick operation make them a common choice in industrial design.",
       "ar": "تُستخدم الصمامات الكروية على نطاق واسع في قطاعات النفط والغاز والبتروكيماويات والمياه والعمليات الصناعية. وتجعلها آليتها البسيطة وإحكامها الفعال وسرعة تشغيلها خياراً شائعاً في التصميم الصناعي.",
       "ru": "Шаровые клапаны широко применяются в нефтегазовой, нефтехимической, водной и технологической отраслях. Простая конструкция, надежное уплотнение и быстрое срабатывание делают их распространенным выбором в промышленности."
     },
     "category": {
-      "fa": "شیرهای صنعتی",
+      "fa": "شیرهای توپی صنعتی",
       "en": "Industrial valves",
       "ar": "الصمامات الصناعية",
       "ru": "Промышленная арматура"
@@ -28,7 +28,9 @@
     "readMinutes": 6,
     "pdfUrl": "/documents/articles/ball-valves.pdf",
     "id": "article-ball-valve-overview",
-    "status": "published"
+    "status": "published",
+    "active": true,
+    "image": "/uploads/images/mvgavsv4-10qu7o.jpg"
   },
   {
     "slug": "hp-hvof-thermal-spray",
@@ -59,7 +61,9 @@
     "readMinutes": 5,
     "pdfUrl": "/documents/articles/hp-hvof-thermal-spray.pdf",
     "id": "article-hp-hvof-thermal-spray",
-    "status": "published"
+    "status": "published",
+    "active": true,
+    "image": "/uploads/images/mvgan1zs-g3o8cs.jpg"
   },
   {
     "slug": "control-valve-sizing-requirements",
@@ -90,7 +94,9 @@
     "readMinutes": 5,
     "pdfUrl": "/documents/articles/control-valve-sizing.pdf",
     "id": "article-control-valve-sizing-requirements",
-    "status": "published"
+    "status": "published",
+    "active": true,
+    "image": "/uploads/images/mvgardkb-9kv1p5.jpg"
   },
   {
     "slug": "valve-sizing-guide",
@@ -110,9 +116,9 @@
     "category": "نگهداری",
     "date": "1404/04/28",
     "readTime": "10 دقیقه",
-    "active": true,
+    "active": false,
     "id": "article-cavitation-flashing",
-    "status": "published"
+    "status": "draft"
   },
   {
     "slug": "hvf-coating-benefits",
@@ -121,9 +127,9 @@
     "category": "پوشش‌دهی",
     "date": "1404/04/10",
     "readTime": "8 دقیقه",
-    "active": true,
+    "active": false,
     "id": "article-hvf-coating-benefits",
-    "status": "published"
+    "status": "draft"
   },
   {
     "slug": "material-selection",
@@ -157,5 +163,38 @@
     "active": false,
     "id": "article-valve-maintenance",
     "status": "draft"
+  },
+  {
+    "slug": "article-mvgaigt9",
+    "title": {
+      "fa": "اصول طراحی شیرهای توپی ",
+      "en": "A Comprehensive Guide to Ball Valves",
+      "ar": "دليل شامل للصمامات الكروية",
+      "ru": "Подробный обзор шаровых клапанов"
+    },
+    "excerpt": {
+      "fa": "شیرهای توپی از پرکاربردترین شیرهای صنعتی در صنایع نفت، گاز، پتروشیمی، آب و فرایند هستند؛ مکانیزم ، آب‌بندی مؤثر و عملکرد سریع، آن‌ها را به گزینه‌ای رایج در طراحی صنعتی تبدیل کرده است.",
+      "en": "Ball valves are widely used in oil, gas, petrochemical, water and process industries. Their simple mechanism, effective sealing and quick operation make them a common choice in industrial design.",
+      "ar": "تُستخدم الصمامات الكروية على نطاق واسع في قطاعات النفط والغاز والبتروكيماويات والمياه والعمليات الصناعية. وتجعلها آليتها البسيطة وإحكامها الفعال وسرعة تشغيلها خياراً شائعاً في التصميم الصناعي.",
+      "ru": "Шаровые клапаны широко применяются в нефтегазовой, нефтехимической, водной и технологической отраслях. Простая конструкция, надежное уплотнение и быстрое срабатывание делают их распространенным выбором в промышленности."
+    },
+    "category": {
+      "fa": "شیرهای توپی صنعتی",
+      "en": "Industrial valves",
+      "ar": "الصمامات الصناعية",
+      "ru": "Промышленная арматура"
+    },
+    "date": {
+      "fa": "۱۴۰۵/۰۳/۲۶",
+      "en": "Jun 16, 2026",
+      "ar": "16 يونيو 2026",
+      "ru": "16 июня 2026"
+    },
+    "readMinutes": 6,
+    "pdfUrl": "/documents/articles/ball-valves.pdf",
+    "id": "article-ball-valve-overview",
+    "status": "draft",
+    "active": false,
+    "image": "/uploads/images/mvgavsv4-10qu7o.jpg"
   }
 ]

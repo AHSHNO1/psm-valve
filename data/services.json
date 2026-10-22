@@ -16,11 +16,11 @@
     },
     "active": true,
     "order": 1,
-    "image": "/images/services/valve-pattern-making.png"
+    "image": "/uploads/images/mvgbem21-mch41v.jpg"
   },
   {
     "slug": "lop-test",
-    "image": "/images/services/lop-test.png",
+    "image": "/uploads/images/mvgbdj1l-nnfntb.jpg",
     "icon": "Gauge",
     "name": {
       "fa": "تست میدانی شیرهای کنترلی صنعتی",
@@ -149,6 +149,6 @@
     },
     "active": true,
     "order": 8,
-    "image": "/images/services/lop-test.png"
+    "image": "/uploads/images/mvgbcjqz-2fx9mr.jpg"
   }
 ]

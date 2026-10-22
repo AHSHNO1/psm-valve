@@ -3,6 +3,8 @@
 وبسایت شرکتی **پترو سازه میهن (PETRO SAZEH MIHAN CO.)** — طراح و تولیدکنندهٔ شیرهای کنترلی صنعتی.
 سایت چندزبانه (فارسی، انگلیسی، عربی، روسی) با پنل مدیریت کامل.
 
+تاریخچهٔ کامل تغییرات: [`CHANGELOG.md`](./CHANGELOG.md)
+
 ## استک فنی
 
 | لایه | فناوری |
@@ -95,6 +97,8 @@ deploy/               اسکریپتها و کانفیگ انتشار
 | مسیر | دستور اصلی |
 | --- | --- |
 | **VPS تازه (توصیهشده)** — نصب Node/PM2/Nginx/SSL/بکاپ/فایروال با یک دستور | `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com` |
+| همان کار بدون دادن گزینه (اوبونتو؛ IP را خودش مییابد) | `sudo bash deploy/start-vps-ubuntu.sh` |
+| **Windows Server** — Node/اسرار/بیلد/Caddy/Scheduled Task با یک دستور | `powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -Domain psmvalve.com` |
 | همان کار، از ویندوز | `.\deploy\install-remote.ps1 -Server <IP> -Domain psmvalve.com` |
 | **Docker** | `bash deploy/docker.sh` |
 | **cPanel/CloudLinux** (Node.js Selector) | [`deploy/cpanel/README.md`](./deploy/cpanel/README.md) |

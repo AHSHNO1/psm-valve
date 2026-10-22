@@ -1,7 +1,11 @@
 import ProductWizard from "@/components/admin/ProductWizard";
 import ContentStudioNav from "@/components/admin/ContentStudioNav";
+import { getCategories } from "@/lib/category-store";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default function NewProductPage() {
   return (
@@ -28,7 +32,7 @@ export default function NewProductPage() {
           </div>
         </div>
       </div>
-      <ProductWizard isNew />
+      <ProductWizard isNew categories={getCategories()} />
     </div>
   );
 }

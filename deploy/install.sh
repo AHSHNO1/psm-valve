@@ -3,12 +3,14 @@
 # PSM VALVE — نصب و راهاندازی کامل خودکار روی سرور لینوکسی (Ubuntu/Debian)
 #
 #   sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com
+#   sudo bash deploy/install.sh --domain 203.0.113.10 --no-ssl
+#   sudo bash deploy/install.sh --source /root/psm-valve --domain 203.0.113.10 --no-ssl
 #
 # این یک فایل، همهٔ کارهای انتشار را انجام میدهد:
 #    ۱) بررسی پیشنیازها و سیستمعامل
 #    ۲) نصب Node.js 20 LTS، PM2، Nginx، Certbot و ابزار بیلد
 #    ۳) ساخت کاربر اجراکننده، پوشهها و سواپ (برای بیلد روی سرور کمحافظه)
-#    ۴) دریافت کد از گیت (clone در نصب اول، pull در اجرای دوباره)
+#    ۴) دریافت کد از گیت یا منبع محلی (--source) و به روزرسانی امن
 #    ۵) نصب وابستگیها (npm ci)
 #    ۶) ساخت .env.production با اسرار تصادفی
 #    ۷) تنظیم رمز مدیر بهصورت هش bcrypt در data/admin.json
@@ -33,6 +35,8 @@ APP_NAME="${APP_NAME:-psm-valve}"
 APP_PORT="${APP_PORT:-3000}"
 ADMIN_USER="${ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
+ADMIN_PASSWORD_FILE="${ADMIN_PASSWORD_FILE:-}"
+SOURCE_DIR="${SOURCE_DIR:-}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/psm-valve}"
 NODE_MAJOR="${NODE_MAJOR:-20}"
 ENABLE_SSL=true
@@ -59,7 +63,9 @@ PSM VALVE — نصب خودکار روی سرور (Ubuntu/Debian)
   --port <number>           پورت اپلیکیشن (پیشفرض: 3000) — در فایل .app-port ذخیره و در Nginx هم استفاده میشود
   --admin-user <user>       نام کاربری پنل مدیریت (پیشفرض: admin)
   --admin-password <pass>   رمز پنل؛ اگر ندهید رمز تصادفی ساخته و نمایش داده میشود
-  --no-ssl                  بدون SSL (فقط HTTP؛ موقت)
+  --admin-password-file <p> رمز را از خط اول فایل می خواند (فایل پس از استفاده پاک می شود)
+  --source <dir>            نصب از کد موجود در همین مسیر به‌جای git clone (داده و آپلود سرور حفظ می‌شود)
+  --no-ssl                  بدون SSL (فقط HTTP؛ موقت — با IP خودکار فعال می‌شود)
   --no-firewall             بدون تنظیم ufw و fail2ban
   --skip-build              پرش از بیلد (اگر .next از قبل آماده است)
   --no-cron                 بدون نصب cron بکاپ روزانه
@@ -89,6 +95,10 @@ while [ $# -gt 0 ]; do
     --admin-user=*) ADMIN_USER="${1#*=}" ;;
     --admin-password) ADMIN_PASSWORD="${2:-}"; shift ;;
     --admin-password=*) ADMIN_PASSWORD="${1#*=}" ;;
+    --admin-password-file) ADMIN_PASSWORD_FILE="${2:-}"; shift ;;
+    --admin-password-file=*) ADMIN_PASSWORD_FILE="${1#*=}" ;;
+    --source) SOURCE_DIR="${2:-}"; shift ;;
+    --source=*) SOURCE_DIR="${1#*=}" ;;
     --no-ssl) ENABLE_SSL=false ;;
     --no-firewall) ENABLE_FIREWALL=false ;;
     --skip-build) RUN_BUILD=false ;;
@@ -99,6 +109,25 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+if [ -n "$ADMIN_PASSWORD_FILE" ]; then
+  if [ ! -r "$ADMIN_PASSWORD_FILE" ]; then
+    echo "✖ فایل رمز مدیر خواندنی نیست: $ADMIN_PASSWORD_FILE"
+    exit 1
+  fi
+  ADMIN_PASSWORD="$(head -n 1 "$ADMIN_PASSWORD_FILE")"
+  trap 'rm -f "$ADMIN_PASSWORD_FILE"' EXIT
+  if [ -z "$ADMIN_PASSWORD" ]; then
+    echo "✖ فایل رمز مدیر خالی است."
+    exit 1
+  fi
+fi
+
+log()  { echo "    $*"; }
+ok()   { echo "    ✔ $*"; }
+warn() { echo "    ▲ $*"; }
+step() { STEP=$((STEP + 1)); echo; echo "==> [$STEP/$TOTAL_STEPS] $*"; }
+die()  { echo; echo "✖ $*"; exit 1; }
+
 if [ -z "$DOMAIN" ]; then
   echo "✖ دامنه مشخص نشده است."
   usage
@@ -108,16 +137,28 @@ DOMAIN="${DOMAIN#www.}"
 DOMAIN="${DOMAIN%/}"
 EMAIL="${EMAIL:-admin@$DOMAIN}"
 
-if [ "$(id -u)" -ne 0 ]; then
-  echo "✖ این اسکریپت باید با root اجرا شود:  sudo bash deploy/install.sh --domain $DOMAIN"
-  exit 1
+if ! [[ "$ADMIN_USER" =~ ^[A-Za-z0-9._@-]{1,64}$ ]]; then
+  die "نام کاربری مدیر باید ۱ تا ۶۴ کاراکتر و شامل حروف، رقم یا . _ @ - باشد: «$ADMIN_USER»"
 fi
 
-log()  { echo "    $*"; }
-ok()   { echo "    ✔ $*"; }
-warn() { echo "    ▲ $*"; }
-step() { STEP=$((STEP + 1)); echo; echo "==> [$STEP/$TOTAL_STEPS] $*"; }
-die()  { echo; echo "✖ $*"; exit 1; }
+IS_IP=false
+if [[ "$DOMAIN" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+  IS_IP=true
+fi
+if [ "$IS_IP" = true ] && [ "$ENABLE_SSL" = true ]; then
+  warn "دامنه یک IP است؛ SSL غیرفعال شد. برای HTTPS یک دامنه بدهید."
+  ENABLE_SSL=false
+fi
+if [ "$IS_IP" = true ]; then
+  SERVER_NAMES="$DOMAIN"
+else
+  SERVER_NAMES="$DOMAIN www.$DOMAIN"
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  die "این اسکریپت باید با root اجرا شود:  sudo bash deploy/install.sh --domain $DOMAIN"
+fi
+
 case "${APP_PORT:-}" in
   ''|*[!0-9]*) die "پورت نامعتبر: «${APP_PORT}» — یک عدد بدهید (پیشفرض ۳۰۰۰)." ;;
 esac
@@ -150,7 +191,7 @@ ok "root ✓ · دامنه: $DOMAIN · مسیر نصب: $APP_DIR · SSL: $ENABLE
 step "نصب بستههای پایه، Node.js $NODE_MAJOR و PM2"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl git openssl build-essential python3 unzip nginx > /dev/null
+apt-get install -y -qq ca-certificates curl git openssl build-essential python3 unzip rsync nginx > /dev/null
 ok "بستههای پایه نصب شدند"
 
 NODE_OK=false
@@ -218,23 +259,60 @@ else
 fi
 
 # ---------- ۴) دریافت کد ----------
-step "دریافت کد پروژه (شاخهٔ $BRANCH)"
-if [ -d "$APP_DIR/.git" ]; then
-  as_app "cd '$APP_DIR' && git fetch --all --prune && git checkout '$BRANCH' && git pull --ff-only"
-  ok "کد بهروزرسانی شد"
+SOURCE_MODE=false
+if [ -n "$SOURCE_DIR" ]; then
+  step "همگام‌سازی کد از منبع محلی"
+  [ -d "$SOURCE_DIR" ] || die "مسیر منبع پیدا نشد: $SOURCE_DIR"
+  [ -f "$SOURCE_DIR/package.json" ] || die "package.json در منبع پیدا نشد: $SOURCE_DIR"
+  [ -f "$SOURCE_DIR/ecosystem.config.js" ] || die "ecosystem.config.js در منبع پیدا نشد: $SOURCE_DIR"
+  SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd -P)"
+  APP_REAL="$(cd "$APP_DIR" && pwd -P)"
+  SOURCE_MODE=true
+
+  if [ "$SOURCE_DIR" = "$APP_REAL" ]; then
+    ok "منبع و مسیر نصب یکی هستند — کپی لازم نیست"
+  elif [ -f "$APP_DIR/package.json" ]; then
+    log "همگام‌سازی کد از $SOURCE_DIR (داده، آپلود و env سرور حفظ می‌شوند) ..."
+    rsync -a --delete \
+      --exclude='.git/' --exclude='node_modules/' --exclude='.next/' \
+      --exclude='logs/' --exclude='data/' --exclude='public/uploads/' \
+      --exclude='.env' --exclude='.env.*' --exclude='.app-port' \
+      "$SOURCE_DIR"/ "$APP_DIR"/
+    ok "کد به‌روزرسانی شد (بدون دست‌زدن به دادهٔ زنده)"
+  else
+    log "انتقال کد از $SOURCE_DIR ..."
+    rsync -a \
+      --exclude='.git/' --exclude='node_modules/' --exclude='.next/' \
+      --exclude='logs/' --exclude='.env' --exclude='.env.*' --exclude='.app-port' \
+      --exclude='data/admin.json' --exclude='data/users.json' \
+      --exclude='data/messages.json' --exclude='data/*.sqlite' \
+      --exclude='data/*.sqlite-*' --exclude='data/*.bak' \
+      --exclude='data/*.backup*' --exclude='data/*.tmp' \
+      "$SOURCE_DIR"/ "$APP_DIR"/
+    ok "کد منتقل شد (دادهٔ خصوصی و رمزهای محلی منتقل نشدند)"
+  fi
+  mkdir -p "$APP_DIR/logs"
+  chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+  ok "نسخهٔ مستقرشده از منبع محلی: $SOURCE_DIR"
 else
-  if [ -n "$(ls -A "$APP_DIR" 2>/dev/null)" ]; then
-    die "پوشهٔ $APP_DIR خالی نیست و مخزن گیت ندارد. آن را خالی کنید یا با --app-dir مسیر دیگری بدهید."
+  step "دریافت کد پروژه (شاخهٔ $BRANCH)"
+  if [ -d "$APP_DIR/.git" ]; then
+    as_app "cd '$APP_DIR' && git fetch --all --prune && git checkout '$BRANCH' && git pull --ff-only"
+    ok "کد به‌روزرسانی شد"
+  else
+    if [ -n "$(ls -A "$APP_DIR" 2>/dev/null)" ]; then
+      die "پوشهٔ $APP_DIR خالی نیست و مخزن گیت ندارد. آن را خالی کنید یا با --app-dir مسیر دیگری بدهید."
+    fi
+    log "clone از $REPO_URL ..."
+    if ! as_app "git clone --branch '$BRANCH' '$REPO_URL' '$APP_DIR'"; then
+      die "دریافت کد ناموفق بود. اگر مخزن خصوصی است از SSH یا توکن استفاده کنید: --repo git@github.com:USER/psm-valve.git"
+    fi
+    ok "مخزن clone شد"
   fi
-  log "clone از $REPO_URL ..."
-  if ! as_app "git clone --branch '$BRANCH' '$REPO_URL' '$APP_DIR'"; then
-    die "دریافت کد ناموفق بود. اگر مخزن خصوصی است از SSH یا توکن استفاده کنید: --repo git@github.com:USER/psm-valve.git"
-  fi
-  ok "مخزن clone شد"
+  mkdir -p "$APP_DIR/logs"
+  chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+  ok "نسخهٔ دریافت‌شده: $(su - "$APP_USER" -c "cd '$APP_DIR' && git log -1 --oneline")"
 fi
-mkdir -p "$APP_DIR/logs"
-chown -R "$APP_USER:$APP_USER" "$APP_DIR"
-ok "نسخهٔ دریافتشده: $(su - "$APP_USER" -c "cd '$APP_DIR' && git log -1 --oneline")"
 
 # ---------- ۵) نصب وابستگیها ----------
 step "نصب وابستگیها (npm ci)"
@@ -261,7 +339,8 @@ else
   GENERATED_PASSWORD="$SET_PASSWORD"
 fi
 if [ -n "$SET_PASSWORD" ]; then
-  as_app "cd '$APP_DIR' && node scripts/rotate-admin-password.mjs --password '$SET_PASSWORD'" > /dev/null
+  # رمز از stdin می‌رود تا در آرگومان‌های پروسه/تاریخچهٔ شل دیده نشود.
+  printf '%s' "$SET_PASSWORD" | as_app "cd '$APP_DIR' && node scripts/rotate-admin-password.mjs --stdin --username '$ADMIN_USER'" > /dev/null
   ok "رمز مدیر ذخیره شد (هش bcrypt) برای کاربر «$ADMIN_USER»"
 fi
 
@@ -308,7 +387,7 @@ write_http_config() {
 server {
     listen 80;
     listen [::]:80;
-    server_name $DOMAIN www.$DOMAIN;
+    server_name $SERVER_NAMES;
 
     client_max_body_size 60m;
     gzip on;
@@ -456,19 +535,19 @@ echo "  PSM VALVE — انتشار کامل شد"
 echo "============================================================"
 echo
 if [ "$ENABLE_SSL" = true ] && [ "$SSL_READY" = true ]; then
-  echo "  آدرس سایت :  https://www.$DOMAIN/fa   (و https://$DOMAIN)"
-  echo "  پنل مدیریت:  https://www.$DOMAIN/admin"
+  SITE_URL="https://www.$DOMAIN"
+  echo "  آدرس سایت :  $SITE_URL/fa   (و https://$DOMAIN)"
 else
-  echo "  آدرس سایت :  http://$DOMAIN/fa   (تا فعال شدن SSL)"
-  echo "  پنل مدیریت:  http://$DOMAIN/admin"
+  SITE_URL="http://$DOMAIN"
+  echo "  آدرس سایت :  $SITE_URL/fa"
 fi
-echo "  کاربر پنل :  $ADMIN_USER"
+echo "  پنل مدیریت:  $SITE_URL/admin"
 if [ -n "$GENERATED_PASSWORD" ]; then
   echo "  رمز پنل   :  $GENERATED_PASSWORD"
   echo "               (در /root/psm-initial-admin-password.txt هم ذخیره شد)"
   echo "               ⚠️ بعد از اولین ورود از بخش «امنیت» پنل تغییرش دهید."
 elif [ -n "$ADMIN_PASSWORD" ]; then
-  echo "  رمز پنل   :  همان رمزی که با --admin-password دادید"
+  echo "  رمز پنل   :  همان رمز داده‌شده (--admin-password / --admin-password-file)"
 else
   echo "  رمز پنل   :  از قبل تنظیمشده (data/admin.json) — بدون تغییر"
 fi
@@ -483,10 +562,19 @@ else
   echo "  سلامت سرویس: ▲ هنوز پاسخ نداد — بررسی کنید: pm2 logs $APP_NAME"
 fi
 echo
-echo "  بهروزرسانی بعدی:  su - $APP_USER -c 'bash $APP_DIR/deploy/update.sh'"
+if [ "$SOURCE_MODE" = true ]; then
+  echo "  به‌روزرسانی بعدی:  همین اسکریپت را دوباره با --source اجرا کنید (داده و env حفظ می‌شود)"
+else
+  echo "  به‌روزرسانی بعدی:  su - $APP_USER -c 'bash $APP_DIR/deploy/update.sh'"
+fi
 echo "  بازرسی وضعیت    :  su - $APP_USER -c 'pm2 status'"
-echo "  ورود به پنل     :  https://www.$DOMAIN/admin/login"
+echo "  ورود به پنل     :  $SITE_URL/admin/login"
 echo
+if [ "$ENABLE_SSL" != true ] && [ "$IS_IP" != true ]; then
+  echo "  ▲ SSL غیرفعال است. برای HTTPS بعد از تنظیم DNS:"
+  echo "     sudo bash $APP_DIR/deploy/install.sh --domain $DOMAIN --skip-build"
+  echo
+fi
 if [ "$ENABLE_SSL" = true ] && [ "$SSL_READY" != true ]; then
   echo "  ⚠️ SSL صادر نشد. بعد از اینکه DNS دامنه به این سرور (IP این سرور) اشاره کرد:"
   echo "     certbot certonly --webroot -w /var/www/html -d www.$DOMAIN -d $DOMAIN && \\"

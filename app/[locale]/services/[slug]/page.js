@@ -1,14 +1,18 @@
-import { services, getService } from "@/lib/services";
+import { getAllServices, getServiceBySlug } from "@/lib/service-store";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Cog, Gauge, Wrench, Circle, Flame, Settings } from "lucide-react";
+import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata, localeUrl, breadcrumbSchema, jsonLdScript, absoluteUrl } from "@/lib/seo";
+import { COMPANY } from "@/lib/company-info";
+import MediaImage from "@/components/MediaImage";
 
 const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Settings };
 
 export async function generateStaticParams() {
   const { locales } = await import("@/lib/i18n");
   return locales.flatMap((locale) =>
-    services.map((s) => ({ locale, slug: s.slug }))
+    getAllServices().map((s) => ({ locale, slug: s.slug }))
   );
 }
 
@@ -23,15 +27,54 @@ function pickArray(obj, locale) {
   return obj[locale] || obj.en || obj.fa || [];
 }
 
+export async function generateMetadata({ params }) {
+  const { locale, slug } = params;
+  const s = getServiceBySlug(slug);
+  if (!s) return { robots: { index: false, follow: false } };
+  const name = pick(s.name, locale) || slug;
+  const short = pick(s.short, locale);
+  return buildMetadata({
+    locale,
+    path: `/services/${slug}`,
+    title: name,
+    description: short ? short.slice(0, 160) : name,
+    keywords: [name, "PSM Valve", "industrial valve service"].filter(Boolean),
+    image: s.image || undefined,
+    imageAlt: name
+  });
+}
+
 export default async function ServiceDetailPage({ params }) {
   const { locale, slug } = params;
-  const s = getService(slug);
+  const s = getServiceBySlug(slug);
   if (!s) notFound();
 
+  const dict = await getDictionary(locale);
   const Icon = ICONS[s.icon] || Cog;
   const name = pick(s.name, locale);
   const short = pick(s.short, locale);
   const features = pickArray(s.features, locale);
+  const serviceUrl = localeUrl(locale, `/services/${slug}`);
+
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name,
+    serviceType: name,
+    description: short || name,
+    url: serviceUrl,
+    image: s.image ? absoluteUrl(s.image) : undefined,
+    provider: {
+      "@type": "Organization",
+      name: COMPANY.brandEn,
+      url: "https://www.psmvalve.com"
+    }
+  };
+  const breadcrumb = breadcrumbSchema([
+    { name: dict.nav?.home || "Home", url: localeUrl(locale) },
+    { name: dict.nav?.services || "Services", url: localeUrl(locale, "/services") },
+    { name, url: serviceUrl }
+  ]);
 
   const labels = {
     fa: { back: "بازگشت به خدمات", desc: "توضیحات", feats: "ویژگیها", cta: "درخواست مشاوره", imageSoon: "تصویر بهزودی" },
@@ -42,6 +85,9 @@ export default async function ServiceDetailPage({ params }) {
   const L = labels[locale] || labels.en;
 
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(serviceSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumb) }} />
     <section className="container-x pt-10 sm:pt-16 pb-16">
       <Link
         href={`/${locale}/services`}
@@ -63,11 +109,14 @@ export default async function ServiceDetailPage({ params }) {
             style={{ border: "1px solid var(--border)" }}
           >
             {s.image ? (
-              <img
+              <MediaImage
                 src={s.image}
                 alt={name}
+                width={1200}
+                height={900}
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="w-full h-auto max-h-[480px] object-contain p-4"
-                loading="lazy"
               />
             ) : (
               <div className="flex flex-col items-center gap-3 py-12" style={{ color: "var(--text-soft)" }}>
@@ -112,5 +161,6 @@ export default async function ServiceDetailPage({ params }) {
         </div>
       </div>
     </section>
+    </>
   );
 }

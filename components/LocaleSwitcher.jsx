@@ -38,11 +38,11 @@ export default function LocaleSwitcher() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        aria-label={changeLanguageLabel}
+        aria-label={changeLanguageLabel + " " + localeNames[currentLocale] + " " + localeFlags[currentLocale]}
         aria-expanded={open}
         aria-controls={open ? "locale-switcher-menu" : undefined}
         className="header-control flex items-center gap-2 h-10 px-3 rounded-lg border transition text-sm font-bold"
-        style={{ color: "var(--gold)", borderColor: "var(--text-soft)", background: "var(--bg-card)" }}
+        style={{ color: "var(--gold-text)", borderColor: "var(--text-soft)", background: "var(--bg-card)" }}
       >
         <Globe size={16} />
         <span>{localeFlags[currentLocale]}</span>

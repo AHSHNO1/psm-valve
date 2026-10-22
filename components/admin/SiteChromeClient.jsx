@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Check, ChevronDown, ChevronUp, Eye, Layout, Save } from "lucide-react";
-import { categories } from "@/lib/categories";
 import ContentStudioNav from "./ContentStudioNav";
 
 const LANGUAGES = [
@@ -61,8 +60,6 @@ const NAV_ITEMS = [
   ["contact", "تماس"]
 ];
 
-const HEADER_CATEGORIES = categories.filter((category) => !category.parentId);
-
 const DEFAULT_SETTINGS = {
   header: {
     layout: "standard",
@@ -72,7 +69,7 @@ const DEFAULT_SETTINGS = {
     showTheme: true,
     showLocale: true,
     hiddenNavItems: [],
-    categoryOrder: HEADER_CATEGORIES.map((category) => category.id),
+    categoryOrder: [],
     hiddenCategoryIds: [],
     categoryNames: {}
   },
@@ -99,7 +96,8 @@ function updatePath(source, path, value) {
   return clone;
 }
 
-export default function SiteChromeClient({ initialTranslations, initialSettings }) {
+export default function SiteChromeClient({ initialTranslations, initialSettings, categories = [] }) {
+  const headerCategories = categories.filter((category) => !category.parentId);
   const [translations, setTranslations] = useState(initialTranslations);
   const [settings, setSettings] = useState({
     ...DEFAULT_SETTINGS,
@@ -312,7 +310,7 @@ export default function SiteChromeClient({ initialTranslations, initialSettings 
               </div>
               <div className="space-y-2">
                 {settings.header.categoryOrder.map((categoryId, index) => {
-                  const category = HEADER_CATEGORIES.find((item) => item.id === categoryId);
+                  const category = headerCategories.find((item) => item.id === categoryId);
                   if (!category) return null;
                   const hidden = settings.header.hiddenCategoryIds.includes(categoryId);
                   const categoryLabel =

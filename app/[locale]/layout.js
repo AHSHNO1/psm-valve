@@ -1,5 +1,6 @@
 import "../globals.css";
 import "../fonts.css";
+import "../critical.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -13,8 +14,10 @@ import { locales, isValidLocale, localeDirs, defaultLocale } from "@/lib/i18n";
 import { getBranding } from "@/lib/content";
 import { COMPANY, getCompanyInfo } from "@/lib/company-info";
 import { getProducts } from "@/lib/product-store";
+import { getCategories } from "@/lib/category-store";
 import { getSiteChrome } from "@/lib/site-chrome";
 import { getDictionary } from "@/lib/getDictionary";
+import { SITE_BASE, jsonLdScript } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -80,7 +83,7 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       type: "website",
-      locale: safeLocale,
+      locale: { fa: "fa_IR", en: "en_US", ar: "ar_SA", ru: "ru_RU" }[safeLocale] || safeLocale,
       siteName: messages.common.company,
       title: title,
       description: description,
@@ -112,7 +115,57 @@ export default async function LocaleLayout({ children, params }) {
   const branding = getBranding();
   const company = getCompanyInfo();
   const products = getProducts();
+  const categories = getCategories();
   const siteChrome = getSiteChrome();
+  const navProducts = products.map((product) => ({
+    slug: product.slug,
+    series: product.series,
+    categoryId: product.categoryId,
+    name: product.name
+  }));
+
+  const localized = (value) => value?.[locale] || value?.en || value?.fa || "";
+  const city = { fa: "اراک", en: "Arak", ar: "أراك", ru: "Арак" }[locale] || "Arak";
+  const socialUrls = Object.values(company.social || {})
+    .filter((url) => /^https?:\/\//.test(url) && !/psmvalve\.com/i.test(url));
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": SITE_BASE + "/#organization",
+    name: company.brandEn,
+    alternateName: localized(company.name),
+    url: SITE_BASE,
+    logo: SITE_BASE + "/logo/logo-main.png",
+    image: SITE_BASE + "/og/og-default.jpg",
+    description: localized(company.description),
+    slogan: localized(company.slogan),
+    email: company.email?.primary,
+    telephone: company.phone?.office,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: localized(company.address?.office),
+      addressLocality: city,
+      addressCountry: "IR",
+      postalCode: company.address?.postalCode
+    },
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: company.phone?.office,
+      email: company.email?.primary,
+      contactType: "sales",
+      availableLanguage: ["fa", "en", "ar", "ru"]
+    },
+    sameAs: socialUrls
+  };
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": SITE_BASE + "/#website",
+    url: SITE_BASE + "/" + locale,
+    name: company.brandEn,
+    inLanguage: locale,
+    publisher: { "@id": SITE_BASE + "/#organization" }
+  };
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
@@ -129,12 +182,14 @@ export default async function LocaleLayout({ children, params }) {
         />
       </head>
       <body className="antialiased">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationSchema) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteSchema) }} />
         <Providers locale={locale} dict={dict}>
           <SkipLink />
           <PwaRegister locale={locale} />
           <ScrollProgress />
           <SmoothScroll>
-            <Navbar logo={branding.logo} logoIcon={branding.logoIcon} products={products} chrome={siteChrome} />
+            <Navbar logo={branding.logo} logoIcon={branding.logoIcon} products={navProducts} categories={categories} chrome={siteChrome} />
             <main id="main-content" tabIndex={-1} className={(siteChrome.header.layout === "compact" ? "pt-16" : "pt-20") + " outline-none"}>
               {children}
             </main>

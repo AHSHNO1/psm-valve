@@ -1,31 +1,30 @@
-import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { getSession } from "@/lib/auth";
 import { getArticles, saveArticles } from "@/lib/articles";
 import { locales } from "@/lib/i18n";
+import { guard, readJson, json, err, isResponse } from "@/lib/api-helpers";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
-  return NextResponse.json({ ok: true, articles: getArticles() });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
+  return json({ articles: getArticles() });
 }
 
 export async function POST(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست JSON معتبر نیست" }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
 
   const { articles } = body || {};
   if (!Array.isArray(articles)) {
-    return NextResponse.json({ ok: false, error: "فهرست مقاله‌ها معتبر نیست" }, { status: 400 });
+    return err("فهرست مقاله‌ها معتبر نیست", 400);
+  }
+  if (articles.length > 500) {
+    return err("تعداد مقاله‌ها از حد مجاز (۵۰۰) بیشتر است", 400);
   }
 
   const slugs = new Set();
@@ -39,10 +38,10 @@ export async function POST(request) {
         (typeof article.title !== "object" ||
           !Object.values(article.title).some((title) => typeof title === "string" && title.trim())))
     ) {
-      return NextResponse.json({ ok: false, error: "عنوان و شناسهٔ هر مقاله را بررسی کنید" }, { status: 400 });
+      return err("عنوان و شناسهٔ هر مقاله را بررسی کنید", 400);
     }
     if (slugs.has(article.slug)) {
-      return NextResponse.json({ ok: false, error: "شناسهٔ مقاله تکراری است" }, { status: 400 });
+      return err("شناسهٔ مقاله تکراری است", 400);
     }
     slugs.add(article.slug);
     if (
@@ -52,7 +51,7 @@ export async function POST(request) {
         article.pdfUrl.startsWith("//") ||
         article.pdfUrl.includes(".."))
     ) {
-      return NextResponse.json({ ok: false, error: "فایل مقاله باید از همین سایت باشد" }, { status: 400 });
+      return err("فایل مقاله باید از همین سایت باشد", 400);
     }
   }
 
@@ -74,5 +73,5 @@ export async function POST(request) {
     for (const slug of routeSlugs) revalidatePath(`/${locale}/articles/${slug}`);
   }
   revalidatePath("/sitemap.xml");
-  return NextResponse.json({ ok: true });
+  return json();
 }

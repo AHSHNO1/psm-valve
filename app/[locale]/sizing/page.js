@@ -6,6 +6,7 @@ import StandardsTable from "@/components/StandardsTable";
 import { getProducts } from "@/lib/product-store";
 import { getSizingTablesForClient } from "@/lib/valve-cv";
 import { buildSizingCatalog } from "@/lib/valve-catalog";
+import { buildMetadata } from "@/lib/seo";
 import "./sizing-hub.css";
 
 const SITE_URL = "https://www.psmvalve.com";
@@ -36,54 +37,14 @@ const META = {
 export async function generateMetadata({ params }) {
   const locale = params?.locale || "fa";
   const m = META[locale] || META.en;
-  const url = `${SITE_URL}/${locale}/sizing`;
-
-  return {
+  return buildMetadata({
+    locale,
+    path: "/sizing",
     title: m.title,
     description: m.description,
     keywords: m.keywords,
-    alternates: {
-      canonical: url,
-      languages: {
-        "fa-IR": `${SITE_URL}/fa/sizing`,
-        "en-US": `${SITE_URL}/en/sizing`,
-        "ar-SA": `${SITE_URL}/ar/sizing`,
-        "ru-RU": `${SITE_URL}/ru/sizing`
-      }
-    },
-    openGraph: {
-      type: "website",
-      url: url,
-      title: m.title,
-      description: m.description,
-      siteName: "PSM Valve",
-      locale: locale === "fa" ? "fa_IR" : locale === "ar" ? "ar_SA" : locale === "ru" ? "ru_RU" : "en_US",
-      images: [
-        {
-          url: `${SITE_URL}/og/sizing-${locale}.jpg`,
-          width: 1200,
-          height: 630,
-          alt: m.title
-        }
-      ]
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: m.title,
-      description: m.description,
-      images: [`${SITE_URL}/og/sizing-${locale}.jpg`]
-    },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1
-      }
-    }
-  };
+    imageAlt: m.title
+  });
 }
 
 const TABS = [
@@ -113,26 +74,26 @@ const TABS = [
       ru: "Конвертер, расчеты труб, научный калькулятор"
     },
     chips: {
-      fa: ["تبدیل واحد", "محاسبات لوله", "علمی", "تاریخچه"],
-      en: ["Unit Converter", "Pipe Calc", "Scientific", "History"],
-      ar: ["محول", "أنابيب", "علمية", "السجل"],
-      ru: ["Конвертер", "Трубы", "Научный", "История"]
+      fa: ["تبدیل واحد", "محاسبات لوله", "NPS/Sch", "علمی"],
+      en: ["Unit Converter", "Pipe Calc", "NPS/Sch", "Scientific"],
+      ar: ["محول", "أنابيب", "NPS/Sch", "علمية"],
+      ru: ["Конвертер", "Трубы", "NPS/Sch", "Научный"]
     }
   },
   {
     id: "standards", icon: BookOpen, accent: "#10B981", badge: "DN / ANSI",
     title: { fa: "مرجع استانداردهای مهندسی", en: "Engineering Standards", ar: "المعايير الهندسية", ru: "Инженерные стандарты" },
     desc: {
-      fa: "مرجع سریع تبدیل DN/NPS، ANSI/PN، Cv/Kv و واحدهای دما",
-      en: "Quick reference for DN/NPS, ANSI/PN, Cv/Kv and temperature conversions",
-      ar: "مرجع سريع لتحويل DN/NPS وANSI/PN وCv/Kv ودرجات الحرارة",
-      ru: "Справочник по DN/NPS, ANSI/PN, Cv/Kv и температуре"
+      fa: "مرجع تعاملی DN/NPS، ANSI/PN، Cv/Kv، دما و برنامهٔ لوله Sch 40/80",
+      en: "Interactive DN/NPS, ANSI/PN, Cv/Kv, temperature reference and Sch 40/80 pipe schedule",
+      ar: "مرجع تفاعلي لـ DN/NPS وANSI/PN وCv/Kv والحرارة وجدول الأنابيب Sch 40/80",
+      ru: "Интерактивный справочник DN/NPS, ANSI/PN, Cv/Kv, температуры и сортамента Sch 40/80"
     },
     chips: {
-      fa: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "دما"],
-      en: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "Temperature"],
-      ar: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "الحرارة"],
-      ru: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "Температура"]
+      fa: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "برنامهٔ لوله"],
+      en: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "Pipe Schedule"],
+      ar: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "جدول الأنابيب"],
+      ru: ["DN ↔ NPS", "ANSI ↔ PN", "Cv ↔ Kv", "Сортамент"]
     }
   }
 ];
@@ -172,8 +133,11 @@ export default function SizingPage({ params, searchParams }) {
     : "sizing";
   const isRTL = locale === "fa" || locale === "ar";
   const H = HUB[locale] || HUB.en;
-  const catalog = buildSizingCatalog(getProducts());
-  const cvTables = getSizingTablesForClient().series;
+  const sizingTables = getSizingTablesForClient();
+  const cvTables = sizingTables.series;
+  // جدول Cv مبناست: سری‌هایی که متن سایزشان خوانا نیست (spec.size خالی) هم
+  // با بازهٔ NPS خود جدول وارد سایزینگ می‌شوند تا Cv برآوردی از قلم نیفتد.
+  const catalog = buildSizingCatalog(getProducts(), cvTables);
 
   const jsonLd = {
     "@context": "https://schema.org",

@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/admin/site-chrome", label: "طراحی هدر و فوتر", icon: Layout },
   { href: "/admin/slider", label: "اسلایدر صفحه اصلی", icon: PanelsTopLeft },
   { href: "/admin/products", label: "محصولات", icon: Package },
+  { href: "/admin/categories", label: "دسته‌ها و سری محصولات", icon: Layers3 },
   { href: "/admin/media", label: "گالری و رسانه", icon: Images },
   { href: "/admin/translations", label: "متن‌های همه صفحات", icon: Languages },
   { href: "/admin/company", label: "اطلاعات تماس", icon: Building2 },

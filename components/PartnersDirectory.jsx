@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Building2, Search } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -91,11 +92,12 @@ export default function PartnersDirectory({ partners, locale }) {
             const card = (
               <div className="card-glass h-full min-h-36 p-5 grid place-items-center transition hover:-translate-y-1 hover:border-gold-500/50">
                 {partner.logo ? (
-                  <img
+                  <MediaImage
                     src={partner.logo}
                     alt={name}
-                    loading="lazy"
-                    decoding="async"
+                    width={300}
+                    height={192}
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="max-w-full max-h-24 object-contain"
                   />
                 ) : (

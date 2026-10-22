@@ -46,7 +46,7 @@ const COPY = {
     titleEnd: "مهندسی",
     subtitle: "مدل را انتخاب کنید، اجزا را بررسی کنید و نمای انفجاری را با اسلایدر کنترل کنید.",
     inspect: "ساختار محصول",
-    interaction: "بکشید: چرخش · کلیک: انتخاب قطعه · اسلایدر: انفجار",
+    interaction: "بکشید: چرخش · کلیک: انتخاب قطعه · اسلایدرها: انفجار و عملکرد",
     note: "مدل‌ها شماتیک هستند؛ آرایش قطعات ممکن است با مدل و سفارش واقعی تفاوت داشته باشد.",
     items: {
       globe: {
@@ -93,7 +93,7 @@ const COPY = {
     titleEnd: "in detail",
     subtitle: "Choose a model, inspect its components and control the exploded view with the slider.",
     inspect: "Product structure",
-    interaction: "Drag: rotate · Click: select part · Slider: explode",
+    interaction: "Drag: rotate · Click: select part · Sliders: explode & function",
     note: "Illustrative models only. Component arrangement may vary by product model and specification.",
     items: {
       globe: {
@@ -140,7 +140,7 @@ const COPY = {
     titleEnd: "الهندسية",
     subtitle: "اختر نموذجاً، واستكشف مكوناته، وتحكم في العرض التفجيري باستخدام شريط التمرير.",
     inspect: "بنية المنتج",
-    interaction: "اسحب: تدوير · انقر: تحديد جزء · شريط التمرير: تفجير",
+    interaction: "اسحب: تدوير · انقر: تحديد جزء · أشرطة التمرير: التفكيك والتشغيل",
     note: "النماذج توضيحية؛ قد يختلف ترتيب المكونات حسب طراز المنتج ومواصفاته.",
     items: {
       globe: {
@@ -187,7 +187,7 @@ const COPY = {
     titleEnd: "в деталях",
     subtitle: "Выберите модель, изучите её компоненты и настройте разнесение с помощью ползунка.",
     inspect: "Структура изделия",
-    interaction: "Перетаскивание: вращение · щелчок: выбор детали · ползунок: разнесение",
+    interaction: "Перетаскивание: вращение · щелчок: выбор детали · ползунки: разнесение и работа",
     note: "Модели схематичны; расположение деталей зависит от модели и спецификации изделия.",
     items: {
       globe: {

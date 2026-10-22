@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Quote, User, Award, BadgeCheck, FlaskConical } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -35,16 +36,16 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
       <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 mt-5 items-start">
         {/* LEFT: Photo */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="lg:col-span-2"
+          className="lg:col-span-2 min-w-0"
         >
           <div className="relative aspect-[4/5] rounded-3xl overflow-hidden w-full"
             style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}>
             {ceo.photo ? (
-              <img src={ceo.photo} alt={name} className="w-full h-full object-cover" />
+              <MediaImage src={ceo.photo} alt={name} fill sizes="(max-width: 1024px) 100vw, 40vw" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full grid place-items-center"
                 style={{ background: "linear-gradient(135deg, var(--bg-soft), var(--bg-card))" }}>
@@ -61,11 +62,11 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
 
         {/* RIGHT: Bio + Message */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="lg:col-span-3 space-y-5"
+          className="lg:col-span-3 space-y-5 min-w-0"
         >
           <div className="card-glass p-6 sm:p-8">
             <h3 className="font-black text-lg sm:text-xl mb-4" style={{ color: "var(--gold)" }}>
@@ -109,7 +110,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
 
           {message && (
             <div className="relative card-glass p-6 sm:p-8 overflow-hidden">
-              <Quote size={80} className="absolute top-4 left-4 opacity-10" style={{ color: "var(--gold)" }} />
+              <Quote size={80} className="absolute top-4 start-4 opacity-10" style={{ color: "var(--gold)" }} />
               <h3 className="font-black text-lg sm:text-xl mb-4 relative z-10" style={{ color: "var(--gold)" }}>
                 {L.msgTitle}
               </h3>
@@ -133,8 +134,9 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
             <div style={{
               position: "absolute",
               top: -30,
-              left: -30,
+              insetInlineStart: 0,
               width: 120,
+              maxWidth: "100%",
               height: 120,
               borderRadius: "50%",
               background: "radial-gradient(circle, rgba(224, 168, 26, 0.25), transparent 70%)",
@@ -259,10 +261,12 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                           title={pick(c.title, locale)}
                           style={{ display: "block", width: "100%", height: "100%" }}
                         >
-                          <img
+                          <MediaImage
                             src={c.image}
                             alt={pick(c.title, locale)}
-                            loading="lazy"
+                            width={400}
+                            height={300}
+                            sizes="(max-width: 640px) 50vw, 160px"
                             style={{
                               width: "100%",
                               height: "100%",

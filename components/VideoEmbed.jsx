@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Play } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function getYouTubeId(url) {
   if (!url) return null;
@@ -54,14 +55,32 @@ export default function VideoEmbed({ url, title, poster, aspect = "16/9" }) {
   const vimeoId = getVimeoId(url);
   const aparatId = getAparatId(url);
 
-  if (!playing && poster) {
+  if (!playing) {
     return (
       <button
+        type="button"
         onClick={() => setPlaying(true)}
+        aria-label={title || "Play video"}
         className="relative w-full rounded-2xl overflow-hidden group"
         style={{ aspectRatio: aspect, background: "var(--bg-soft)", border: "1px solid var(--border)" }}
       >
-        <img src={poster} alt={title || "Video"} className="w-full h-full object-cover" />
+        {poster ? (
+          <MediaImage
+            src={poster}
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 30% 20%, rgba(245, 197, 24, 0.24), transparent 42%), linear-gradient(135deg, var(--bg-soft), var(--bg-card))"
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition" />
         <div
           className="absolute inset-0 grid place-items-center"

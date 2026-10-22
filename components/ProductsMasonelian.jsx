@@ -6,7 +6,8 @@ import {
   Gauge, Circle, Sun, Square, ArrowRight, Cylinder, Minus,
   ShieldAlert, Snowflake, Flame, ArrowLeft, Filter, Package, Search, X
 } from "lucide-react";
-import { categories, getCategoryLabel } from "@/lib/categories";
+import { getCategoryLabel } from "@/lib/category-utils";
+import MediaImage from "./MediaImage";
 import { useDictionary } from "./Providers";
 
 const ICONS = {
@@ -99,25 +100,27 @@ function pickLocalized(value, locale) {
   return value[locale] || value.en || value.fa || "";
 }
 
-export default function ProductsMasonelian({ products = [] }) {
+export default function ProductsMasonelian({ products = [], categories = [], header = null }) {
   const { locale, t } = useDictionary();
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
   const labels = PRODUCTS_LABELS[locale] || PRODUCTS_LABELS.en;
   const normalizedQuery = normalizeSearchText(query);
 
-  const catalogCategories = useMemo(() => categories
-    .filter((category) =>
-      Boolean(category.children) ||
-      Boolean(category.parentId) ||
-      products.some((product) => product.categoryId === category.id)
-    )
+  const visibleCategories = useMemo(() => categories.filter((category) => {
+    if (category.hidden) return false;
+    if (!category.parentId) return true;
+    const parent = categories.find((item) => item.id === category.parentId);
+    return !parent || !parent.hidden;
+  }), [categories]);
+
+  const catalogCategories = useMemo(() => visibleCategories
     .map((category) => ({
       ...category,
       products: products.filter((product) => product.categoryId === category.id)
-    })), [products]);
+    })), [products, visibleCategories]);
 
-  const filterCategories = categories.filter((category) => !category.parentId);
+  const filterCategories = visibleCategories.filter((category) => !category.parentId);
 
   const filtered = useMemo(() => catalogCategories
     .filter((category) => {
@@ -146,8 +149,12 @@ export default function ProductsMasonelian({ products = [] }) {
 
   const totalProducts = products.length;
   const resultCount = filtered.reduce((count, category) => count + category.products.length, 0);
-  const visibleCategoryCount = new Set(categories.map((category) => category.parentId || category.id)).size;
+  const visibleCategoryCount = new Set(visibleCategories.map((category) => category.parentId || category.id)).size;
   const hasFilters = activeCategory !== "all" || Boolean(query.trim());
+  const headerBadge = pickLocalized(header?.badge, locale) || t.products.catalog;
+  const headerTitle1 = pickLocalized(header?.title1, locale) || t.products.pageTitle1;
+  const headerTitle2 = pickLocalized(header?.title2, locale) || t.products.pageTitle2;
+  const headerDescription = pickLocalized(header?.description, locale);
   const resultMessage = labels.results
     .replace("{count}", String(resultCount))
     .replace("{total}", String(totalProducts));
@@ -157,12 +164,15 @@ export default function ProductsMasonelian({ products = [] }) {
       {/* Hero */}
       <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
         <span className="chip">
-          <Package size={12} /> {t.products.catalog}
+          <Package size={12} /> {headerBadge}
         </span>
         <h1 id="products-page-title" className="section-title mt-4">
-          <span className="heading-grad">{t.products.pageTitle1}</span>{" "}
-          <span className="heading-gold">{t.products.pageTitle2}</span>
+          <span className="heading-grad">{headerTitle1}</span>{" "}
+          <span className="heading-gold">{headerTitle2}</span>
         </h1>
+        {headerDescription && (
+          <p className="mt-4 text-sm sm:text-base text-soft leading-7">{headerDescription}</p>
+        )}
         <p className="mt-4 text-sm sm:text-base text-soft">
           {visibleCategoryCount} {labels.categories} · {totalProducts} {labels.products}
         </p>
@@ -254,8 +264,8 @@ export default function ProductsMasonelian({ products = [] }) {
                 }`}
               >
                 <Icon size={14} />
-                <span className="hidden sm:inline">{getCategoryLabel(cat, locale)}</span>
-                <span className="sm:hidden">{getCategoryLabel(cat, locale).split(" / ").at(-1).split(" ")[0]}</span>
+                <span className="hidden sm:inline">{getCategoryLabel(cat, locale, categories)}</span>
+                <span className="sm:hidden">{getCategoryLabel(cat, locale, categories).split(" / ").at(-1).split(" ")[0]}</span>
               </button>
             );
           })}
@@ -278,14 +288,14 @@ export default function ProductsMasonelian({ products = [] }) {
                 <div className="min-w-0">
                   {cat.parentId && (
                     <p className="mb-1 text-[10px] sm:text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                      {getCategoryLabel(categories.find((item) => item.id === cat.parentId), locale)}
+                      {getCategoryLabel(categories.find((item) => item.id === cat.parentId), locale, categories)}
                     </p>
                   )}
                   <h2 className="font-black text-lg sm:text-2xl" style={{ color: "var(--text)" }}>
-                    {cat.parentId ? pickLocalized(cat.name, locale) : getCategoryLabel(cat, locale)}
+                    {cat.parentId ? pickLocalized(cat.name, locale) : getCategoryLabel(cat, locale, categories)}
                   </h2>
                   <p className="text-xs sm:text-sm mt-1 text-soft leading-relaxed">
-                    {cat.desc[locale] || cat.desc.fa}
+                    {pickLocalized(cat.desc, locale)}
                   </p>
                 </div>
               </div>
@@ -343,11 +353,12 @@ export default function ProductsMasonelian({ products = [] }) {
                           className="relative aspect-[4/3] rounded-xl mb-4 sm:mb-5 overflow-hidden bg-[var(--bg-soft)]"
                           style={{ border: "1px solid var(--border)" }}
                         >
-                          <img
+                          <MediaImage
                             src={p.image}
                             alt={pickLocalized(p.name, locale)}
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             className="w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
                           />
                           <div className="absolute top-2 sm:top-3 right-2 sm:right-3 px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-black"
                             style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--gold)" }}>

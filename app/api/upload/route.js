@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { guard, json, err, isResponse } from "@/lib/api-helpers";
+import { optimizeRasterImage } from "@/lib/image-optimizer";
 import fs from "fs";
 import path from "path";
+
+export const runtime = "nodejs";
 
 // نوع مجاز → پسوند ثابت. پسوند هرگز از نام فایل کاربر گرفته نمی‌شود؛
 // وگرنه می‌توان با نام «x.html» و MIME جعلی، HTML اجراشدنی روی دامنهٔ سایت نوشت.
@@ -76,9 +79,15 @@ function detectMime(buffer) {
 }
 
 export async function POST(request) {
-  const session = await getSession(request);
-  if (!session) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
+
+  // محدودسازی آپلود (ضد پرکردن دیسک/اسپم): ۴۰ آپلود در هر ۱۰ دقیقه برای هر IP
+  const rate = consumeRateLimit(request, "upload", 40, 10 * 60 * 1000);
+  if (!rate.allowed) {
+    return err("تعداد آپلودها بیش از حد مجاز است؛ کمی بعد دوباره تلاش کنید.", 429, {
+      code: "rate_limited"
+    }, { headers: { "Retry-After": String(rate.retryAfter) } });
   }
 
   try {
@@ -87,15 +96,15 @@ export async function POST(request) {
     const type = formData.get("type") || "images";
 
     if (!file || typeof file === "string") {
-      return NextResponse.json({ ok: false, error: "فایلی انتخاب نشده" }, { status: 400 });
+      return err("فایلی انتخاب نشده", 400);
     }
 
     if (!ALLOWED[type]) {
-      return NextResponse.json({ ok: false, error: "نوع نامعتبر" }, { status: 400 });
+      return err("نوع نامعتبر", 400);
     }
 
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ ok: false, error: "فایل بیش از 50MB" }, { status: 400 });
+      return err("فایل بیش از 50MB", 400);
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -103,33 +112,37 @@ export async function POST(request) {
     const ext = detected ? ALLOWED[type][detected] : null;
 
     if (!ext) {
-      return NextResponse.json(
-        { ok: false, error: "محتوای فایل با فرمت‌های مجاز این بخش نمی‌خواند" },
-        { status: 400 }
-      );
+      return err("محتوای فایل با فرمت‌های مجاز این بخش نمی‌خواند", 400);
     }
+
+    // تصاویر راستری در همان لحظهٔ آپلود به WebP بهینه تبدیل می‌شوند تا
+    // فایل‌های چند مگابایتی وارد مخزن رسانه نشوند. GIF متحرک دست‌نخورده می‌ماند.
+    let payload = buffer;
+    let outputMime = detected;
+    if (detected.startsWith("image/") && detected !== "image/gif") {
+      const optimized = await optimizeRasterImage(buffer);
+      if (optimized) {
+        payload = optimized;
+        outputMime = "image/webp";
+      }
+    }
+    const outputExt = ALLOWED[type][outputMime] || ext;
 
     const originalName = path.basename(file.name || "file").slice(0, 120);
     const safeName =
-      Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + ext;
+      Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + outputExt;
 
     const uploadDir = path.join(process.cwd(), "public", "uploads", type);
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
     const fullPath = path.join(uploadDir, safeName);
-    fs.writeFileSync(fullPath, buffer);
+    fs.writeFileSync(fullPath, payload);
 
     const url = `/uploads/${type}/${safeName}`;
 
-    return NextResponse.json({
-      ok: true,
-      url,
-      filename: safeName,
-      size: buffer.length,
-      originalName
-    });
+    return json({ url, filename: safeName, size: payload.length, originalName });
   } catch (error) {
     console.error("Upload failed:", error);
-    return NextResponse.json({ ok: false, error: "خطا در آپلود" }, { status: 500 });
+    return err("خطا در آپلود", 500);
   }
 }

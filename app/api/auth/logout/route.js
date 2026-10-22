@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { COOKIE_OPTIONS } from "@/lib/auth";
+import { getCookieOptions } from "@/lib/auth";
 
-export async function POST() {
+export async function POST(request) {
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE_OPTIONS.name, "", { ...COOKIE_OPTIONS, maxAge: 0 });
+  const cookieOptions = getCookieOptions(request);
+  res.cookies.set(cookieOptions.name, "", { ...cookieOptions, maxAge: 0 });
   return res;
 }

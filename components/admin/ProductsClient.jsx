@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "./AdminIcons";
 import { EditBtn, ViewBtn, DeleteBtn } from "./Actions";
-import { getCategoryLabel } from "@/lib/categories";
+import { getCategoryLabel } from "@/lib/category-utils";
 import ContentStudioNav from "./ContentStudioNav";
 
 function pick(obj) {
@@ -109,9 +109,14 @@ export default function ProductsClient({ products: initialProducts, categories }
             </div>
           </div>
         </div>
-        <Link href="/admin/products/new" className="btn-add">
-          <Icon name="plus" /> افزودن محصول
-        </Link>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <Link href="/admin/categories" className="btn-cancel">
+            <Icon name="layers" /> دسته‌ها و سری‌ها
+          </Link>
+          <Link href="/admin/products/new" className="btn-add">
+            <Icon name="plus" /> افزودن محصول
+          </Link>
+        </div>
       </div>
 
       {notice.text && (
@@ -168,7 +173,7 @@ export default function ProductsClient({ products: initialProducts, categories }
             return (
               <button key={c.id} onClick={function() { setActiveCat(c.id); }}
                 className={"tab" + (activeCat === c.id ? " tab-active" : "")}>
-                {getCategoryLabel(c)}
+                {getCategoryLabel(c, "fa", categories)}
                 <span className="tab-badge">{count}</span>
               </button>
             );

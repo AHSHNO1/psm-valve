@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Quote, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -132,7 +133,7 @@ export default function TestimonialsCompact({ testimonials, locale }) {
               borderTop: "1px solid var(--border)"
             }}>
               {current.image ? (
-                <img src={current.image} alt="" style={{
+                <MediaImage src={current.image} alt="" width={104} height={104} sizes="52px" style={{
                   width: 52,
                   height: 52,
                   borderRadius: "50%",

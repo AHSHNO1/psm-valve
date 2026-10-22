@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
 
+export const metadata = {
+  robots: { index: false, follow: false }
+};
+
 // ============================================================
 // CATCH-ALL 404
 // هر آدرسی که زیر یک زبان معتبر (fa/en/ar/ru) وجود نداشته باشد

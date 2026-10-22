@@ -3,8 +3,22 @@ import { getDictionary } from "@/lib/getDictionary";
 import { getNews, getProjects } from "@/lib/content";
 import { getArticles } from "@/lib/articles";
 import MediaTabsSimple from "@/components/MediaTabsSimple";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const seo = pageSeo(locale, "media");
+  return buildMetadata({
+    locale,
+    path: "/media",
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords
+  });
+}
 
 export default async function MediaPage({ params, searchParams }) {
   const { locale } = params;

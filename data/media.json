@@ -37,5 +37,105 @@
       "updatedAt": "2026-10-18T04:23:16.070Z"
     }
   ],
-  "gallery": []
+  "gallery": [
+    {
+      "id": "mvghvc8k9080a",
+      "createdAt": "2026-10-20T09:42:17.012Z",
+      "url": "/uploads/images/mvghv34d-xs3e50.jpg",
+      "title": "ارسال به سایت کارفرما",
+      "description": ""
+    },
+    {
+      "id": "mvghtxbtzk46d",
+      "createdAt": "2026-10-20T09:41:11.033Z",
+      "url": "/uploads/images/mvghtcu5-d8ct6j.jpg",
+      "title": "خط تولید شیرهای کنترلی",
+      "description": "",
+      "updatedAt": "2026-10-20T09:41:49.684Z"
+    },
+    {
+      "id": "mvghs469d4c8g",
+      "createdAt": "2026-10-20T09:39:46.593Z",
+      "url": "/uploads/images/mvghs3go-kryuem.jpg",
+      "title": "ماشینکاری بدنه شیرهای کنترلی",
+      "description": ""
+    },
+    {
+      "id": "mvghr6ihpwtn8",
+      "createdAt": "2026-10-20T09:39:02.969Z",
+      "url": "/uploads/images/mvghqrmb-iqem2g.jpg",
+      "title": "شیرهای کنترلی گلوب",
+      "description": ""
+    },
+    {
+      "id": "mvghqfg3ayzf9",
+      "createdAt": "2026-10-20T09:38:27.891Z",
+      "url": "/uploads/images/mvghq91v-vdyewr.jpg",
+      "title": "مونتاژ شیرهای کنترلی",
+      "description": ""
+    },
+    {
+      "id": "mvghond73rt27",
+      "createdAt": "2026-10-20T09:37:04.843Z",
+      "url": "/uploads/images/mvghomvf-ex9509.jpg",
+      "title": "تعمیرات شیرهای صنعتی",
+      "description": ""
+    },
+    {
+      "id": "mvghnsk6kkxfl",
+      "createdAt": "2026-10-20T09:36:24.918Z",
+      "url": "/uploads/images/mvghnff5-2o2irp.jpg",
+      "title": "شیرهای پیستون",
+      "description": ""
+    },
+    {
+      "id": "mvghmy74syqov",
+      "createdAt": "2026-10-20T09:35:45.568Z",
+      "url": "/uploads/images/mvghmwpx-6iz86o.jpg",
+      "title": "سنگ زنی توپی 32 اینچ",
+      "description": ""
+    },
+    {
+      "id": "mvghjzznp1v3p",
+      "createdAt": "2026-10-20T09:33:27.923Z",
+      "url": "/uploads/images/mvghjz3l-3m3mlh.jpg",
+      "title": "قطعات تریم داخلی شیرهای کنترلی",
+      "description": ""
+    },
+    {
+      "id": "mvghi5vn98d8t",
+      "createdAt": "2026-10-20T09:32:02.243Z",
+      "url": "/uploads/images/mvghi51k-12o7wv.jpg",
+      "title": "شیرهای توپی کنترلی",
+      "description": ""
+    },
+    {
+      "id": "mvghhd58pltmf",
+      "createdAt": "2026-10-20T09:31:25.004Z",
+      "url": "/uploads/images/mvghhc2n-74jrea.jpg",
+      "title": "شیرهای کنترلی آماده در حال تست CV",
+      "description": ""
+    },
+    {
+      "id": "mvghfqe64gl1g",
+      "createdAt": "2026-10-20T09:30:08.862Z",
+      "url": "/uploads/images/mvghfpi3-yipmsv.jpg",
+      "title": "طراحی و تولید شیرپروانه ای کنترلی",
+      "description": ""
+    },
+    {
+      "id": "mvghelu8xg3x0",
+      "createdAt": "2026-10-20T09:29:16.304Z",
+      "url": "/uploads/images/mvghekt3-fosyoc.jpg",
+      "title": "پوشش دهی توپی 34 اینچ",
+      "description": ""
+    },
+    {
+      "id": "mvghctc5mc4w4",
+      "createdAt": "2026-10-20T09:27:52.709Z",
+      "url": "/uploads/images/mvghcrmv-qqulpj.jpg",
+      "title": "طراحی شیرهای میکروتریم",
+      "description": ""
+    }
+  ]
 }

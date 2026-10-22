@@ -1,6 +1,21 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { getAparatChannelVideos, getMedia, addMediaItem, mergeAparatVideos, removeMediaItem, updateMedia, updateMediaItem } from "@/lib/media";
+import {
+  getAparatChannelVideos,
+  getMedia,
+  getMediaItem,
+  addMediaItem,
+  mergeAparatVideos,
+  removeMediaItem,
+  updateMedia,
+  updateMediaItem,
+  findMediaReferences,
+  deleteMediaFile
+} from "@/lib/media";
+import { guard, readJson, json, err, isResponse, revalidatePublic } from "@/lib/api-helpers";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const VALID_TYPES = ["videos", "catalogs", "gallery"];
 
 function isValidMediaItem(type, item) {
   if (typeof item.url !== "string" || !item.url.trim() || item.url.length > 2048) return false;
@@ -18,8 +33,8 @@ function isValidMediaItem(type, item) {
 }
 
 export async function GET(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
   const media = getMedia();
   media.catalogs = (media.catalogs || []).filter((catalog) =>
     typeof catalog.url === "string" && catalog.url.startsWith("/uploads/catalogs/")
@@ -29,81 +44,95 @@ export async function GET(request) {
   } catch (error) {
     console.error("Unable to refresh Aparat videos in media API:", error);
   }
-  return NextResponse.json({ ok: true, media });
+  return json({ media });
 }
 
 export async function POST(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست نامعتبر" }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
   const { type, item } = body || {};
 
-  const validTypes = ["videos", "catalogs", "gallery"];
-  if (!validTypes.includes(type) || !item || typeof item !== "object" || Array.isArray(item)) {
-    return NextResponse.json({ ok: false, error: "نوع نامعتبر" }, { status: 400 });
+  if (!VALID_TYPES.includes(type) || !item || typeof item !== "object" || Array.isArray(item)) {
+    return err("نوع نامعتبر", 400);
   }
   if (!isValidMediaItem(type, item) || typeof item.title !== "string" || !item.title.trim()) {
-    return NextResponse.json({ ok: false, error: "عنوان یا فایل مدیا معتبر نیست" }, { status: 400 });
+    return err("عنوان یا فایل مدیا معتبر نیست", 400);
   }
 
   const newItem = addMediaItem(type, item);
-  return NextResponse.json({ ok: true, item: newItem });
+  revalidatePublic(["", "media", "products"]);
+  return json({ item: newItem });
 }
 
 export async function PUT(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست نامعتبر" }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
   const { type, id, item } = body || {};
-  const validTypes = ["videos", "catalogs", "gallery"];
-  if (!validTypes.includes(type) || typeof id !== "string" || !id || !item || typeof item !== "object" || Array.isArray(item)) {
-    return NextResponse.json({ ok: false, error: "اطلاعات ویرایش نامعتبر است" }, { status: 400 });
+  if (!VALID_TYPES.includes(type) || typeof id !== "string" || !id || !item || typeof item !== "object" || Array.isArray(item)) {
+    return err("اطلاعات ویرایش نامعتبر است", 400);
   }
   if (!isValidMediaItem(type, item) || typeof item.title !== "string" || !item.title.trim()) {
-    return NextResponse.json({ ok: false, error: "عنوان یا فایل مدیا معتبر نیست" }, { status: 400 });
+    return err("عنوان یا فایل مدیا معتبر نیست", 400);
   }
 
   const updatedItem = updateMediaItem(type, id, item);
   if (!updatedItem) {
-    return NextResponse.json({ ok: false, error: "آیتم پیدا نشد" }, { status: 404 });
+    return err("آیتم پیدا نشد", 404);
   }
-  return NextResponse.json({ ok: true, item: updatedItem });
+  revalidatePublic(["", "media", "products"]);
+  return json({ item: updatedItem });
 }
 
 export async function DELETE(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const type = searchParams.get("type");
+  const force = searchParams.get("force") === "1";
 
-  const validTypes = ["videos", "catalogs", "gallery"];
-  if (!validTypes.includes(type)) {
-    return NextResponse.json({ ok: false, error: "نوع نامعتبر" }, { status: 400 });
+  if (!VALID_TYPES.includes(type) || typeof id !== "string" || !id) {
+    return err("شناسه یا نوع نامعتبر است", 400);
   }
 
-  const updated = removeMediaItem(type, id);
-  return NextResponse.json({ ok: true, media: updated });
+  const item = getMediaItem(type, id);
+  if (!item) return err("آیتم مدیا پیدا نشد", 404);
+
+  // اگر فایل در بخش‌های دیگر استفاده شده باشد، بدون force حذف نمی‌شود (۴۰۹).
+  const references = findMediaReferences(item.url);
+  if (references.length && !force) {
+    return err("این فایل در بخش‌های دیگری از سایت استفاده شده است.", 409, {
+      references,
+      url: item.url
+    });
+  }
+
+  const removed = removeMediaItem(type, id);
+  if (!removed) return err("آیتم مدیا پیدا نشد", 404);
+
+  const fileDeleted = deleteMediaFile(item.url);
+  revalidatePublic(["", "media", "products"]);
+  return json({ removed, fileDeleted, references });
 }
 
 export async function PATCH(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  const { introVideoUrl } = await request.json();
-  const updated = updateMedia({ introVideoUrl: introVideoUrl || "" });
-  return NextResponse.json({ ok: true, media: updated });
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
+  if (body && typeof body === "object" && "introVideoUrl" in body &&
+      typeof body.introVideoUrl !== "string") {
+    return err("آدرس ویدئوی معرفی معتبر نیست", 400);
+  }
+  const updated = updateMedia({ introVideoUrl: body?.introVideoUrl || "" });
+  revalidatePublic(["", "media"]);
+  return json({ media: updated });
 }

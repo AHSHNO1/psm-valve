@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyCredentials, signToken, COOKIE_OPTIONS } from "@/lib/auth";
+import { verifyCredentials, signToken, getCookieOptions } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request) {
@@ -47,7 +47,8 @@ export async function POST(request) {
       role: user.role
     });
     const res = NextResponse.json({ ok: true, role: user.role });
-    res.cookies.set(COOKIE_OPTIONS.name, token, COOKIE_OPTIONS);
+    const cookieOptions = getCookieOptions(request);
+    res.cookies.set(cookieOptions.name, token, cookieOptions);
     return res;
   } catch (error) {
     console.error("Panel login failed:", error);

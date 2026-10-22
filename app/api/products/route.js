@@ -1,49 +1,45 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { isProductCategory } from "@/lib/category-store";
 import { createProduct, getProducts } from "@/lib/product-store";
-import { isProductCategory } from "@/lib/categories";
+import { guard, readJson, json, err, isResponse, revalidatePublic } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
   try {
-    return NextResponse.json({ ok: true, products: getProducts() });
+    return json({ products: getProducts() });
   } catch (error) {
     console.error("Unable to load products:", error);
-    return NextResponse.json({ ok: false, error: "بارگذاری محصولات ناموفق بود." }, { status: 500 });
+    return err("بارگذاری محصولات ناموفق بود.", 500);
   }
 }
 
 export async function POST(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  let product;
-  try {
-    product = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست نامعتبر است." }, { status: 400 });
-  }
+  const product = await readJson(request);
+  if (isResponse(product)) return product;
 
   if (!product || typeof product !== "object" || Array.isArray(product) ||
       typeof product.slug !== "string" || !/^[a-z0-9-]+$/.test(product.slug) ||
       typeof product.series !== "string" || !product.series.trim() ||
       !isProductCategory(product.categoryId) ||
       !product.name || typeof product.name.fa !== "string" || !product.name.fa.trim()) {
-    return NextResponse.json({ ok: false, error: "فیلدهای الزامی محصول معتبر نیست." }, { status: 400 });
+    return err("فیلدهای الزامی محصول معتبر نیست.", 400);
   }
 
   try {
     if (!createProduct(product)) {
-      return NextResponse.json({ ok: false, error: "این نامک قبلاً استفاده شده." }, { status: 409 });
+      return err("این نامک قبلاً استفاده شده.", 409);
     }
-    return NextResponse.json({ ok: true }, { status: 201 });
+    revalidatePublic(["", "products", `products/${product.slug}`, `products/${product.slug}/datasheet`, "sizing"]);
+    return json({}, { status: 201 });
   } catch (error) {
     console.error("Unable to create product:", error);
-    return NextResponse.json({ ok: false, error: "ذخیره محصول ناموفق بود." }, { status: 500 });
+    return err("ذخیره محصول ناموفق بود.", 500);
   }
 }

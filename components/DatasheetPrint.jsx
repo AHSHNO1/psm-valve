@@ -95,7 +95,7 @@ export default function DatasheetPrint({ product, locale, dict, company }) {
   const t = TEXT[locale] || TEXT.en;
   const info = company || {};
   const name = pick(p.name, locale);
-  const description = pick(p.description, locale) || pick(p.short, locale);
+  const description = (p.description && p.description[locale]) || pick(p.short, locale);
   const features = pickArray(p.features, locale);
   const options = pickArray(p.options, locale);
   const applications = pickArray(p.applications, locale);

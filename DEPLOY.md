@@ -1,12 +1,14 @@
 # راهنمای راهاندازی، انتشار و نگهداری — PSM VALVE
 
-> آخرین بهروزرسانی: ۲۰۲۶-۱۰-۱۹ · نسخهٔ اپ: `package.json` → Next.js 14.2.35
+> آخرین بهروزرسانی: ۲۰۲۶-۱۰-۲۲ · نسخهٔ اپ: `package.json` → Next.js 14.2.35
 > این فایل مرجع کامل «از صفر تا آنلاین» است. برای شروع سریع توسعه، `README.md` را ببین.
 > **خلاصهٔ انتشار و چک‌لیست:** [`GO-LIVE.md`](GO-LIVE.md) · پیش‌بررسی: `node scripts/preflight.mjs`
 > 🚀 **مسیر خودکار (توصیهشده):** `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
 > همین یک دستور، همهٔ گامهای بخش ۳ و ۴ را انجام میدهد: نصب Node 20 / PM2 / Nginx / Certbot، ساخت کاربر اجرا
 > و سواپ، دریافت کد، `npm ci`، ساخت `.env.production` با اسرار تصادفی، تنظیم رمز پنل (هش bcrypt)، بیلد،
 > اجرای PM2 با startup، کانفیگ Nginx و SSL، cron بکاپ روزانه، فایروال و بررسی سلامت.
+> **یک خط فرمان، بدون گزینه:** اوبونتو → `sudo bash deploy/start-vps-ubuntu.sh` ·
+> Windows Server → `powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1` (بخش «ویندوز سرور» در ادامه).
 > گزینههای دیگر: Docker → `bash deploy/docker.sh` · cPanel/CloudLinux → [`deploy/cpanel/README.md`](deploy/cpanel/README.md)
 > مقایسهٔ همهٔ مسیرها و چکلیست: [`deploy/README.md`](deploy/README.md)
 
@@ -22,7 +24,7 @@
 | ذخیرهسازی داده | **فایلسیستم پایدار**: `data/*.json`, پایگاه‌دادهٔ `data/psm-valve.sqlite` و `public/uploads/**` |
 | نقشهٔ داده | ۱) `data/` دادهٔ زندهٔ JSON و SQLite · ۲) `public/uploads/**` فایلهای آپلودشده از پنل · ۳) `lib/products.js` فقط دادهٔ اولیهٔ seed محصولات |
 | ناسازگار با | Vercel، Netlify، Render Static، Cloudflare Pages، هر PaaS با دیسک موقت (فایل نوشتهشده با هر دیپلوی/ریاستارت پاک میشود) |
-| سازگار با | VPS لینوکسی (توصیهشده)، کانتینر با Volume پایدار، سرور اختصاصی، PaaS با دیسک پایدار (مثل Liara با دیسک، یا Dokploy/Coolify روی VPS) |
+| سازگار با | VPS لینوکسی (توصیهشده)، **Windows Server** (با `deploy/start-vps-windows.ps1`)، کانتینر با Volume پایدار، سرور اختصاصی، PaaS با دیسک پایدار (مثل Liara با دیسک، یا Dokploy/Coolify روی VPS) |
 | دامنهٔ canonical | `https://www.psmvalve.com` — در `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` **هاردکد** شده است |
 | ✅ دامنهٔ یکسانشده | همهجا `https://www.psmvalve.com`: `lib/seo.js`, `app/sitemap.js`, `app/robots.js`, `app/[locale]/layout.js` و `data/settings.json` → `website`. ریدایرکت ۳۰۱ از بدون-`www` به `www` در کانفیگ Nginx انجام میشود. |
 
@@ -89,6 +91,44 @@
 | ufw + fail2ban | — | فایروال و محافظت SSH |
 
 اسکریپت آمادهٔ راهاندازی سرور تازه: [`deploy/bootstrap-server.sh`](./deploy/bootstrap-server.sh)
+
+## ۲-و) ویندوز سرور — راهاندازی با یک خط فرمان
+
+بقیهٔ این راهنما برای لینوکس است (PM2 + Nginx + Certbot). اگر سرورت **Windows Server** است،
+همان کارها را `deploy/start-vps-windows.ps1` انجام میدهد — بدون Git، بدون PM2 و بدون Nginx:
+
+```powershell
+# از داخل پوشهٔ پروژه، با PowerShell باز شده به‌صورت Run as Administrator
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -Domain psmvalve.com -Email admin@psmvalve.com
+
+# دامنه نداری؟ IP عمومی سرور خودش تشخیص داده میشود و سایت روی HTTP بالا میآید
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1
+
+# کد را از پوشهٔ آماده یا ZIP بده (روی سرور Git نصب نیست)
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -SourceDir C:\psm-valve -Domain 5.1.2.3
+```
+
+| کار در لینوکس | معادل در ویندوز |
+| --- | --- |
+| Node 20 + PM2 + `pm2 startup` | MSI رسمی nodejs.org + دو **Scheduled Task** با حساب SYSTEM (`PSM-VALVE`، `PSM-VALVE-Proxy`) که در بوت بالا می‌آیند و خودکار ریاستارت می‌شوند |
+| Nginx reverse proxy + Certbot | **Caddy** (پروکسی + گواهی Let's Encrypt خودکار)؛ اگر پورت ۸۰ دست IIS باشد، اپ مستقیم روی پورت ۳۰۰۰ سرو می‌شود |
+| `ufw` + `fail2ban` | قواعد فایروال ویندوز در گروه `PSM VALVE` (۸۰/۴۴۳ یا پورت اپ) |
+| cron بکاپ | بکاپ خودکار ندارد؛ از `manage.ps1` و کپی `data\` + `public\uploads\` استفاده کن |
+| `.env.production` با اسرار | همان فایل، UTF-8 **بدون BOM**؛ اسرار و رمز اولیه در `C:\ProgramData\PSMValve` با ACL محدود به SYSTEM/Administrators |
+| `pm2 logs` | `powershell -File "C:\ProgramData\PSMValve\manage.ps1" -Action logs` |
+
+نکتههای اختصاصی ویندوز:
+- فایل‌های `ps1` را **UTF-8 با BOM** نگه دار؛ PowerShell ۵.۱ بدون BOM متن فارسی را خراب می‌خواند.
+  برعکس آن، `.env.production` باید **بدون BOM** باشد.
+- `npm ci` برای `better-sqlite3` به بیلد ابزار نیاز دارد؛ اگر شکست، Visual Studio Build Tools ۲۰۲۲
+  (Desktop development with C++) را نصب و لانچر را دوباره اجرا کن.
+- گواهی HTTPS فقط با دامنه صادر میشود؛ روی IP، لاگین پنل با HTTP هم کار میکند.
+- اجرای دوبارهٔ لانچر بیخطر است: `data\`، `public\uploads\` و `.env.production` حفظ میشوند.
+- جزئیات گزینهها و عیبیابی: بخش ۱۳ در [`INSTALL-STEPS.txt`](./INSTALL-STEPS.txt) و
+  بخش «لانچر یکخطی» در [`deploy/README.md`](./deploy/README.md).
+
+اگر سرور اوبونتو داری ولی نمی‌خواهی گزینه‌ها را یادداشت کنی، `deploy/start-vps-ubuntu.sh` همان
+`install.sh` را با تشخیص خودکار IP و دریافت `sudo` اجرا میکند (از داخل پوشهٔ پروژه یا با `curl | sudo bash`).
 
 ## ۳) راهاندازی سرور — گامبهگام
 
@@ -185,7 +225,7 @@ chmod 600 /var/www/psm-valve/.env.production
 ```bash
 cd /var/www/psm-valve
 npm ci                 # نصب دقیق بر اساس package-lock.json
-npm run build          # خروجی: ✓ Compiled successfully + 263 static pages
+npm run build          # خروجی: ✓ Compiled successfully + 134 static pages
 mkdir -p logs
 ```
 

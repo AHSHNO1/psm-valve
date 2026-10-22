@@ -1,18 +1,27 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { guard, readJson, json, err, isResponse, revalidatePublic } from "@/lib/api-helpers";
 import { getFaqs, saveFaqs } from "@/lib/content";
+import { validateFaqs } from "@/lib/validators";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
-  return NextResponse.json({ ok: true, faqs: getFaqs() });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
+  return json({ faqs: getFaqs() });
 }
 
 export async function POST(request) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ ok: false }, { status: 401 });
-  const { faqs } = await request.json();
-  if (!Array.isArray(faqs)) return NextResponse.json({ ok: false }, { status: 400 });
-  saveFaqs(faqs);
-  return NextResponse.json({ ok: true });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
+
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
+
+  const result = validateFaqs(body?.faqs);
+  if (!result.ok) return err(result.error, 400);
+
+  saveFaqs(result.items);
+  revalidatePublic(["", "faq"]);
+  return json();
 }

@@ -10,6 +10,7 @@ import {
   Ruler, Zap, Sigma, Droplet, Wind, Gauge, Flame, Package, Scale, Box,
   Rocket, Bolt, Power, Beaker, Hand, History, X, Clock
 } from "lucide-react";
+import { PIPE_SCHEDULE, findPipeByNps, pipeInsideDiameter, nearestPipeSize } from "@/lib/pipe-schedule";
 
 // ============================================================
 // CONFIG
@@ -686,13 +687,73 @@ function UnitConverter({ locale }) {
 // ============================================================
 // PIPE CALCULATOR
 // ============================================================
+const PIPE_UNIT_OPTIONS = {
+  diameter: [{ id: "mm", label: "mm" }, { id: "in", label: "in" }],
+  flow: [
+    { id: "m3h", label: "m³/h" }, { id: "gpm", label: "GPM" },
+    { id: "lmin", label: "L/min" }, { id: "ls", label: "L/s" }
+  ],
+  velocity: [{ id: "ms", label: "m/s" }, { id: "ftps", label: "ft/s" }],
+  density: [
+    { id: "kgm3", label: "kg/m³" }, { id: "lbft3", label: "lb/ft³" },
+    { id: "gcm3", label: "g/cm³" }
+  ],
+  viscosity: [{ id: "mPas", label: "mPa·s" }, { id: "pas", label: "Pa·s" }],
+  length: [{ id: "m", label: "m" }, { id: "ft", label: "ft" }]
+};
+
+const PIPE_UNIT_FACTORS = {
+  diameter: { mm: 1, in: 25.4 },
+  flow: { m3h: 1, gpm: 0.227125, lmin: 0.06, ls: 3.6 },
+  velocity: { ms: 1, ftps: 0.3048 },
+  density: { kgm3: 1, lbft3: 16.0185, gcm3: 1000 },
+  viscosity: { mPas: 0.001, pas: 1 },
+  length: { m: 1, ft: 0.3048 }
+};
+
+const SERVICE_GUIDE = {
+  liquid: { min: 1, max: 3 },
+  gas: { min: 10, max: 30 },
+  steam: { min: 15, max: 40 }
+};
+
+function pipeUnitLabel(field, id) {
+  const entry = (PIPE_UNIT_OPTIONS[field] || []).find(function(u) { return u.id === id; });
+  return entry ? entry.label : id;
+}
+
+function roundDisplay(value) {
+  if (!Number.isFinite(value)) return "";
+  const abs = Math.abs(value);
+  if (abs >= 1000) return String(Number(value.toFixed(1)));
+  if (abs >= 1) return String(Number(value.toFixed(3)));
+  if (abs === 0) return "0";
+  return String(Number(value.toPrecision(4)));
+}
+
+function fmtResult(value) {
+  if (!Number.isFinite(value)) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1000) return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  if (abs >= 1) return String(Number(value.toFixed(2)));
+  if (abs === 0) return "0";
+  return String(Number(value.toPrecision(3)));
+}
+
 function PipeCalculator({ locale }) {
   const [mode, setMode] = useState("flow");
   const [inputs, setInputs] = useState({
     diameter: "50", velocity: "2", flow: "14.14",
-    density: "1000", viscosity: "0.001",
+    density: "1000", viscosity: "1",
     length: "100", roughness: "steel"
   });
+  const [units, setUnits] = useState({
+    diameter: "mm", flow: "m3h", velocity: "ms",
+    density: "kgm3", viscosity: "mPas", length: "m"
+  });
+  const [pipeNps, setPipeNps] = useState('2"');
+  const [pipeSchedule, setPipeSchedule] = useState("40");
+  const [service, setService] = useState("liquid");
 
   function upd(k, v) { setInputs(Object.assign({}, inputs, { [k]: v })); }
 
@@ -747,12 +808,83 @@ function PipeCalculator({ locale }) {
     }
   }[locale] || {};
 
-  const d = parseFloat(inputs.diameter) || 0;
-  const v = parseFloat(inputs.velocity) || 0;
-  const q = parseFloat(inputs.flow) || 0;
-  const rho = parseFloat(inputs.density) || 0;
-  const mu = parseFloat(inputs.viscosity) || 0;
-  const len = parseFloat(inputs.length) || 0;
+  const P = {
+    fa: {
+      inputs: "ورودی‌ها",
+      inDiameter: "قطر داخلی لوله", inVelocity: "سرعت جریان", inFlow: "دبی",
+      inDensity: "چگالی سیال", inViscosity: "ویسکوزیته",
+      inLength: "طول لوله", inRoughness: "جنس لوله",
+      service: "سرویس سیال", liquid: "مایع", gas: "گاز", steam: "بخار",
+      guide: "محدودهٔ پیشنهادی سرعت", within: "در محدوده", below: "کمتر از محدوده", above: "بیشتر از محدوده",
+      pipePick: "قطر داخلی از جدول لوله", apply: "اعمال", schedule: "Schedule",
+      od: "OD", id: "ID", nearest: "نزدیک‌ترین سایز استاندارد",
+      dp100: "افت فشار در ۱۰۰ متر", empty: "برای مشاهده نتایج، ورودی‌ها را پر کنید"
+    },
+    en: {
+      inputs: "Inputs",
+      inDiameter: "Pipe inside diameter", inVelocity: "Flow velocity", inFlow: "Flow rate",
+      inDensity: "Fluid density", inViscosity: "Viscosity",
+      inLength: "Pipe length", inRoughness: "Pipe material",
+      service: "Fluid service", liquid: "Liquid", gas: "Gas", steam: "Steam",
+      guide: "Recommended velocity", within: "Within range", below: "Below range", above: "Above range",
+      pipePick: "Inside diameter from pipe schedule", apply: "Apply", schedule: "Schedule",
+      od: "OD", id: "ID", nearest: "Nearest standard pipe size",
+      dp100: "Pressure drop per 100 m", empty: "Fill inputs to see results"
+    },
+    ar: {
+      inputs: "المدخلات",
+      inDiameter: "القطر الداخلي", inVelocity: "سرعة التدفق", inFlow: "معدل التدفق",
+      inDensity: "كثافة المائع", inViscosity: "اللزوجة",
+      inLength: "طول الأنبوب", inRoughness: "مادة الأنبوب",
+      service: "خدمة المائع", liquid: "سائل", gas: "غاز", steam: "بخار",
+      guide: "السرعة الموصى بها", within: "ضمن النطاق", below: "أقل من النطاق", above: "أعلى من النطاق",
+      pipePick: "القطر الداخلي من جدول الأنابيب", apply: "تطبيق", schedule: "الجدول",
+      od: "القطر الخارجي", id: "القطر الداخلي", nearest: "أقرب مقاس قياسي",
+      dp100: "فقد الضغط لكل 100 م", empty: "أدخل القيم لعرض النتائج"
+    },
+    ru: {
+      inputs: "Входные данные",
+      inDiameter: "Внутренний диаметр", inVelocity: "Скорость", inFlow: "Расход",
+      inDensity: "Плотность", inViscosity: "Вязкость",
+      inLength: "Длина трубы", inRoughness: "Материал трубы",
+      service: "Среда", liquid: "Жидкость", gas: "Газ", steam: "Пар",
+      guide: "Рекомендуемая скорость", within: "В диапазоне", below: "Ниже диапазона", above: "Выше диапазона",
+      pipePick: "Внутренний диаметр по сортаменту", apply: "Применить", schedule: "Сортамент",
+      od: "OD", id: "ID", nearest: "Ближайший стандартный размер",
+      dp100: "Потери на 100 м", empty: "Заполните поля для результатов"
+    }
+  }[locale] || {};
+
+  function toSi(field, value) {
+    const numeric = parseFloat(value);
+    if (!Number.isFinite(numeric)) return 0;
+    return numeric * PIPE_UNIT_FACTORS[field][units[field]];
+  }
+
+  function changeUnit(field, nextUnit) {
+    const previousUnit = units[field];
+    const current = parseFloat(inputs[field]);
+    setUnits(Object.assign({}, units, { [field]: nextUnit }));
+    if (Number.isFinite(current)) {
+      const siValue = current * PIPE_UNIT_FACTORS[field][previousUnit];
+      upd(field, roundDisplay(siValue / PIPE_UNIT_FACTORS[field][nextUnit]));
+    }
+  }
+
+  const pickedPipe = findPipeByNps(pipeNps);
+  const pickedId = pickedPipe ? pipeInsideDiameter(pickedPipe, pipeSchedule) : null;
+
+  function applyPipe() {
+    if (pickedId == null) return;
+    upd("diameter", roundDisplay(pickedId / PIPE_UNIT_FACTORS.diameter[units.diameter]));
+  }
+
+  const d = toSi("diameter", inputs.diameter);
+  const v = toSi("velocity", inputs.velocity);
+  const q = toSi("flow", inputs.flow);
+  const rho = toSi("density", inputs.density);
+  const mu = toSi("viscosity", inputs.viscosity);
+  const len = toSi("length", inputs.length);
   const rough = PIPE_ROUGHNESS[inputs.roughness] || PIPE_ROUGHNESS.steel;
 
   let results = null, reynoldsInfo = null, frictionInfo = null;
@@ -771,6 +903,24 @@ function PipeCalculator({ locale }) {
   } else if (mode === "velocity") {
     results = calcVelocity({ flow_m3h: q, diameter_mm: d });
   }
+
+  let activeVelocity = 0;
+  if (mode === "flow" || mode === "diameter") activeVelocity = v;
+  else if (mode === "friction" && frictionInfo) activeVelocity = frictionInfo.velocity;
+  else if (mode === "velocity" && results && !results.error) activeVelocity = results.velocity_ms;
+
+  const guide = SERVICE_GUIDE[service];
+  const guideStatus = !activeVelocity
+    ? null
+    : activeVelocity < guide.min ? "below" : activeVelocity > guide.max ? "above" : "within";
+  const guideColor = guideStatus === "above" ? "#DC2626" : guideStatus === "below" ? "#F59E0B" : "#10B981";
+
+  const interpretedDiameter = mode === "diameter" && results && !results.error ? results.diameter_mm : d;
+  const nearest = interpretedDiameter > 0 ? nearestPipeSize(interpretedDiameter) : null;
+
+  const dpPer100 = mode === "friction" && frictionInfo && len > 0
+    ? frictionInfo.pressureDrop_bar / len * 100
+    : null;
 
   function regimeLabel(r) {
     if (r === "Laminar") return L.laminar;
@@ -812,22 +962,84 @@ function PipeCalculator({ locale }) {
       <div className="pipe-grid">
         {/* Inputs */}
         <div className="pipe-inputs">
-          <div className="pipe-title">{locale === "fa" ? "ورودی‌ها" : "Inputs"}</div>
+          <div className="pipe-title">{P.inputs}</div>
           <div style={{ display: "grid", gap: 12 }}>
             {(mode === "flow" || mode === "friction" || mode === "velocity") && (
-              <FieldCompact label={L.inDiameter} value={inputs.diameter} onChange={function (val) { upd("diameter", val); }} />
+              <>
+                <FieldCompact
+                  label={P.inDiameter}
+                  value={inputs.diameter}
+                  onChange={function (val) { upd("diameter", val); }}
+                  units={PIPE_UNIT_OPTIONS.diameter}
+                  unit={units.diameter}
+                  onUnitChange={function (unit) { changeUnit("diameter", unit); }}
+                />
+                <div className="pipe-picker">
+                  <div className="pipe-picker-head">
+                    <span className="pipe-field-label" style={{ marginBottom: 0 }}>{P.pipePick}</span>
+                    <span className="pipe-picker-dims" dir="ltr">
+                      {pickedPipe ? "OD " + pickedPipe.od + " mm · ID " + pickedId + " mm" : "—"}
+                    </span>
+                  </div>
+                  <div className="pipe-picker-row">
+                    <select
+                      value={pipeNps}
+                      onChange={function (e) { setPipeNps(e.target.value); }}
+                      className="pipe-select"
+                      aria-label="NPS"
+                      dir="ltr"
+                    >
+                      {PIPE_SCHEDULE.map(function (row) {
+                        return <option key={row.nps} value={row.nps}>{row.nps} · DN{row.dn}</option>;
+                      })}
+                    </select>
+                    <select
+                      value={pipeSchedule}
+                      onChange={function (e) { setPipeSchedule(e.target.value); }}
+                      className="pipe-select"
+                      aria-label={P.schedule}
+                      dir="ltr"
+                    >
+                      <option value="40">Sch 40</option>
+                      <option value="80">Sch 80</option>
+                    </select>
+                    <button type="button" className="pipe-apply" onClick={applyPipe}>{P.apply}</button>
+                  </div>
+                </div>
+              </>
             )}
             {(mode === "diameter" || mode === "friction" || mode === "velocity") && (
-              <FieldCompact label={L.inFlow} value={inputs.flow} onChange={function (val) { upd("flow", val); }} />
+              <FieldCompact
+                label={P.inFlow}
+                value={inputs.flow}
+                onChange={function (val) { upd("flow", val); }}
+                units={PIPE_UNIT_OPTIONS.flow}
+                unit={units.flow}
+                onUnitChange={function (unit) { changeUnit("flow", unit); }}
+              />
             )}
             {(mode === "flow" || mode === "diameter") && (
-              <FieldCompact label={L.inVelocity} value={inputs.velocity} onChange={function (val) { upd("velocity", val); }} />
+              <FieldCompact
+                label={P.inVelocity}
+                value={inputs.velocity}
+                onChange={function (val) { upd("velocity", val); }}
+                units={PIPE_UNIT_OPTIONS.velocity}
+                unit={units.velocity}
+                onUnitChange={function (unit) { changeUnit("velocity", unit); }}
+              />
             )}
             {mode === "friction" && (
               <>
-                <FieldCompact label={L.inLength} value={inputs.length} onChange={function (val) { upd("length", val); }} />
+                <FieldCompact
+                  label={P.inLength}
+                  value={inputs.length}
+                  onChange={function (val) { upd("length", val); }}
+                  units={PIPE_UNIT_OPTIONS.length}
+                  unit={units.length}
+                  onUnitChange={function (unit) { changeUnit("length", unit); }}
+                />
                 <div>
-                  <label className="pipe-field-label">{L.inRoughness}</label>
+                  <label className="pipe-field-label">{P.inRoughness}</label>
                   <select
                     value={inputs.roughness}
                     onChange={function (e) { upd("roughness", e.target.value); }}
@@ -847,10 +1059,36 @@ function PipeCalculator({ locale }) {
             )}
             {(mode === "flow" || mode === "friction" || mode === "diameter") && (
               <>
-                <FieldCompact label={L.inDensity} value={inputs.density} onChange={function (val) { upd("density", val); }} />
-                <FieldCompact label={L.inViscosity} value={inputs.viscosity} onChange={function (val) { upd("viscosity", val); }} />
+                <FieldCompact
+                  label={P.inDensity}
+                  value={inputs.density}
+                  onChange={function (val) { upd("density", val); }}
+                  units={PIPE_UNIT_OPTIONS.density}
+                  unit={units.density}
+                  onUnitChange={function (unit) { changeUnit("density", unit); }}
+                />
+                <FieldCompact
+                  label={P.inViscosity}
+                  value={inputs.viscosity}
+                  onChange={function (val) { upd("viscosity", val); }}
+                  units={PIPE_UNIT_OPTIONS.viscosity}
+                  unit={units.viscosity}
+                  onUnitChange={function (unit) { changeUnit("viscosity", unit); }}
+                />
               </>
             )}
+            <div>
+              <label className="pipe-field-label">{P.service}</label>
+              <select
+                value={service}
+                onChange={function (e) { setService(e.target.value); }}
+                className="pipe-select"
+              >
+                <option value="liquid">{P.liquid} — 1–3 m/s</option>
+                <option value="gas">{P.gas} — 10–30 m/s</option>
+                <option value="steam">{P.steam} — 15–40 m/s</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -874,34 +1112,75 @@ function PipeCalculator({ locale }) {
             <div style={{ display: "grid", gap: 8 }}>
               {mode === "flow" && (
                 <>
-                  <ResultBig label={L.flowRate} value={results.flow_m3h} unit="m³/h" />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    <ResultSmall label={L.lmin} value={results.flow_lmin} unit="L/min" />
-                    <ResultSmall label={L.gpm} value={results.flow_gpm} unit="GPM" />
+                  <ResultBig
+                    label={L.flowRate}
+                    value={fmtResult(results.flow_m3h / PIPE_UNIT_FACTORS.flow[units.flow])}
+                    unit={pipeUnitLabel("flow", units.flow)}
+                    unitOptions={PIPE_UNIT_OPTIONS.flow}
+                    unitId={units.flow}
+                    onUnitChange={function (unit) { changeUnit("flow", unit); }}
+                  />
+                  <div style={{ display: "grid", gridTemplateColumns: units.flow === "lmin" || units.flow === "gpm" ? "1fr" : "1fr 1fr", gap: 8 }}>
+                    {units.flow !== "lmin" && (
+                      <ResultSmall label={L.lmin} value={fmtResult(results.flow_lmin)} unit="L/min" />
+                    )}
+                    {units.flow !== "gpm" && (
+                      <ResultSmall label={L.gpm} value={fmtResult(results.flow_gpm)} unit="GPM" />
+                    )}
                   </div>
-                  <ResultSmall label={L.area} value={results.area_mm2} unit="mm²" />
+                  <ResultSmall label={L.area} value={fmtResult(results.area_mm2)} unit="mm²" />
                 </>
               )}
               {mode === "diameter" && (
                 <>
-                  <ResultBig label={L.diameterOut} value={results.diameter_mm} unit="mm" />
-                  <ResultSmall label="inch" value={results.diameter_in} unit='"' />
+                  <ResultBig
+                    label={L.diameterOut}
+                    value={fmtResult(results.diameter_mm / PIPE_UNIT_FACTORS.diameter[units.diameter])}
+                    unit={pipeUnitLabel("diameter", units.diameter)}
+                    unitOptions={PIPE_UNIT_OPTIONS.diameter}
+                    unitId={units.diameter}
+                    onUnitChange={function (unit) { changeUnit("diameter", unit); }}
+                  />
+                  {units.diameter === "mm" ? (
+                    <ResultSmall label="inch" value={fmtResult(results.diameter_in)} unit='"' />
+                  ) : (
+                    <ResultSmall label="mm" value={fmtResult(results.diameter_mm)} unit="mm" />
+                  )}
                 </>
               )}
               {mode === "friction" && frictionInfo && (
                 <>
-                  <ResultBig label={L.velocityOut} value={results.velocity} unit="m/s" />
+                  <ResultBig
+                    label={L.velocityOut}
+                    value={fmtResult(results.velocity / PIPE_UNIT_FACTORS.velocity[units.velocity])}
+                    unit={pipeUnitLabel("velocity", units.velocity)}
+                    unitOptions={PIPE_UNIT_OPTIONS.velocity}
+                    unitId={units.velocity}
+                    onUnitChange={function (unit) { changeUnit("velocity", unit); }}
+                  />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    <ResultSmall label={L.pressureDrop} value={results.pressureDrop_bar} unit="bar" />
-                    <ResultSmall label={L.headLoss} value={results.headLoss_m} unit="m" />
+                    <ResultSmall label={L.pressureDrop} value={fmtResult(results.pressureDrop_bar)} unit="bar" />
+                    <ResultSmall label={L.headLoss} value={fmtResult(results.headLoss_m)} unit="m" />
                   </div>
-                  <ResultSmall label={L.frictionFactor} value={results.frictionFactor} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <ResultSmall label={P.dp100} value={fmtResult(dpPer100)} unit="bar/100m" />
+                    <ResultSmall label={L.frictionFactor} value={fmtResult(results.frictionFactor)} />
+                  </div>
                 </>
               )}
               {mode === "velocity" && (
                 <>
-                  <ResultBig label={L.velocityOut} value={results.velocity_ms} unit="m/s" />
-                  <ResultSmall label="ft/s" value={results.velocity_fts} unit="ft/s" />
+                  <ResultBig
+                    label={L.velocityOut}
+                    value={fmtResult(results.velocity_ms / PIPE_UNIT_FACTORS.velocity[units.velocity])}
+                    unit={pipeUnitLabel("velocity", units.velocity)}
+                    unitOptions={PIPE_UNIT_OPTIONS.velocity}
+                    unitId={units.velocity}
+                    onUnitChange={function (unit) { changeUnit("velocity", unit); }}
+                  />
+                  {units.velocity !== "ftps" && (
+                    <ResultSmall label="ft/s" value={fmtResult(results.velocity_fts)} unit="ft/s" />
+                  )}
                 </>
               )}
 
@@ -922,6 +1201,32 @@ function PipeCalculator({ locale }) {
                   }}>
                     {regimeLabel(reynoldsInfo.regime)}
                   </div>
+                </div>
+              )}
+
+              {guideStatus && (
+                <div className="velocity-guide" style={{
+                  background: guideColor + "12",
+                  borderColor: guideColor + "40"
+                }}>
+                  <div className="velocity-guide-main">
+                    <span style={{ color: guideColor }}>{P.guide}</span>
+                    <span className="velocity-guide-range">
+                      {P[service]} · {fmtResult(guide.min / PIPE_UNIT_FACTORS.velocity[units.velocity])}–{fmtResult(guide.max / PIPE_UNIT_FACTORS.velocity[units.velocity])} {pipeUnitLabel("velocity", units.velocity)}
+                    </span>
+                  </div>
+                  <span className="velocity-guide-status" style={{ background: guideColor }}>
+                    {P[guideStatus]}
+                  </span>
+                </div>
+              )}
+
+              {nearest && (
+                <div className="nearest-pipe">
+                  <span>{P.nearest}</span>
+                  <strong dir="ltr">
+                    {nearest.nps} · Sch {nearest.schedule} · ID {nearest.insideDiameter} mm
+                  </strong>
                 </div>
               )}
             </div>
@@ -1006,6 +1311,138 @@ function PipeCalculator({ locale }) {
           border-color: var(--gold);
           box-shadow: 0 0 0 3px var(--glow);
         }
+        .pipe-field-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 5px;
+        }
+        .pipe-unit-select {
+          padding: 3px 6px;
+          border-radius: 6px;
+          border: 1px solid var(--border);
+          background: var(--bg-soft);
+          color: var(--text-soft);
+          font-family: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          cursor: pointer;
+          outline: none;
+          direction: ltr;
+        }
+        .pipe-unit-select:focus {
+          border-color: var(--gold);
+        }
+        .result-unit-select {
+          padding: 3px 6px;
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.45);
+          background: rgba(255, 255, 255, 0.18);
+          color: #FFFFFF;
+          font-family: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          cursor: pointer;
+          outline: none;
+          direction: ltr;
+        }
+        .result-unit-select option {
+          color: #1A1A1A;
+          background: #FFFFFF;
+        }
+        .pipe-picker {
+          padding: 10px;
+          border: 1px dashed var(--border);
+          border-radius: 10px;
+          background: var(--bg-soft);
+        }
+        .pipe-picker-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-bottom: 7px;
+        }
+        .pipe-picker-dims {
+          font-size: 9.5px;
+          font-weight: 800;
+          color: var(--text-muted);
+          font-family: monospace;
+        }
+        .pipe-picker-row {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr auto;
+          gap: 6px;
+          align-items: center;
+        }
+        .pipe-picker-row .pipe-select {
+          padding: 8px 9px;
+          font-size: 11px;
+        }
+        .pipe-apply {
+          padding: 9px 11px;
+          border: none;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #E0A81A, #B8850A);
+          color: #FFFFFF;
+          font-family: inherit;
+          font-size: 10.5px;
+          font-weight: 900;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .velocity-guide {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 10px 12px;
+          border: 1px solid;
+          border-radius: 10px;
+        }
+        .velocity-guide-main {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          font-size: 10px;
+          font-weight: 900;
+        }
+        .velocity-guide-range {
+          font-size: 10px;
+          font-weight: 700;
+          color: var(--text-muted);
+          direction: ltr;
+        }
+        .velocity-guide-status {
+          padding: 4px 9px;
+          border-radius: 7px;
+          color: #FFFFFF;
+          font-size: 9.5px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+        .nearest-pipe {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 9px 12px;
+          border: 1px dashed var(--border);
+          border-radius: 10px;
+          background: var(--bg-card);
+          font-size: 10px;
+          font-weight: 800;
+          color: var(--text-muted);
+        }
+        .nearest-pipe strong {
+          color: var(--text);
+          font-family: monospace;
+          font-size: 11px;
+        }
 
         .pipe-results-title {
           font-size: 11px;
@@ -1081,16 +1518,33 @@ function PipeCalculator({ locale }) {
         @media (max-width: 900px) {
           .pipe-grid { grid-template-columns: 1fr; }
           .pipe-modes { grid-template-columns: repeat(2, 1fr); }
+          .pipe-picker-row { grid-template-columns: 1fr 1fr; }
+          .pipe-apply { grid-column: 1 / -1; }
         }
       `}</style>
     </div>
   );
 }
 
-function FieldCompact({ label, value, onChange }) {
+function FieldCompact({ label, value, onChange, units, unit, onUnitChange }) {
   return (
     <div>
-      <label className="pipe-field-label">{label}</label>
+      <div className="pipe-field-head">
+        <label className="pipe-field-label" style={{ marginBottom: 0 }}>{label}</label>
+        {units && units.length > 1 && (
+          <select
+            className="pipe-unit-select"
+            value={unit}
+            onChange={function (e) { onUnitChange(e.target.value); }}
+            aria-label={label}
+            dir="ltr"
+          >
+            {units.map(function (u) {
+              return <option key={u.id} value={u.id}>{u.label}</option>;
+            })}
+          </select>
+        )}
+      </div>
       <input
         type="number"
         value={value}
@@ -1123,7 +1577,7 @@ function FieldCompact({ label, value, onChange }) {
   );
 }
 
-function ResultBig({ label, value, unit }) {
+function ResultBig({ label, value, unit, unitOptions, unitId, onUnitChange }) {
   return (
     <div style={{
       padding: 14,
@@ -1137,13 +1591,34 @@ function ResultBig({ label, value, unit }) {
       boxShadow: "0 6px 16px rgba(201, 149, 13, 0.3)"
     }}>
       <div style={{
-        fontSize: 10,
-        fontWeight: 900,
-        opacity: 0.9,
-        textTransform: "uppercase",
-        letterSpacing: "0.05em"
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 6,
+        minWidth: 0
       }}>
-        {label}
+        <div style={{
+          fontSize: 10,
+          fontWeight: 900,
+          opacity: 0.9,
+          textTransform: "uppercase",
+          letterSpacing: "0.05em"
+        }}>
+          {label}
+        </div>
+        {unitOptions && unitOptions.length > 1 && (
+          <select
+            className="result-unit-select"
+            value={unitId}
+            onChange={function (e) { onUnitChange(e.target.value); }}
+            aria-label={label}
+            dir="ltr"
+          >
+            {unitOptions.map(function (u) {
+              return <option key={u.id} value={u.id}>{u.label}</option>;
+            })}
+          </select>
+        )}
       </div>
       <div style={{
         fontSize: 24,
@@ -1207,17 +1682,61 @@ function ResultSmall({ label, value, unit }) {
 // ============================================================
 // SCIENTIFIC CALCULATOR
 // ============================================================
+function transformDegrees(expr) {
+  const functions = ["sin", "cos", "tan"];
+  let result = "";
+  let index = 0;
+  while (index < expr.length) {
+    const fn = functions.find(function (name) { return expr.startsWith(name + "(", index); });
+    if (!fn) {
+      result += expr.charAt(index);
+      index++;
+      continue;
+    }
+    const open = index + fn.length;
+    let depth = 0;
+    let close = -1;
+    for (let i = open; i < expr.length; i++) {
+      if (expr.charAt(i) === "(") depth++;
+      else if (expr.charAt(i) === ")") {
+        depth--;
+        if (depth === 0) { close = i; break; }
+      }
+    }
+    if (close === -1) {
+      result += expr.slice(index);
+      break;
+    }
+    const inner = expr.slice(open + 1, close);
+    result += fn + "(((" + transformDegrees(inner) + "))*π/180)";
+    index = close + 1;
+  }
+  return result;
+}
+
 function ScientificCalculator({ locale }) {
   const [expr, setExpr] = useState("");
   const [history, setHistory] = useState([]);
   const [lastAnswer, setLastAnswer] = useState(0);
+  const [memory, setMemory] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [angleMode, setAngleMode] = useState("deg");
+
+  const T = {
+    fa: { history: "تاریخچه", clear: "پاک‌کردن", empty: "محاسبه‌ای انجام نشده", copied: "کپی شد" },
+    en: { history: "History", clear: "Clear", empty: "No calculations yet", copied: "Copied" },
+    ar: { history: "السجل", clear: "مسح", empty: "لا توجد حسابات بعد", copied: "تم النسخ" },
+    ru: { history: "История", clear: "Очистить", empty: "Расчётов пока нет", copied: "Скопировано" }
+  }[locale] || {
+    history: "History", clear: "Clear", empty: "No calculations yet", copied: "Copied"
+  };
 
   useEffect(function () {
     function onKey(e) {
       const k = e.key;
       if (["INPUT", "TEXTAREA"].indexOf(document.activeElement.tagName) !== -1) return;
       if (/[0-9]/.test(k)) setExpr(function (x) { return x + k; });
-      else if (".+-*/()".indexOf(k) !== -1 && k.length === 1) setExpr(function (x) { return x + k; });
+      else if (".+-*/()^".indexOf(k) !== -1 && k.length === 1) setExpr(function (x) { return x + k; });
       else if (k === "Enter" || k === "=") { e.preventDefault(); evaluate(); }
       else if (k === "Backspace") setExpr(function (x) { return x.slice(0, -1); });
       else if (k === "Escape") setExpr("");
@@ -1226,15 +1745,49 @@ function ScientificCalculator({ locale }) {
     return function () { window.removeEventListener("keydown", onKey); };
   });
 
+  function compute(expression) {
+    const prepared = (angleMode === "deg" ? transformDegrees(expression) : expression)
+      .replace(/\^/g, "**");
+    return safeEval(prepared);
+  }
+
   function evaluate() {
-    const r = safeEval(expr);
+    const r = compute(expr);
     if (r !== null) {
-      setHistory(function (h) { return [{ expr: expr, result: r, id: Date.now() }].concat(h).slice(0, 15); });
-      setLastAnswer(r);
-      setExpr(String(r));
+      const clean = Number(r.toPrecision(12));
+      setHistory(function (h) { return [{ expr: expr, result: clean, id: Date.now() }].concat(h).slice(0, 15); });
+      setLastAnswer(clean);
+      setExpr(String(clean));
     } else {
       setExpr("Error");
       setTimeout(function () { setExpr(""); }, 800);
+    }
+  }
+
+  async function copyResult() {
+    const value = preview !== null ? preview : lastAnswer;
+    let copiedOk = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(String(value));
+        copiedOk = true;
+      } catch (e) {}
+    }
+    if (!copiedOk) {
+      try {
+        const area = document.createElement("textarea");
+        area.value = String(value);
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        copiedOk = document.execCommand("copy");
+        document.body.removeChild(area);
+      } catch (e) {}
+    }
+    if (copiedOk) {
+      setCopied(true);
+      setTimeout(function () { setCopied(false); }, 1200);
     }
   }
 
@@ -1243,16 +1796,34 @@ function ScientificCalculator({ locale }) {
     if (t === "⌫") { setExpr(function (e) { return e.slice(0, -1); }); return; }
     if (t === "=") { evaluate(); return; }
     if (t === "ANS") { setExpr(function (e) { return e + lastAnswer; }); return; }
+    if (t === "MC") { setMemory(0); return; }
+    if (t === "MR") { setExpr(function (e) { return e + "(" + memory + ")"; }); return; }
+    if (t === "M+") {
+      const current = compute(expr);
+      if (current !== null) setMemory(function (m) { return m + current; });
+      return;
+    }
+    if (t === "COPY") { copyResult(); return; }
     setExpr(function (e) { return e + t; });
   }
 
   const buttons = [
+    { l: "MC", t: "MC", s: "mem" }, { l: "MR", t: "MR", s: "mem" }, { l: "M+", t: "M+", s: "mem" },
     { l: "C", t: "C", s: "danger" }, { l: "⌫", t: "⌫", s: "warn" },
-    { l: "(", t: "(", s: "fn" }, { l: ")", t: ")", s: "fn" }, { l: "÷", t: "/", s: "op" },
-    { l: "√", t: "√", s: "fn" }, { l: "7", t: "7" }, { l: "8", t: "8" }, { l: "9", t: "9" }, { l: "×", t: "*", s: "op" },
-    { l: "x²", t: "^2", s: "fn" }, { l: "4", t: "4" }, { l: "5", t: "5" }, { l: "6", t: "6" }, { l: "−", t: "-", s: "op" },
-    { l: "sin", t: "sin(", s: "fn" }, { l: "1", t: "1" }, { l: "2", t: "2" }, { l: "3", t: "3" }, { l: "+", t: "+", s: "op" },
-    { l: "cos", t: "cos(", s: "fn" }, { l: "0", t: "0" }, { l: ".", t: "." }, { l: "ANS", t: "ANS", s: "fn" }, { l: "=", t: "=", s: "eq" }
+
+    { l: "sin", t: "sin(", s: "fn" }, { l: "cos", t: "cos(", s: "fn" }, { l: "tan", t: "tan(", s: "fn" },
+    { l: "(", t: "(", s: "fn" }, { l: ")", t: ")", s: "fn" },
+
+    { l: "ln", t: "ln(", s: "fn" }, { l: "log", t: "log(", s: "fn" }, { l: "√", t: "√(", s: "fn" },
+    { l: "x²", t: "^2", s: "fn" }, { l: "÷", t: "/", s: "op" },
+
+    { l: "7", t: "7" }, { l: "8", t: "8" }, { l: "9", t: "9" }, { l: "π", t: "π", s: "fn" }, { l: "×", t: "*", s: "op" },
+
+    { l: "4", t: "4" }, { l: "5", t: "5" }, { l: "6", t: "6" }, { l: "e", t: "(2.718281828459045)", s: "fn" }, { l: "−", t: "-", s: "op" },
+
+    { l: "1", t: "1" }, { l: "2", t: "2" }, { l: "3", t: "3" }, { l: "ANS", t: "ANS", s: "fn" }, { l: "+", t: "+", s: "op" },
+
+    { l: "0", t: "0" }, { l: ".", t: "." }, { l: copied ? T.copied : "COPY", t: "COPY", s: "copy" }, { l: "=", t: "=", s: "eq", span: 2 }
   ];
 
   function btnStyle(s) {
@@ -1262,27 +1833,51 @@ function ScientificCalculator({ locale }) {
       case "eq": return { background: "linear-gradient(135deg, #E0A81A, #B8850A)", color: "#FFFFFF" };
       case "danger": return { background: "rgba(232, 17, 35, 0.12)", color: "#E81123" };
       case "warn": return { background: "rgba(245, 158, 11, 0.12)", color: "#D97706" };
+      case "mem": return { background: "rgba(16, 185, 129, 0.12)", color: "#059669" };
+      case "copy": return { background: "rgba(0, 120, 212, 0.1)", color: "#0078D4" };
       default: return { background: "var(--bg-soft)", color: "var(--text)" };
     }
   }
 
-  const preview = safeEval(expr);
+  const preview = compute(expr);
 
   return (
     <div className="sci-layout">
       <div className="sci-main">
         {/* Display */}
         <div className="sci-display">
+          <div className="sci-display-top">
+            <div className="sci-angle">
+              <button
+                className={angleMode === "deg" ? "active" : ""}
+                onClick={function () { setAngleMode("deg"); }}
+              >
+                DEG
+              </button>
+              <button
+                className={angleMode === "rad" ? "active" : ""}
+                onClick={function () { setAngleMode("rad"); }}
+              >
+                RAD
+              </button>
+            </div>
+          </div>
           <div className="sci-expr">{expr || "0"}</div>
           <div className="sci-preview">
             {preview !== null && expr ? "= " + Number(preview.toFixed(8)) : ""}
           </div>
+          {memory !== 0 && (
+            <div className="sci-memory">
+              <span>M</span>
+              {Number(memory.toFixed(8))}
+            </div>
+          )}
         </div>
 
         {/* Keypad */}
         <div className="sci-keypad">
           {buttons.map(function (b, i) {
-            const st = btnStyle(b.s);
+            const st = Object.assign({}, btnStyle(b.s), b.span ? { gridColumn: "span " + b.span } : null);
             return (
               <button
                 key={i}
@@ -1301,13 +1896,13 @@ function ScientificCalculator({ locale }) {
         <div className="sci-history-head">
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <History size={12} />
-            {locale === "fa" ? "تاریخچه" : "History"}
+            {T.history}
           </span>
           {history.length > 0 && (
             <button
               onClick={function () { setHistory([]); }}
               className="sci-history-clear"
-              title={locale === "fa" ? "پاک‌کردن" : "Clear"}
+              title={T.clear}
             >
               <RotateCcw size={12} />
             </button>
@@ -1316,7 +1911,7 @@ function ScientificCalculator({ locale }) {
         <div className="sci-history-body">
           {history.length === 0 ? (
             <div className="sci-history-empty">
-              {locale === "fa" ? "محاسبه‌ای انجام نشده" : "No calculations yet"}
+              {T.empty}
             </div>
           ) : (
             history.map(function (h) {
@@ -1356,6 +1951,34 @@ function ScientificCalculator({ locale }) {
         .dark .sci-display {
           background: linear-gradient(135deg, #0F1114, #1A1C20);
         }
+        .sci-display-top {
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: 6px;
+        }
+        .sci-angle {
+          display: inline-flex;
+          gap: 3px;
+          padding: 3px;
+          border-radius: 8px;
+          border: 1px solid var(--border);
+          background: var(--bg-card);
+        }
+        .sci-angle button {
+          padding: 4px 9px;
+          border: none;
+          border-radius: 6px;
+          background: transparent;
+          color: var(--text-muted);
+          font-family: inherit;
+          font-size: 9.5px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+        .sci-angle button.active {
+          background: var(--gold);
+          color: #FFFFFF;
+        }
         .sci-expr {
           font-size: 18px;
           font-weight: 700;
@@ -1375,6 +1998,20 @@ function ScientificCalculator({ locale }) {
           direction: ltr;
           text-align: right;
           min-height: 38px;
+        }
+        .sci-memory {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 6px;
+          padding: 2px 8px;
+          border-radius: 6px;
+          background: rgba(16, 185, 129, 0.12);
+          color: #059669;
+          font-family: monospace;
+          font-size: 10px;
+          font-weight: 900;
+          direction: ltr;
         }
 
         .sci-keypad {
@@ -1478,6 +2115,12 @@ function ScientificCalculator({ locale }) {
         @media (max-width: 900px) {
           .sci-layout { grid-template-columns: 1fr; }
           .sci-history { max-height: 260px; }
+        }
+        @media (max-width: 420px) {
+          .sci-display { padding: 18px 16px 14px; }
+          .sci-preview { font-size: 26px; min-height: 32px; }
+          .sci-keypad { padding: 8px; gap: 4px; }
+          .sci-key { padding: 13px 4px; font-size: 13px; border-radius: 9px; }
         }
       `}</style>
     </div>

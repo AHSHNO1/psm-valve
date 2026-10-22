@@ -2,7 +2,7 @@
 # ============================================================
 # PSM VALVE — نصب و اجرا با Docker (یک دستور)
 #
-#   bash deploy/docker.sh [--admin-password <رمز>]
+#   bash deploy/docker.sh [--admin-password <رمز>] [--admin-user <نام>]
 #
 # چه میکند؟
 #   ۱) بررسی Docker و Docker Compose
@@ -24,8 +24,10 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --admin-password) ADMIN_PASSWORD="${2:-}"; shift ;;
     --admin-password=*) ADMIN_PASSWORD="${1#*=}" ;;
+    --admin-user) ADMIN_USER="${2:-}"; shift ;;
+    --admin-user=*) ADMIN_USER="${1#*=}" ;;
     -h|--help)
-      echo "استفاده: bash deploy/docker.sh [--admin-password <رمز>]"
+      echo "استفاده: bash deploy/docker.sh [--admin-password <رمز>] [--admin-user <نام>]"
       exit 0
       ;;
     *)
@@ -35,6 +37,11 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+if ! [[ "$ADMIN_USER" =~ ^[A-Za-z0-9._@-]{1,64}$ ]]; then
+  echo "✖ نام کاربری مدیر نامعتبر است: $ADMIN_USER"
+  exit 1
+fi
 
 if ! command -v docker > /dev/null 2>&1; then
   echo "✖ Docker پیدا نشد. نصب: https://docs.docker.com/engine/install/"
@@ -89,11 +96,11 @@ GENERATED_PASSWORD=""
 if [ -f data/admin.json ]; then
   echo "    رمز مدیر از قبل تنظیم شده است (data/admin.json) — تغییر نکرد"
 elif [ -n "$ADMIN_PASSWORD" ]; then
-  $COMPOSE exec -T app node scripts/rotate-admin-password.mjs --password "$ADMIN_PASSWORD" > /dev/null
+  printf '%s' "$ADMIN_PASSWORD" | $COMPOSE exec -T app node scripts/rotate-admin-password.mjs --stdin --username "$ADMIN_USER" > /dev/null
   echo "    ✔ رمز مدیر ذخیره شد"
 else
   GENERATED_PASSWORD="$(random_password 20)"
-  $COMPOSE exec -T app node scripts/rotate-admin-password.mjs --password "$GENERATED_PASSWORD" > /dev/null
+  printf '%s' "$GENERATED_PASSWORD" | $COMPOSE exec -T app node scripts/rotate-admin-password.mjs --stdin --username "$ADMIN_USER" > /dev/null
   echo "    ✔ رمز تصادفی مدیر ذخیره و در ادامه نمایش داده میشود"
 fi
 

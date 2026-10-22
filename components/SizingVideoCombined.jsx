@@ -57,8 +57,8 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Sizing card */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
           style={{
@@ -68,21 +68,24 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
             background: "linear-gradient(145deg, var(--bg-card), var(--bg-soft))",
             border: "1px solid var(--border)",
             boxShadow: "var(--shadow-md)",
-            overflow: "hidden"
+            overflow: "hidden",
+            minWidth: 0
           }}
         >
           {/* Decorative grid */}
           <div className="grid-pattern" style={{
             position: "absolute", inset: 0, opacity: 0.22, pointerEvents: "none"
           }} />
+          {/* درخشش تزئینی گوشه؛ با ویژگی منطقی تا در RTL آینه شود و از لبه بیرون نزند */}
           <div style={{
             position: "absolute",
-            top: -60, right: -60,
+            top: -60, insetInlineEnd: 0,
             width: 200, height: 200,
             borderRadius: "50%",
             background: "radial-gradient(circle, var(--glow), transparent 70%)",
             filter: "blur(36px)",
-            pointerEvents: "none"
+            pointerEvents: "none",
+            maxWidth: "100%"
           }} />
 
           <div style={{ position: "relative" }}>
@@ -155,8 +158,8 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
 
         {/* Video card */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
           style={{
@@ -165,7 +168,8 @@ export default function SizingVideoCombined({ videoUrl, locale }) {
             padding: "clamp(18px, 4vw, 28px)",
             background: "var(--bg-card)",
             border: "1px solid var(--border)",
-            overflow: "hidden"
+            overflow: "hidden",
+            minWidth: 0
           }}
         >
           <span className="chip">

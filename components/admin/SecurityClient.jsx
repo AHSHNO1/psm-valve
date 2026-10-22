@@ -1,26 +1,42 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "./AdminIcons";
-import { SaveBtn } from "./Actions";
+import { useToast, Toast } from "./useToast";
 
-const SECURITY_CHECKS = [
-  { label: "احراز هویت JWT", active: true },
-  { label: "کوکی HttpOnly", active: true },
-  { label: "انقضای توکن ۷ روز", active: true },
-  { label: "محافظت از مسیر /admin", active: true },
-  { label: "آپلود امن با محدودیت", active: true },
-  { label: "نقش نویسنده با دسترسی محدود", active: true }
-];
+// چک‌لیست امنیتی از وضعیت واقعیِ سرور ساخته می‌شود (فقط boolean).
+function buildChecks(status) {
+  const configured = Boolean(status);
+  return [
+    { label: "کلید JWT (JWT_SECRET) تنظیم شده", active: configured && status.jwtSecretConfigured },
+    { label: "رمز مدیر با hash قوی ذخیره شده", active: configured && status.adminCredentialConfigured },
+    { label: "اعتبارهای ضامنِ توسعه غیرفعال است", active: configured && status.insecureDevCredentialsAllowed === false },
+    { label: "کوکی امن (Secure در پروداکشن)", active: configured && status.cookieSecure },
+    { label: "محافظت از مسیر /admin (middleware)", active: configured && status.middlewareGuardsAdmin },
+    { label: "آپلود امن با محدودیت نرخ", active: configured && status.uploadGuarded },
+    { label: "نقش نویسنده با دسترسی محدود", active: configured && status.authorRoleRestricted }
+  ];
+}
+
+function tokenMeta(status) {
+  if (!status || status.tokenAgeDays === null || status.tokenAgeDays === undefined) return null;
+  return "توکن فعلی: " + status.tokenAgeDays + " روز از صدور، " +
+    (status.tokenExpiresInDays ?? 0) + " روز تا انقضا";
+}
 
 export default function SecurityClient() {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState({ type: "", text: "" });
+  const [status, setStatus] = useState(null);
+  const { notify, toast } = useToast();
 
-  function notify(text, isError) {
-    setMsg({ type: isError ? "error" : "success", text: text });
-    setTimeout(function() { setMsg({ type: "", text: "" }); }, 3000);
-  }
+  useEffect(function () {
+    let active = true;
+    fetch("/api/auth/status", { cache: "no-store" })
+      .then(function (res) { return res.json(); })
+      .then(function (data) { if (active && data && data.ok) setStatus(data.status); })
+      .catch(function () { if (active) notify("دریافت وضعیت امنیتی ناموفق بود", true); });
+    return function () { active = false; };
+  }, [notify]);
 
   async function submit(e) {
     e.preventDefault();
@@ -69,11 +85,7 @@ export default function SecurityClient() {
         </div>
       </div>
 
-      {msg.text && (
-        <div className={"msg anim-in " + (msg.type === "success" ? "msg-success" : "msg-error")}>
-          <Icon name={msg.type === "success" ? "check" : "alert"} /> {msg.text}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div style={{
         display: "grid",
@@ -165,7 +177,7 @@ export default function SecurityClient() {
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: 8
           }}>
-            {SECURITY_CHECKS.map(function(c, i) {
+            {buildChecks(status).map(function(c, i) {
               return (
                 <div key={i} style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -176,12 +188,18 @@ export default function SecurityClient() {
                 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#1A1D21" }}>{c.label}</span>
                   <span className={"chip " + (c.active ? "chip-green" : "chip-gray")}>
-                    {c.active ? "فعال" : "غیرفعال"}
+                    {c.active ? "فعال" : (status ? "غیرفعال" : "—")}
                   </span>
                 </div>
               );
             })}
           </div>
+
+          {tokenMeta(status) && (
+            <div style={{ marginTop: 10, fontSize: 11.5, fontWeight: 700, color: "#4A5568" }}>
+              {tokenMeta(status)}
+            </div>
+          )}
 
           <div style={{
             marginTop: 14,

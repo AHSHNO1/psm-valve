@@ -42,8 +42,10 @@ RUN mkdir -p /app/.seed/data /app/.seed/uploads /app/data /app/public/uploads /a
  && cp -a data/. /app/.seed/data/ \
  && cp -a public/uploads/. /app/.seed/uploads/ \
  && rm -f /app/.seed/data/admin.json /app/.seed/data/users.json /app/.seed/data/messages.json \
- && rm -f /app/.seed/data/*.sqlite /app/.seed/data/*.sqlite-* \
- && find /app/.seed/data -name '*.backup*.json' -delete \
+ && rm -f /app/.seed/data/*.sqlite /app/.seed/data/*.sqlite-* /app/.seed/data/*.bak /app/.seed/data/*.backup-* \
+ && rm -f /app/data/admin.json /app/data/users.json /app/data/messages.json \
+ && rm -f /app/data/*.sqlite /app/data/*.sqlite-* /app/data/*.bak /app/data/*.backup-* \
+ && find /app/.seed/data /app/data -name '*.backup*.json' -delete \
  && chmod +x /app/deploy/*.sh
 
 EXPOSE 3000

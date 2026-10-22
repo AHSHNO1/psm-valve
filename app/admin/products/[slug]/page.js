@@ -1,4 +1,5 @@
 import { getProduct } from "@/lib/product-store";
+import { getCategories } from "@/lib/category-store";
 import { notFound } from "next/navigation";
 import ProductWizard from "@/components/admin/ProductWizard";
 import ContentStudioNav from "@/components/admin/ContentStudioNav";
@@ -44,7 +45,7 @@ export default function EditProductPage({ params }) {
         </div>
       </div>
 
-      <ProductWizard initial={product} initialStep={2} />
+      <ProductWizard initial={product} categories={getCategories()} initialStep={2} />
     </div>
   );
 }

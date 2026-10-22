@@ -25,6 +25,15 @@ import {
 // ============================================================
 
 const CARD = { border: "1px solid #E5E7EB", borderRadius: 12, background: "#FFFFFF" };
+// بنچ سرچشمهٔ داده: برآورد مهندسی هرگز نباید مثل دادهٔ اندازه‌گیری‌شده خوانده شود
+const estimateChip = {
+  padding: "2px 7px", borderRadius: 20, fontSize: 10, fontWeight: 900,
+  background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A"
+};
+const measuredChip = {
+  padding: "2px 7px", borderRadius: 20, fontSize: 10, fontWeight: 900,
+  background: "#DCFCE7", color: "#065F46", border: "1px solid #BBF7D0"
+};
 const INPUT = {
   padding: "7px 9px",
   borderRadius: 7,
@@ -173,13 +182,19 @@ function CatalogCard({ catalog }) {
         <>
           <ul style={{ margin: "8px 0 0", paddingInlineStart: 18, fontSize: 11.5, color: "#334155", lineHeight: 2 }}>
             {catalog.series.map(function (entry) {
+              const estimated = entry.provenance === "estimated";
+              const chars = entry.byCharacteristic || {};
               return (
                 <li key={entry.series} dir="auto">
-                  <b dir="ltr">سری {entry.series}</b> — {entry.sizes.length} سایز · {entry.trims} ترم
+                  <b dir="ltr">سری {entry.series}</b>
+                  {" "}{estimated
+                    ? <span style={estimateChip}>برآورد{entry.errorPct != null ? " ±" + Math.round(entry.errorPct) + "٪" : ""}</span>
+                    : <span style={measuredChip}>اندازه‌گیری‌شده</span>}
+                  {" — "}{entry.sizes.length} سایز · {entry.trims} ترم
                   {entry.cvMin != null ? " · Cv از " + entry.cvMin + " تا " + entry.cvMax : ""}
                   {" · "}
-                  {Object.keys(entry.byCharacteristic).map(function (kind) {
-                    return kind + " " + entry.byCharacteristic[kind];
+                  {Object.keys(chars).map(function (kind) {
+                    return kind + " " + chars[kind];
                   }).join(" · ")}
                 </li>
               );
@@ -188,7 +203,28 @@ function CatalogCard({ catalog }) {
           <div style={{ marginTop: 8, fontSize: 11, color: "#64748B", lineHeight: 2 }}>
             این داده در پنل ویرایش نمی‌شود. اگر برای یک DN مقداری ذخیره کنید، همان DN از جدول دست‌نویس شما خوانده می‌شود و
             منحنی مشخصهٔ آن سایز در سایزینگ کنار گذاشته می‌شود (محاسبه با فرض خطی).
+            {catalog.estimatedCount > 0 && (
+              <>
+                <br />
+                <b style={{ color: "#92400E" }}>{catalog.estimatedCount} سری با برآورد مهندسی</b> — این جدول‌ها از قانون
+                مقیاس‌پذیری Cv روی سری‌های اندازه‌گیری‌شده ساخته شده‌اند، نه آزمون کارخانه. برای جایگزینی، Cv واقعی را
+                در همان سری ذخیره کنید: دادهٔ شما جای برآورد را می‌گیرد.
+              </>
+            )}
           </div>
+
+          {catalog.refused && catalog.refused.length > 0 && (
+            <details style={{ marginTop: 8 }}>
+              <summary style={{ fontSize: 11, fontWeight: 800, color: "#64748B", cursor: "pointer" }}>
+                چرا {catalog.refused.length} سری هیچ Cv (اندازه‌گیری‌شده یا برآورد) ندارند؟
+              </summary>
+              <ul style={{ margin: "6px 0 0", paddingInlineStart: 18, fontSize: 11, color: "#64748B", lineHeight: 2 }}>
+                {catalog.refused.map(function (row) {
+                  return <li key={row.series} dir="auto"><b dir="ltr">{row.series}</b> — {(row.reasons || []).join(" ")}</li>;
+                })}
+              </ul>
+            </details>
+          )}
         </>
       )}
 
@@ -413,8 +449,8 @@ function SeriesCard({ info, open, editor }) {
 
         <div style={{ marginInlineStart: "auto", display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           {info.inSizing && info.catalog && (
-            <span dir="ltr" style={{ fontSize: 10, fontFamily: "monospace", color: "#1D4ED8" }}>
-              کاتالوگ {info.catalog.sizes.length} سایز · Cv تا {info.catalog.sizes.reduce(function (max, size) {
+            <span dir="ltr" style={{ fontSize: 10, fontFamily: "monospace", color: info.catalog.provenance === "estimated" ? "#92400E" : "#1D4ED8" }}>
+              {info.catalog.provenance === "estimated" ? "برآورد" : "کاتالوگ"} {info.catalog.sizes.length} سایز · Cv تا {info.catalog.sizes.reduce(function (max, size) {
                 return size.cvMax != null && size.cvMax > max ? size.cvMax : max;
               }, 0)}
             </span>
@@ -455,7 +491,7 @@ function SeriesEditor({ info, editor }) {
         </button>
         {catalog && (
           <button type="button" onClick={editor.loadCatalog} style={smallBtn()} disabled={editor.saving || editor.deleting}>
-            بارگذاری {catalog.sizes.length} سایز از کاتالوگ
+            بارگذاری {catalog.sizes.length} سایز از {catalog.provenance === "estimated" ? "برآورد (به‌جای دادهٔ اندازه‌گیری‌شده)" : "کاتالوگ"}
           </button>
         )}
         {info.adminCount > 0 && <DeleteBtn onClick={editor.remove} title="حذف جدول این سری" />}

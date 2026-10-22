@@ -29,6 +29,8 @@ function Ico({ name, size }) {
     menu: <><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></>,
     close: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
     bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+    globe: <><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
+    type: <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>,
     layers: <><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>
   };
   return (
@@ -49,12 +51,22 @@ const NAV_GROUPS = [
     label: "محتوا",
     items: [
       { href: "/admin/content", label: "مدیریت محتوای سایت", icon: "layers" },
+      { href: "/admin/content/text", label: "متن‌ها و تصاویر سایت", icon: "type" },
+      { href: "/admin/products", label: "محصولات", icon: "package" },
+      { href: "/admin/categories", label: "دسته‌ها و سری محصولات", icon: "layers" },
       { href: "/admin/services", label: "خدمات", icon: "cog" },
       { href: "/admin/news", label: "اخبار", icon: "newspaper" },
       { href: "/admin/articles", label: "مقاله‌ها", icon: "file" },
       { href: "/admin/certificates", label: "گواهینامه‌ها", icon: "award" },
       { href: "/admin/faq", label: "سوالات متداول", icon: "help" },
-      { href: "/admin/projects", label: "پروژه‌ها", icon: "package" }
+      { href: "/admin/projects", label: "پروژه‌ها", icon: "sparkles" }
+    ]
+  },
+  {
+    label: "رسانه و نمایش",
+    items: [
+      { href: "/admin/media", label: "گالری و رسانه", icon: "image" },
+      { href: "/admin/slider", label: "اسلایدر صفحه اصلی", icon: "grid" }
     ]
   },
   {
@@ -66,6 +78,16 @@ const NAV_GROUPS = [
     ]
   },
   {
+    label: "پیکربندی سایت",
+    items: [
+      { href: "/admin/company", label: "اطلاعات شرکت", icon: "building" },
+      { href: "/admin/settings", label: "تنظیمات کلی", icon: "settings" },
+      { href: "/admin/branding", label: "برند و لوگو", icon: "palette" },
+      { href: "/admin/site-chrome", label: "چیدمان هدر و فوتر", icon: "menu" },
+      { href: "/admin/translations", label: "زبان‌ها و ترجمه‌ها", icon: "globe" }
+    ]
+  },
+  {
     label: "مهندسی",
     items: [
       { href: "/admin/cv-tables", label: "جدول Cv سایزینگ", icon: "package" }
@@ -73,8 +95,8 @@ const NAV_GROUPS = [
   },
   {
     label: "سیستم",
-  items: [
-    { href: "/admin/security", label: "امنیت", icon: "lock" },
+    items: [
+      { href: "/admin/security", label: "امنیت", icon: "lock" },
       { href: "/admin/users", label: "نویسندگان", icon: "user" },
       { href: "/admin/help", label: "راهنما", icon: "help" }
     ]
@@ -178,10 +200,6 @@ export default function AdminShell({ children, notifications = [], unreadCount =
         currentLabel = item.label;
       }
     }
-    if (pathname.startsWith("/admin/products")) currentLabel = "محصولات";
-    else if (pathname.startsWith("/admin/slider")) currentLabel = "اسلایدر صفحه اصلی";
-    else if (pathname.startsWith("/admin/media")) currentLabel = "گالری و رسانه";
-    else if (pathname.startsWith("/admin/content/text")) currentLabel = "متن‌ها و تصاویر سایت";
   }
 
   function isActive(href) {
@@ -200,14 +218,6 @@ export default function AdminShell({ children, notifications = [], unreadCount =
             <div className="admin-brand-title">پنل مدیریت</div>
             <div className="admin-brand-sub">PSM VALVE</div>
           </div>
-          <button
-            className="head-icon-btn"
-            onClick={function() { setSidebarOpen(false); }}
-            aria-label="بستن"
-            style={{ display: "none" }}
-          >
-            <Ico name="close" />
-          </button>
         </div>
 
         <nav className="admin-groups">
@@ -222,11 +232,15 @@ export default function AdminShell({ children, notifications = [], unreadCount =
                       key={item.href}
                       href={item.href}
                       className={"admin-nav-item" + (active ? " admin-nav-item-active" : "")}
+                      aria-current={active ? "page" : undefined}
                     >
                       <span className="admin-nav-icon">
                         <Ico name={item.icon} size={14} />
                       </span>
                       <span>{item.label}</span>
+                      {item.href === "/admin/messages" && visibleUnreadCount > 0 && (
+                        <span className="admin-nav-badge">{visibleUnreadCount > 9 ? "9+" : visibleUnreadCount}</span>
+                      )}
                     </Link>
                   );
                 })}
@@ -257,10 +271,9 @@ export default function AdminShell({ children, notifications = [], unreadCount =
         <header className="admin-header">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
-              className="head-icon-btn"
+              className="head-icon-btn admin-menu-btn"
               onClick={function() { setSidebarOpen(true); }}
               aria-label="منو"
-              style={{ display: "flex" }}
             >
               <Ico name="menu" size={17} />
             </button>
@@ -271,19 +284,27 @@ export default function AdminShell({ children, notifications = [], unreadCount =
             </div>
           </div>
 
-          {userRole === "admin" && <button
-            onClick={function() { setNotifOpen(true); }}
-            className="head-icon-btn"
-            aria-label="اعلان‌ها"
-            title="اعلان‌ها (Ctrl+K)"
-          >
-            <Ico name="bell" size={17} />
-            {visibleUnreadCount > 0 && (
-              <span className="head-badge">
-                {visibleUnreadCount > 9 ? "9+" : visibleUnreadCount}
-              </span>
+          <div className="admin-header-actions">
+            <Link href="/fa" target="_blank" rel="noopener noreferrer" className="admin-header-link">
+              <Ico name="external" size={14} />
+              <span>مشاهده سایت</span>
+            </Link>
+            {userRole === "admin" && (
+              <button
+                onClick={function() { setNotifOpen(true); }}
+                className="head-icon-btn"
+                aria-label="اعلان‌ها"
+                title="اعلان‌ها (Ctrl+K)"
+              >
+                <Ico name="bell" size={17} />
+                {visibleUnreadCount > 0 && (
+                  <span className="head-badge">
+                    {visibleUnreadCount > 9 ? "9+" : visibleUnreadCount}
+                  </span>
+                )}
+              </button>
             )}
-          </button>}
+          </div>
         </header>
 
         <main className="admin-content">

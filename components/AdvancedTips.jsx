@@ -1,6 +1,6 @@
 "use client";
 import { TrendingUp, TrendingDown, Lightbulb, Zap, AlertCircle } from "lucide-react";
-import { VALVE_SIZES } from "@/lib/sizing-advanced";
+import { VALVE_SIZES, velocityExceedsGuide } from "@/lib/sizing-advanced";
 
 export default function AdvancedTips({ result, form, fluid, locale }) {
   if (!result || result.error) return null;
@@ -193,7 +193,7 @@ export default function AdvancedTips({ result, form, fluid, locale }) {
   }
 
   // 6. Velocity
-  if (result.velocity && result.velocity > 5) {
+  if (result.velocity && velocityExceedsGuide({ fluidType: result.fluidType, velocity: result.velocity, mach: result.mach })) {
     tips.push({
       icon: "warning",
       color: "#F59E0B",

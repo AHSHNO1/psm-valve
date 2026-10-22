@@ -1,4 +1,5 @@
 "use client";
+import { velocityExceedsGuide } from "@/lib/sizing-advanced";
 
 export default function WhyThisSize({ result, form, fluid, locale }) {
   if (!result || result.error) return null;
@@ -81,8 +82,8 @@ export default function WhyThisSize({ result, form, fluid, locale }) {
     },
     {
       label: L.points.velocity,
-      pass: !result.velocity || result.velocity < 5,
-      detail: result.velocity ? result.velocity + " m/s" : "—"
+      pass: !result.velocity || !velocityExceedsGuide({ fluidType: result.fluidType || fluid, velocity: result.velocity, mach: result.mach }),
+      detail: result.velocity ? result.velocity + " m/s" + (result.mach != null ? " · Ma " + result.mach : "") : "—"
     },
     {
       label: L.points.noise,

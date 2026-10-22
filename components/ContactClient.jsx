@@ -180,8 +180,9 @@ export default function ContactClient({ dict, locale, company, branding, content
         <div style={{
           position: "absolute",
           top: "-100px",
-          right: "-100px",
+          insetInlineEnd: 0,
           width: 320,
+          maxWidth: "100%",
           height: 320,
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(245, 197, 24, 0.18), transparent 70%)",

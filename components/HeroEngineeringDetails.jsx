@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Activity, BadgeCheck, Gauge } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 const COPY = {
   fa: {
@@ -57,7 +58,14 @@ export default function HeroEngineeringDetails({ locale = "fa", showProductVisua
             animate={reduceMotion ? {} : { y: [0, -9, 0], rotateY: [-5, 2, -5], rotateX: [2, -1, 2] }}
             transition={reduceMotion ? {} : { duration: 8, repeat: Infinity, ease: "easeInOut" }}
           >
-            <img src="/images/products/51000.png" alt="" className="hero-valve-image" />
+            <MediaImage
+              src="/images/products/51000.png"
+              alt=""
+              fill
+              sizes="(max-width: 900px) 86vw, 50vw"
+              loading="eager"
+              className="hero-valve-image"
+            />
           </motion.div>
           <motion.div
             className="hero-valve-callout hero-valve-callout-top"
@@ -154,6 +162,7 @@ export default function HeroEngineeringDetails({ locale = "fa", showProductVisua
           animation: hero-orbit-spin 34s linear infinite reverse;
         }
         .hero-valve-image-wrap {
+          position: relative;
           width: 91%;
           height: 100%;
           display: grid;

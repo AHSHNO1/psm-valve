@@ -122,8 +122,112 @@ test("real catalogue data feeds the sizing engine", () => {
   }
 
   const summary = getCvCatalogSummary();
-  assert.equal(summary.series.length, 3);
+  // سه سری اندازه‌گیری‌شده + سری‌های برآوردی؛ هر دو در پنل ادمین دیده می‌شوند
+  const measured = summary.series.filter((entry) => entry.provenance === "measured");
+  assert.equal(measured.length, 3);
+  assert.equal(summary.estimatedCount, summary.series.length - measured.length);
+  assert.ok(summary.series.every((entry) => entry.provenance), "هر سری باید سرچشمهٔ داده داشته باشد");
   const globe = summary.series.find((item) => item.series === "51000");
   assert.equal(globe.trims, 348);
   assert.equal(globe.byCharacteristic.equal, 99);
+});
+
+// ------------------------------------------------------------
+// برآورد مهندسی: سرچشمهٔ داده باید همه‌جا قابل تشخیص بماند
+// ------------------------------------------------------------
+
+test("measured series keep their measured rows and never receive estimated ones", () => {
+  const tables = getSizingTablesForClient().series;
+  // سری‌هایی که کاتالوگ اندازه‌گیری‌شده دارند نباید هیچ ردیف برآوردی بگیرند
+  for (const id of ["31000", "38000", "51000"]) {
+    const entry = tables[id];
+    assert.equal(entry.provenance, "measured", "سری " + id);
+    assert.ok(entry.sizes.every((size) => size.source === "catalog"), "سری " + id + " نباید سایز برآوردی داشته باشد");
+    // منحنی برآوردی هم نباید به سری اندازه‌گیری‌شده بچسبد
+    assert.equal(entry.curveShape, undefined, "سری اندازه‌گیری‌شده منحنی برآوردی ندارد");
+    assert.equal(entry.estimate, undefined);
+  }
+
+  const estimated = Object.values(tables).filter((entry) => entry.provenance === "estimated");
+  assert.ok(estimated.length >= 1, "باید دست‌کم یک سری برآوردی در جدول سایزینگ باشد");
+  for (const entry of estimated) {
+    assert.ok(entry.sizes.every((size) => size.source === "estimated"));
+    assert.ok(entry.sizes.every((size) => size.errorPct > 0), "هر سایز برآوردی باید خطای آزمون داشته باشد");
+    assert.ok(["very-low", "low", "medium"].includes(entry.estimate.confidence));
+    assert.equal(entry.curveShape.points.length, 10);
+    assert.equal(entry.curveShape.points[9], 1, "شکل منحنی نرمال‌شده است");
+    assert.deepEqual(entry.curveShape.points, [...entry.curveShape.points].sort((a, b) => a - b), "شکل باید صعودی باشد");
+  }
+});
+
+test("estimated curves are rebuilt from the shared shape, not left linear", () => {
+  const tables = getSizingTablesForClient().series;
+  const id = Object.keys(tables).find((key) => tables[key].provenance === "estimated");
+  const entry = tables[id];
+  const size = entry.sizes.find((item) => item.trims.length > 1);
+  const trim = size.trims[size.trims.length - 1];
+
+  // جدول کلاینت منحنی تکی ندارد؛ شکل مشترک در سطح سری است
+  assert.equal(trim.curve, undefined);
+
+  const pick = selectCatalogValve(trim.cv - 1e-6, [{ slug: "x", series: id, name: { en: "X" }, categoryId: "control-valves", sizeRange: { min: 0.1, max: 100 } }], { series: { [id]: { ...entry, sizes: [size] } } });
+  assert.ok(pick, "باید از سری برآوردی انتخاب انجام شود");
+  assert.equal(pick.source, "estimated");
+  assert.ok(pick.curveBased, "بازشدگی باید از منحنی بازسازی‌شده بیاید، نه فرض خطی");
+  // بازشدگی برای Cv کمی کمتر از Cv نامی باید نزدیک ۱۰۰٪ باشد، نه ۷۰٪ (فرض خطی)
+  assert.ok(pick.openingPercent >= 90, "بازشدگی " + pick.openingPercent);
+});
+
+test("measured data outranks an estimate when both cover the flow", () => {
+  // دو سری با Cv یکسان در سایز یکسان: یکی اندازه‌گیری‌شده، یکی برآوردی
+  const makeTables = () => ({
+    series: {
+      "90001": {
+        provenance: "measured",
+        sizes: [{ dn: "DN50", nps: 2, dnMm: 50, source: "catalog", cv: 40, trims: [{ cv: 40, characteristic: "linear", curve: null }] }]
+      },
+      "90002": {
+        provenance: "estimated",
+        curveShape: { characteristic: "equal", points: [0.0249, 0.0569, 0.088, 0.164, 0.242, 0.372, 0.556, 0.747, 0.895, 1] },
+        sizes: [{ dn: "DN50", nps: 2, dnMm: 50, source: "estimated", cv: 40, confidence: "low", errorPct: 45, trims: [{ cv: 40, characteristic: "equal" }] }]
+      }
+    }
+  });
+  const catalog = [
+    { slug: "m", series: "90001", name: { en: "Measured" }, categoryId: "control-valves", sizeRange: { min: 2, max: 2 } },
+    { slug: "e", series: "90002", name: { en: "Estimated" }, categoryId: "control-valves", sizeRange: { min: 2, max: 2 } }
+  ];
+
+  const pick = selectCatalogValve(20, catalog, makeTables());
+  assert.ok(pick);
+  assert.equal(pick.product.series, "90001", "با وجود گزینهٔ اندازه‌گیری‌شده، برآورد نباید انتخاب شود");
+  assert.equal(pick.source, "catalog");
+  assert.equal(pick.confidence, null);
+
+  // اگر سری اندازه‌گیری‌شده حذف شود، برآورد با همان قاعده وارد می‌شود
+  const tables = makeTables();
+  delete tables.series["90001"];
+  const fallback = selectCatalogValve(20, [catalog[1]], tables);
+  assert.ok(fallback);
+  assert.equal(fallback.source, "estimated");
+  assert.equal(fallback.errorPct, 45);
+});
+
+test("beyond the measured capacity the estimate fills the gap and says so", () => {
+  const tables = getSizingTablesForClient().series;
+  // همهٔ سری‌ها، از جمله اندازه‌گیری‌شده‌ها، در رقابت‌اند
+  const products = Object.keys(tables).map((id) => ({
+    slug: "p" + id,
+    series: id,
+    name: { en: id },
+    categoryId: "control-valves",
+    sizeRange: { min: 0.25, max: 60 }
+  }));
+
+  // Cv بسیار بزرگ: هیچ سری اندازه‌گیری‌شده‌ای پوشش نمی‌دهد (بزرگ‌ترین تریم کاتالوگ ~۷۰۰۰)
+  const pick = selectCatalogValve(12000, products, { series: tables });
+  assert.ok(pick, "برآورد باید برای Cvهای خارج از کاتالوگ پاسخ بدهد");
+  assert.equal(pick.source, "estimated");
+  assert.ok(pick.errorPct > 0);
+  assert.ok(Number.isFinite(pick.openingPercent));
 });

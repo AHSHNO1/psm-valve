@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Newspaper, ArrowLeft, Calendar, Clock } from "lucide-react";
+import MediaImage from "./MediaImage";
 import { useDictionary } from "./Providers";
 
 function pick(obj, locale, fallback) {
@@ -117,7 +118,7 @@ export default function LatestNews({ news, locale }) {
                   {/* Image */}
                   <div className="lnews-image">
                     {n.image ? (
-                      <img src={n.image} alt={title} />
+                      <MediaImage src={n.image} alt={title} fill sizes="(max-width: 768px) 100vw, 33vw" />
                     ) : (
                       <div className="lnews-image-placeholder">
                         <Newspaper size={32} />

@@ -1,6 +1,6 @@
 import { getProducts } from "@/lib/product-store";
 import { buildSizingCatalog } from "@/lib/valve-catalog";
-import { getCvTables, getCvCatalogSummary } from "@/lib/valve-cv";
+import { getCvTables, getCvCatalogSummary, getSizingTablesForClient } from "@/lib/valve-cv";
 import CvTablesClient from "@/components/admin/CvTablesClient";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,11 @@ export const metadata = {
 export default function CvTablesPage() {
   const all = getProducts();
 
-  // همان شرطی که صفحهٔ سایزینگ استفاده می‌کند: سری‌هایی که بازهٔ سایز خوانا دارند
-  const sizingSeries = new Set(buildSizingCatalog(all).map((product) => product.series));
+  // همان شرطی که صفحهٔ سایزینگ استفاده می‌کند: بازهٔ سایز از spec یا از NPS جدول Cv
+  const sizingTables = getSizingTablesForClient();
+  const sizingSeries = new Set(
+    buildSizingCatalog(all, sizingTables.series).map((product) => product.series)
+  );
 
   const products = all.map((product) => ({
     slug: product.slug,

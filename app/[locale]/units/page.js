@@ -9,7 +9,10 @@ import {
   Wrench
 } from "lucide-react";
 import { getContent } from "@/lib/content";
+import MediaImage from "@/components/MediaImage";
 import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 
 const ICONS = {
   engineering: DraftingCompass,
@@ -24,6 +27,18 @@ function pick(value, locale) {
   if (!value) return "";
   if (typeof value === "string") return value;
   return value[locale] || value.en || value.fa || "";
+}
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const seo = pageSeo(locale, "units");
+  return buildMetadata({
+    locale,
+    path: "/units",
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords
+  });
 }
 
 export default async function UnitsPage({ params }) {
@@ -132,11 +147,12 @@ export default async function UnitsPage({ params }) {
                     background: "var(--bg-soft)"
                   }}
                 >
-                  <img
+                  <MediaImage
                     src={unit.image}
                     alt={name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     loading={index < 3 ? "eager" : "lazy"}
-                    decoding="async"
                     style={{
                       width: "100%",
                       height: "100%",

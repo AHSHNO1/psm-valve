@@ -1,36 +1,33 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
 import { getTranslations, saveTranslations, validateTranslations } from "@/lib/translations";
+import { guard, readJson, json, err, isResponse, revalidatePublic } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const session = await getSession(request);
-  if (!session || session.role !== "admin") return NextResponse.json({ ok: false }, { status: 401 });
-  return NextResponse.json({ ok: true, translations: getTranslations() });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
+  return json({ translations: getTranslations() });
 }
 
 export async function PUT(request) {
-  const session = await getSession(request);
-  if (!session || session.role !== "admin") return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request);
+  if (isResponse(session)) return session;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست JSON معتبر نیست" }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
 
   if (!validateTranslations(body?.translations)) {
-    return NextResponse.json({ ok: false, error: "ساختار ترجمه‌ها معتبر نیست یا شامل فیلدهای ناشناخته است" }, { status: 400 });
+    return err("ساختار ترجمه‌ها معتبر نیست یا شامل فیلدهای ناشناخته است", 400);
   }
 
   try {
     const translations = saveTranslations(body.translations);
-    return NextResponse.json({ ok: true, translations });
+    // ترجمه‌ها از طریق دیکشنری در همهٔ صفحات استفاده می‌شوند.
+    revalidatePublic([], { layout: true });
+    return json({ translations });
   } catch (error) {
     console.error("Failed to save site translations:", error);
-    return NextResponse.json({ ok: false, error: "ذخیرهٔ ترجمه‌ها ناموفق بود" }, { status: 500 });
+    return err("ذخیرهٔ ترجمه‌ها ناموفق بود", 500);
   }
 }

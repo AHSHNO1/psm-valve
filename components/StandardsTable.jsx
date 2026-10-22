@@ -1,14 +1,22 @@
 "use client";
 import { useState } from "react";
+import { PIPE_SCHEDULE, pipeInsideDiameter, pipeFlowArea } from "@/lib/pipe-schedule";
 
 const DN_NPS_DATA = [
+  { dn: "DN6",   nps: '1/8"',  mm: 6,   inch: 0.125 },
+  { dn: "DN8",   nps: '1/4"',  mm: 8,   inch: 0.25 },
+  { dn: "DN10",  nps: '3/8"',  mm: 10,  inch: 0.375 },
   { dn: "DN15",  nps: '1/2"',  mm: 15,  inch: 0.5 },
   { dn: "DN20",  nps: '3/4"',  mm: 20,  inch: 0.75 },
   { dn: "DN25",  nps: '1"',    mm: 25,  inch: 1 },
+  { dn: "DN32",  nps: '1-1/4"',mm: 32,  inch: 1.25 },
   { dn: "DN40",  nps: '1-1/2"',mm: 40,  inch: 1.5 },
   { dn: "DN50",  nps: '2"',    mm: 50,  inch: 2 },
+  { dn: "DN65",  nps: '2-1/2"',mm: 65,  inch: 2.5 },
   { dn: "DN80",  nps: '3"',    mm: 80,  inch: 3 },
+  { dn: "DN90",  nps: '3-1/2"',mm: 90,  inch: 3.5 },
   { dn: "DN100", nps: '4"',    mm: 100, inch: 4 },
+  { dn: "DN125", nps: '5"',    mm: 125, inch: 5 },
   { dn: "DN150", nps: '6"',    mm: 150, inch: 6 },
   { dn: "DN200", nps: '8"',    mm: 200, inch: 8 },
   { dn: "DN250", nps: '10"',   mm: 250, inch: 10 },
@@ -17,7 +25,13 @@ const DN_NPS_DATA = [
   { dn: "DN400", nps: '16"',   mm: 400, inch: 16 },
   { dn: "DN450", nps: '18"',   mm: 450, inch: 18 },
   { dn: "DN500", nps: '20"',   mm: 500, inch: 20 },
-  { dn: "DN600", nps: '24"',   mm: 600, inch: 24 }
+  { dn: "DN600", nps: '24"',   mm: 600, inch: 24 },
+  { dn: "DN650", nps: '26"',   mm: 650, inch: 26 },
+  { dn: "DN700", nps: '28"',   mm: 700, inch: 28 },
+  { dn: "DN750", nps: '30"',   mm: 750, inch: 30 },
+  { dn: "DN800", nps: '32"',   mm: 800, inch: 32 },
+  { dn: "DN850", nps: '34"',   mm: 850, inch: 34 },
+  { dn: "DN900", nps: '36"',   mm: 900, inch: 36 }
 ];
 
 const ANSI_PN_DATA = [
@@ -130,7 +144,150 @@ const MATERIAL_GROUP_DATA = [
   { group: "3.x" }
 ];
 
-function DataTable({ headers, rows, accent, wrap }) {
+function convertTemp(value, from, to) {
+  const celsius = from === "C" ? value : from === "F" ? (value - 32) * 5 / 9 : value - 273.15;
+  if (to === "C") return celsius;
+  if (to === "F") return celsius * 9 / 5 + 32;
+  return celsius + 273.15;
+}
+
+const QUICK = {
+  fa: {
+    dnTitle: "جست‌وجوی قطر (DN / NPS)",
+    dnPlaceholder: 'مثلاً 50، 2" یا 1-1/2"',
+    dnHint: "DN را به میلی‌متر یا NPS را به اینچ وارد کنید؛ ردیف متناظر در جدول برجسته می‌شود.",
+    nearest: "نزدیک‌ترین تطابق",
+    invalid: "مقدار معتبر وارد کنید.",
+    pressureTitle: "انتخاب کلاس فشاری",
+    pressureHint: "فشار نامی گروه متریال 1.1 در ۳۸°C؛ با افزایش دما فشار مجاز کاهش می‌یابد.",
+    cvTitle: "تبدیل ضریب جریان",
+    cvHint: "رابطهٔ استاندارد: Kv = Cv ÷ 1.156",
+    tempTitle: "تبدیل دما",
+    tempHint: "ردیف نزدیک‌ترین نقطهٔ مرجع در جدول برجسته می‌شود؛ آب در ۱۰۰°C می‌جوشد و صفر مطلق ۰ K است.",
+    pipeTab: "برنامهٔ لوله (Sch 40/80)",
+    pipeHeaders: ["DN", "NPS", "OD (mm)", "ضخامت Sch 40 (mm)", "ID Sch 40 (mm)", "سطح مقطع 40 (cm²)", "ضخامت Sch 80 (mm)", "ID Sch 80 (mm)", "سطح مقطع 80 (cm²)"],
+    pipeNote: "ابعاد اسمی بر پایهٔ ASME B36.10M برای لولهٔ فولاد کربنی و آلیاژی (NPS 1/8 تا 24 اینچ). قطر داخلی = قطر خارجی − ۲ × ضخامت. لولهٔ زنگ‌نزن از ASME B36.19M با ضخامت‌های متفاوت پیروی می‌کند؛ پیش از سفارش، مشخصات حاکم را کنترل کنید."
+  },
+  en: {
+    dnTitle: "Diameter lookup (DN / NPS)",
+    dnPlaceholder: 'e.g. 50, 2" or 1-1/2"',
+    dnHint: "Enter DN in millimetres or NPS in inches; the matching table row is highlighted.",
+    nearest: "Nearest match",
+    invalid: "Enter a valid value.",
+    pressureTitle: "Pressure class selector",
+    pressureHint: "Group 1.1 material rating at 38 °C; allowable pressure falls as temperature rises.",
+    cvTitle: "Flow coefficient conversion",
+    cvHint: "Standard relation: Kv = Cv ÷ 1.156",
+    tempTitle: "Temperature conversion",
+    tempHint: "The nearest reference row is highlighted; water boils at 100 °C and absolute zero is 0 K.",
+    pipeTab: "Pipe schedule (Sch 40/80)",
+    pipeHeaders: ["DN", "NPS", "OD (mm)", "Wall Sch 40 (mm)", "ID Sch 40 (mm)", "Area 40 (cm²)", "Wall Sch 80 (mm)", "ID Sch 80 (mm)", "Area 80 (cm²)"],
+    pipeNote: "Nominal dimensions based on ASME B36.10M for carbon and alloy steel pipe (NPS 1/8–24\"). Inside diameter = OD − 2 × wall. Stainless pipe follows ASME B36.19M with different wall thicknesses; verify the governing specification before ordering."
+  },
+  ar: {
+    dnTitle: "بحث القطر (DN / NPS)",
+    dnPlaceholder: 'مثال: 50 أو 2" أو 1-1/2"',
+    dnHint: "أدخل DN بالمليمتر أو NPS بالبوصة؛ يتم تمييز الصف المطابق في الجدول.",
+    nearest: "أقرب تطابق",
+    invalid: "أدخل قيمة صالحة.",
+    pressureTitle: "اختيار فئة الضغط",
+    pressureHint: "تصنيف مجموعة المواد 1.1 عند 38°م؛ ينخفض الضغط المسموح مع ارتفاع الحرارة.",
+    cvTitle: "تحويل معامل التدفق",
+    cvHint: "العلاقة القياسية: Kv = Cv ÷ 1.156",
+    tempTitle: "تحويل درجة الحرارة",
+    tempHint: "يتم تمييز أقرب صف مرجعي؛ يغلي الماء عند 100°م والصفر المطلق 0 K.",
+    pipeTab: "جدول الأنابيب (Sch 40/80)",
+    pipeHeaders: ["DN", "NPS", "OD (mm)", "سماكة Sch 40 (mm)", "ID Sch 40 (mm)", "المساحة 40 (cm²)", "سماكة Sch 80 (mm)", "ID Sch 80 (mm)", "المساحة 80 (cm²)"],
+    pipeNote: "أبعاد اسمية وفق ASME B36.10M لأنابيب الفولاذ الكربوني والسبائكي (NPS 1/8–24 بوصة). القطر الداخلي = القطر الخارجي − 2 × السماكة. أنابيب الفولاذ المقاوم للصدأ تتبع ASME B36.19M بسماكات مختلفة؛ تحقق من المواصفة الحاكمة قبل الطلب."
+  },
+  ru: {
+    dnTitle: "Поиск диаметра (DN / NPS)",
+    dnPlaceholder: 'например 50, 2" или 1-1/2"',
+    dnHint: "Введите DN в миллиметрах или NPS в дюймах; соответствующая строка таблицы подсветится.",
+    nearest: "Ближайшее совпадение",
+    invalid: "Введите корректное значение.",
+    pressureTitle: "Выбор класса давления",
+    pressureHint: "Рейтинг группы материалов 1.1 при 38 °C; с ростом температуры допустимое давление снижается.",
+    cvTitle: "Пересчёт коэффициента расхода",
+    cvHint: "Стандартное соотношение: Kv = Cv ÷ 1.156",
+    tempTitle: "Перевод температуры",
+    tempHint: "Подсвечивается ближайшая справочная строка; вода кипит при 100 °C, абсолютный ноль — 0 K.",
+    pipeTab: "Сортамент труб (Sch 40/80)",
+    pipeHeaders: ["DN", "NPS", "OD (мм)", "Стенка Sch 40 (мм)", "ID Sch 40 (мм)", "Площадь 40 (см²)", "Стенка Sch 80 (мм)", "ID Sch 80 (мм)", "Площадь 80 (см²)"],
+    pipeNote: "Номинальные размеры по ASME B36.10M для углеродистых и легированных стальных труб (NPS 1/8–24\"). Внутренний диаметр = OD − 2 × стенка. Нержавеющие трубы по ASME B36.19M имеют другие толщины стенки; перед заказом проверьте действующую спецификацию."
+  }
+};
+
+function fracValue(text) {
+  const parts = text.split("/");
+  const denominator = parseInt(parts[1], 10);
+  if (!denominator) return NaN;
+  return parseInt(parts[0], 10) / denominator;
+}
+
+function parseNpsQuery(raw) {
+  const original = String(raw || "").trim();
+  const mmOnly = /^dn\s*/i.test(original);
+  const cleaned = original.replace(/["'″]/g, "").replace(/^dn\s*/i, "").trim();
+  const text = cleaned.replace(/^(\d+)\s+(\d+\s*\/\s*\d+)$/, "$1-$2");
+  if (!text) return { value: null, mmOnly, fractional: false };
+  if (/^\d+\s*-\s*\d+\s*\/\s*\d+$/.test(text)) {
+    const parts = text.split("-");
+    return { value: parseInt(parts[0], 10) + fracValue(parts[1].replace(/\s/g, "")), mmOnly, fractional: true };
+  }
+  if (/^\d+\s*\/\s*\d+$/.test(text)) {
+    return { value: fracValue(text.replace(/\s/g, "")), mmOnly, fractional: true };
+  }
+  const numeric = parseFloat(text.replace(",", "."));
+  return { value: Number.isFinite(numeric) ? numeric : null, mmOnly, fractional: false };
+}
+
+function lookupDn(raw) {
+  const parsed = parseNpsQuery(raw);
+  if (parsed.value == null) return { parsed, match: null, nearest: null };
+  const preferMm = parsed.mmOnly || (!parsed.fractional && parsed.value >= 6);
+  const key = preferMm ? "mm" : "inch";
+  const exact = DN_NPS_DATA.find(function(d) {
+    return Math.abs(d[key] - parsed.value) < 0.001;
+  });
+  if (exact) return { parsed, match: exact, nearest: null };
+  let nearest = null;
+  let nearestDiff = Infinity;
+  DN_NPS_DATA.forEach(function(d) {
+    const diff = Math.abs(d[key] - parsed.value);
+    if (diff < nearestDiff) {
+      nearestDiff = diff;
+      nearest = d;
+    }
+  });
+  return { parsed, match: null, nearest: nearest };
+}
+
+function fmtQuick(value, digits) {
+  if (!Number.isFinite(value)) return "—";
+  return value.toLocaleString("en-US", { maximumFractionDigits: digits == null ? 3 : digits });
+}
+
+function QuickCard({ title, accent, hint, children }) {
+  return (
+    <div className="standards-quick" style={{ borderColor: accent + "33" }}>
+      <div className="standards-quick-title" style={{ color: accent }}>{title}</div>
+      <div className="standards-quick-row">{children}</div>
+      {hint ? <p className="standards-quick-note">{hint}</p> : null}
+    </div>
+  );
+}
+
+function QuickChip({ label, value }) {
+  return (
+    <div className="standards-quick-chip">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function DataTable({ headers, rows, accent, wrap, highlight }) {
   return (
     <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid var(--border)" }}>
       <table style={{
@@ -159,9 +316,12 @@ function DataTable({ headers, rows, accent, wrap }) {
         </thead>
         <tbody>
           {rows.map(function(row, i) {
+            const activeRow = highlight === i;
             return (
               <tr key={i} style={{
-                background: i % 2 === 0 ? "var(--bg-card)" : "var(--bg-soft)"
+                background: activeRow ? accent + "22" : i % 2 === 0 ? "var(--bg-card)" : "var(--bg-soft)",
+                boxShadow: activeRow ? "inset 3px 0 0 " + accent : "none",
+                transition: "background 0.15s"
               }}>
                 {row.map(function(cell, j) {
                   return (
@@ -188,10 +348,16 @@ function DataTable({ headers, rows, accent, wrap }) {
   );
 }
 
-const VALID_TABS = ["dn", "pressure", "cv", "temp", "testPressure", "testDuration", "leakage", "fci", "material", "isa", "iec"];
+const VALID_TABS = ["dn", "pressure", "cv", "temp", "pipe", "testPressure", "testDuration", "leakage", "fci", "material", "isa", "iec"];
 
 export default function StandardsTable({ locale, initialTab }) {
   const [tab, setTab] = useState(VALID_TABS.includes(initialTab) ? initialTab : "dn");
+  const [dnQuery, setDnQuery] = useState("");
+  const [cvInput, setCvInput] = useState("10");
+  const [cvToKv, setCvToKv] = useState(true);
+  const [tempInput, setTempInput] = useState("25");
+  const [tempUnit, setTempUnit] = useState("C");
+  const [ansiPick, setAnsiPick] = useState("150");
 
   const L = {
     fa: {
@@ -242,7 +408,7 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["قطر اسمی نشیمن (mm)", "قطر (inch)", "حداکثر نشتی (ml/min)", "حباب در دقیقه"],
       fciNote: "ANSI/FCI 70-2-2006 کلاس‌های نشتی شیر کنترل و روش تست را تعیین می‌کند. کلاس IV حد متعارف شیرهای کنترل فلزی و کلاس VI برای نشیمن الاستومری «حباب‌بند» است. انتخاب کلاس، تابع الزام فرآیند و مشخصات خرید است؛ این جدول مرجع سریع است و جایگزین نسخهٔ رسمی استاندارد نیست.",
       isaHeaders: ["نماد", "واحد", "توضیح"],
-      isaNote: "سایزینگ این ابزار بر پایهٔ معادلات ISA-75.01.01 (هم‌راستا با IEC 60534-2-1) است: Cv = Q·√(Gf/ΔP) برای مایع با سقف ΔP بحرانی، و Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) برای گاز. Fp در صورت وارد کردن DN لوله اعمال می‌شود (با فرض کاهندهٔ ناگهانی)؛ عدد رینولدز (FR) و هندسهٔ تیغه لحاظ نشده و نتیجه تخمین مهندسی است.",
+      isaNote: "سایزینگ این ابزار بر پایهٔ معادلات ISA-75.01.01 (هم‌راستا با IEC 60534-2-1) است: Cv = Q·√(Gf/ΔP) برای مایع با سقف ΔP بحرانی، و Cv = Q/(394.3·P1·Y)·√(Gg·T·Z/x) برای گاز (Q در Nm³/h بر مبنای ۰ درجه و ۱۰۱۳٫۲۵ میلی‌بار). Fp در صورت وارد کردن DN لوله اعمال می‌شود (با فرض کاهندهٔ ناگهانی)؛ عدد رینولدز (FR) و هندسهٔ تیغه لحاظ نشده و نتیجه تخمین مهندسی است.",
       iecTab: "IEC 60534-2-1",
       iecNote: "IEC 60534-2-1 نسخهٔ بین‌المللی همان معادلات است و با ISA-75.01.01 هم‌ارز فنی محسوب می‌شود؛ دو استاندارد هم را کامل می‌کنند. تفاوت اصلی در واحدها و ضریب است: IEC از Kv (m³/h در ۱ bar) و ثابت‌های SI استفاده می‌کند و ISA از Cv (gpm در 1 psi) و ثابت‌های US. تبدیل: Cv ≈ 1.156 Kv. هر دو برای دقت بیشتر ضریب هندسهٔ اتصالات (Fp) و ضریب رینولدز (FR) را تعریف می‌کنند؛ این ابزار Fp را در صورت وارد کردن DN لوله اعمال می‌کند، اما FR را نه."
     },
@@ -294,7 +460,7 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["Nominal seat diameter (mm)", "Diameter (inch)", "Max leakage (ml/min)", "Bubbles per minute"],
       fciNote: "ANSI/FCI 70-2-2006 defines control valve leakage classes and test procedures. Class IV is the usual limit for metal-seated control valves and Class VI is bubble-tight for resilient seats. The required class comes from the process and the purchase specification; this table is a quick reference, not a substitute for the official standard.",
       isaHeaders: ["Symbol", "Unit", "Meaning"],
-      isaNote: "This tool follows the ISA-75.01.01 equations (harmonised with IEC 60534-2-1): Cv = Q·√(Gf/ΔP) for liquids with the critical ΔP limit, and Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) for gases. The piping geometry factor (Fp) is applied when a pipe DN is entered (abrupt reducers assumed); Reynolds number (FR) and trim geometry are not included, so results are an engineering estimate.",
+      isaNote: "This tool follows the ISA-75.01.01 equations (harmonised with IEC 60534-2-1): Cv = Q·√(Gf/ΔP) for liquids with the critical ΔP limit, and Cv = Q/(394.3·P1·Y)·√(Gg·T·Z/x) for gases, with Q in Nm³/h referenced to 0 °C and 1013.25 mbar. The piping geometry factor (Fp) is applied when a pipe DN is entered (abrupt reducers assumed); Reynolds number (FR) and trim geometry are not included, so results are an engineering estimate.",
       iecTab: "IEC 60534-2-1",
       iecNote: "IEC 60534-2-1 is the international edition of the same equations and is technically equivalent to ISA-75.01.01; the two standards complete each other. The main difference is the unit system and coefficient: IEC uses Kv (m³/h at 1 bar) with SI constants, ISA uses Cv (gpm at 1 psi) with US constants. Conversion: Cv ≈ 1.156 Kv. Both define a piping geometry factor (Fp) and a Reynolds number factor (FR) for higher accuracy; this tool applies Fp when a pipe DN is entered, but not FR."
     },
@@ -346,7 +512,7 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["القطر الاسمي (mm)", "القطر (inch)", "أقصى تسرب (ml/min)", "فقاعات/دقيقة"],
       fciNote: "يحدد ANSI/FCI 70-2-2006 فئات تسرب صمام التحكم وإجراءات الاختبار. الفئة IV هي الحد المتعارف عليه للصمامات المعدنية والفئة VI للمقاعد المرنة. الفئة المطلوبة تأتي من العملية ومواصفات الشراء؛ هذا الجدول مرجع سريع وليس بديلاً عن النسخة الرسمية.",
       isaHeaders: ["الرمز", "الوحدة", "المعنى"],
-      isaNote: "تعتمد الأداة معادلات ISA-75.01.01 (المتوافقة مع IEC 60534-2-1): Cv = Q·√(Gf/ΔP) للسوائل مع حد ΔP الحرج، وCv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) للغازات. يُطبَّق معامل هندسة التوصيلات (Fp) عند إدخال قطر الأنبوب DN (بافتراض مخفضات مفاجئة)؛ ولا يُؤخذ رقم رينولدز (FR) في الحساب.",
+      isaNote: "تعتمد الأداة معادلات ISA-75.01.01 (المتوافقة مع IEC 60534-2-1): Cv = Q·√(Gf/ΔP) للسوائل مع حد ΔP الحرج، وCv = Q/(394.3·P1·Y)·√(Gg·T·Z/x) للغازات (Q بوحدة Nm³/h عند 0 درجة و1013.25 مليبار). يُطبَّق معامل هندسة التوصيلات (Fp) عند إدخال قطر الأنبوب DN (بافتراض مخفضات مفاجئة)؛ ولا يُؤخذ رقم رينولدز (FR) في الحساب.",
       iecTab: "IEC 60534-2-1",
       iecNote: "IEC 60534-2-1 هو الإصدار الدولي للمعادلات نفسها ويعادل تقنيًا ISA-75.01.01؛ المعياران يكملان بعضهما. الفرق الأساسي في الوحدات والمعامل: IEC يستخدم Kv (m³/h عند 1 bar) وثوابت SI، بينما يستخدم ISA الرمز Cv (gpm عند 1 psi) وثوابت US. التحويل: Cv ≈ 1.156 Kv. يحدد المعياران معامل هندسة التوصيلات (Fp) ومعامل رينولدز (FR) لدقة أعلى؛ تطبّق الأداة Fp عند إدخال DN الأنبوب، لكن ليس FR."
     },
@@ -398,17 +564,20 @@ export default function StandardsTable({ locale, initialTab }) {
       fciClassVIHeaders: ["Номинальный диаметр (mm)", "Диаметр (inch)", "Макс. утечка (ml/min)", "Пузырьков/мин"],
       fciNote: "ANSI/FCI 70-2-2006 определяет классы утечки регулирующих клапанов и методы испытаний. Класс IV — обычный предел для металлических седел, класс VI — для эластомерных. Требуемый класс задаётся процессом и спецификацией закупки; таблица справочная.",
       isaHeaders: ["Символ", "Единица", "Значение"],
-      isaNote: "Инструмент использует уравнения ISA-75.01.01 (согласованы с IEC 60534-2-1): Cv = Q·√(Gf/ΔP) для жидкости с критическим ΔP и Cv = Q/(416.3·P1·Y)·√(Gg·T·Z/x) для газа. Fp применяется при указании DN трубы (предполагаются внезапные переходы); число Рейнольдса (FR) и геометрия затвора не учитываются.",
+      isaNote: "Инструмент использует уравнения ISA-75.01.01 (согласованы с IEC 60534-2-1): Cv = Q·√(Gf/ΔP) для жидкости с критическим ΔP и Cv = Q/(394.3·P1·Y)·√(Gg·T·Z/x) для газа (Q в Nm³/h при 0 °C и 1013,25 мбар). Fp применяется при указании DN трубы (предполагаются внезапные переходы); число Рейнольдса (FR) и геометрия затвора не учитываются.",
       iecTab: "IEC 60534-2-1",
       iecNote: "IEC 60534-2-1 — международная редакция тех же уравнений, технически эквивалентная ISA-75.01.01; стандарты дополняют друг друга. Основное различие — единицы и коэффициент: IEC использует Kv (m³/h при 1 bar) и константы SI, ISA — Cv (gpm при 1 psi) и константы US. Перевод: Cv ≈ 1.156 Kv. Оба стандарта определяют коэффициент геометрии трубопровода (Fp) и коэффициент Рейнольдса (FR) для повышенной точности; инструмент применяет Fp при указании DN трубы, но не FR."
     }
   }[locale] || {};
+
+  const X = QUICK[locale] || QUICK.en;
 
   const tabs = [
     { id: "dn", label: L.dnTab, accent: "#E0A81A" },
     { id: "pressure", label: L.pressureTab, accent: "#0078D4" },
     { id: "cv", label: L.cvTab, accent: "#10B981" },
     { id: "temp", label: L.tempTab, accent: "#F7630C" },
+    { id: "pipe", label: X.pipeTab, accent: "#B45309" },
     { id: "testPressure", label: L.testPressureTab, accent: "#DC2626" },
     { id: "testDuration", label: L.testDurationTab, accent: "#7C3AED" },
     { id: "leakage", label: L.leakageTab, accent: "#0891B2" },
@@ -428,6 +597,164 @@ export default function StandardsTable({ locale, initialTab }) {
 
   const currentTab = tabs.find(function(t) { return t.id === tab; }) || tabs[0];
 
+  const dnLookup = lookupDn(dnQuery);
+  const dnHighlight = dnLookup.match ? DN_NPS_DATA.indexOf(dnLookup.match) : -1;
+
+  const ansiRow = ANSI_PN_DATA.find(function(d) { return d.ansi === ansiPick; }) || ANSI_PN_DATA[0];
+  const ansiHighlight = ANSI_PN_DATA.indexOf(ansiRow);
+
+  const cvNumber = parseFloat(cvInput);
+  const cvValid = Number.isFinite(cvNumber) && cvNumber >= 0;
+  const cvValue = cvValid ? cvNumber : null;
+  const cvConverted = cvValue == null ? null : cvToKv ? cvValue / 1.156 : cvValue * 1.156;
+  const cvHighlight = cvValue == null ? -1 : CV_KV_DATA.findIndex(function(d) {
+    return Math.abs((cvToKv ? d.cv : d.kv) - cvValue) < 1e-6;
+  });
+
+  const tempNumber = parseFloat(tempInput);
+  const tempValid = Number.isFinite(tempNumber);
+  const tempC = tempValid ? convertTemp(tempNumber, tempUnit, "C") : null;
+  const tempF = tempValid ? convertTemp(tempNumber, tempUnit, "F") : null;
+  const tempK = tempValid ? convertTemp(tempNumber, tempUnit, "K") : null;
+  let tempHighlight = -1;
+  if (tempC != null) {
+    let bestDiff = Infinity;
+    TEMP_DATA.forEach(function(d, index) {
+      const diff = Math.abs(d.c - tempC);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        tempHighlight = index;
+      }
+    });
+  }
+
+  let quickContent = null;
+  if (tab === "dn") {
+    quickContent = (
+      <QuickCard title={X.dnTitle} accent={currentTab.accent} hint={X.dnHint}>
+        <input
+          type="text"
+          value={dnQuery}
+          onChange={function(e) { setDnQuery(e.target.value); }}
+          placeholder={X.dnPlaceholder}
+          aria-label={X.dnTitle}
+          dir="ltr"
+          className="standards-quick-input"
+          style={{ direction: "ltr" }}
+        />
+        {dnLookup.match ? (
+          <>
+            <QuickChip label="DN" value={"DN" + dnLookup.match.mm} />
+            <QuickChip label="NPS" value={dnLookup.match.nps} />
+            <QuickChip label="mm" value={dnLookup.match.mm} />
+            <QuickChip label="inch" value={dnLookup.match.inch} />
+          </>
+        ) : null}
+        {!dnLookup.match && dnLookup.nearest ? (
+          <>
+            <span className="standards-quick-badge">{X.nearest}</span>
+            <QuickChip label="DN" value={"DN" + dnLookup.nearest.mm} />
+            <QuickChip label="NPS" value={dnLookup.nearest.nps} />
+          </>
+        ) : null}
+        {dnQuery.trim() && dnLookup.parsed.value == null ? (
+          <span className="standards-quick-badge">{X.invalid}</span>
+        ) : null}
+      </QuickCard>
+    );
+  } else if (tab === "pressure") {
+    quickContent = (
+      <QuickCard title={X.pressureTitle} accent={currentTab.accent} hint={X.pressureHint}>
+        <select
+          value={ansiPick}
+          onChange={function(e) { setAnsiPick(e.target.value); }}
+          aria-label={X.pressureTitle}
+          dir="ltr"
+          className="standards-quick-select"
+        >
+          {ANSI_PN_DATA.map(function(d) {
+            return <option key={d.ansi} value={d.ansi}>Class {d.ansi}</option>;
+          })}
+        </select>
+        <QuickChip label="PN" value={ansiRow.pn} />
+        <QuickChip label="bar @38°C" value={ansiRow.bar} />
+        <QuickChip label="psi @38°C" value={ansiRow.psi} />
+      </QuickCard>
+    );
+  } else if (tab === "cv") {
+    quickContent = (
+      <QuickCard title={X.cvTitle} accent={currentTab.accent} hint={X.cvHint}>
+        <input
+          type="number"
+          min="0"
+          value={cvInput}
+          onChange={function(e) { setCvInput(e.target.value); }}
+          aria-label={X.cvTitle}
+          className="standards-quick-input"
+          style={{ direction: "ltr", minWidth: 110 }}
+        />
+        <button
+          type="button"
+          onClick={function() { setCvToKv(true); }}
+          aria-pressed={cvToKv}
+          className="standards-quick-btn"
+          style={cvToKv ? { background: currentTab.accent, borderColor: currentTab.accent, color: "#FFFFFF" } : undefined}
+        >
+          Cv → Kv
+        </button>
+        <button
+          type="button"
+          onClick={function() { setCvToKv(false); }}
+          aria-pressed={!cvToKv}
+          className="standards-quick-btn"
+          style={!cvToKv ? { background: currentTab.accent, borderColor: currentTab.accent, color: "#FFFFFF" } : undefined}
+        >
+          Kv → Cv
+        </button>
+        {cvValid ? (
+          <>
+            <QuickChip label={cvToKv ? "Cv" : "Kv"} value={fmtQuick(cvValue, 4)} />
+            <QuickChip label={cvToKv ? "Kv" : "Cv"} value={fmtQuick(cvConverted, 4)} />
+          </>
+        ) : cvInput.trim() ? (
+          <span className="standards-quick-badge">{X.invalid}</span>
+        ) : null}
+      </QuickCard>
+    );
+  } else if (tab === "temp") {
+    quickContent = (
+      <QuickCard title={X.tempTitle} accent={currentTab.accent} hint={X.tempHint}>
+        <input
+          type="number"
+          value={tempInput}
+          onChange={function(e) { setTempInput(e.target.value); }}
+          aria-label={X.tempTitle}
+          className="standards-quick-input"
+          style={{ direction: "ltr", minWidth: 110 }}
+        />
+        <select
+          value={tempUnit}
+          onChange={function(e) { setTempUnit(e.target.value); }}
+          aria-label={X.tempTitle}
+          dir="ltr"
+          className="standards-quick-select"
+          style={{ minWidth: 80 }}
+        >
+          <option value="C">°C</option>
+          <option value="F">°F</option>
+          <option value="K">K</option>
+        </select>
+        {tempValid ? (
+          <>
+            <QuickChip label="°C" value={fmtQuick(tempC, 2)} />
+            <QuickChip label="°F" value={fmtQuick(tempF, 2)} />
+            <QuickChip label="K" value={fmtQuick(tempK, 2)} />
+          </>
+        ) : <span className="standards-quick-badge">{X.invalid}</span>}
+      </QuickCard>
+    );
+  }
+
   let tableContent = null;
   if (tab === "dn") {
     tableContent = (
@@ -435,6 +762,7 @@ export default function StandardsTable({ locale, initialTab }) {
         headers={L.dnHeaders}
         accent={currentTab.accent}
         rows={DN_NPS_DATA.map(function(d) { return [d.dn, d.nps, d.mm, d.inch]; })}
+        highlight={dnHighlight}
       />
     );
   } else if (tab === "pressure") {
@@ -443,6 +771,7 @@ export default function StandardsTable({ locale, initialTab }) {
         headers={L.pressureHeaders}
         accent={currentTab.accent}
         rows={ANSI_PN_DATA.map(function(d) { return ["Class " + d.ansi, d.pn, d.bar, d.psi]; })}
+        highlight={ansiHighlight}
       />
     );
   } else if (tab === "cv") {
@@ -451,6 +780,7 @@ export default function StandardsTable({ locale, initialTab }) {
         headers={L.cvHeaders}
         accent={currentTab.accent}
         rows={CV_KV_DATA.map(function(d) { return [d.cv, d.kv]; })}
+        highlight={cvHighlight}
       />
     );
   } else if (tab === "temp") {
@@ -459,7 +789,33 @@ export default function StandardsTable({ locale, initialTab }) {
         headers={L.tempHeaders}
         accent={currentTab.accent}
         rows={TEMP_DATA.map(function(d) { return [d.c, d.f, d.k]; })}
+        highlight={tempHighlight}
       />
+    );
+  } else if (tab === "pipe") {
+    tableContent = (
+      <>
+        <DataTable
+          headers={X.pipeHeaders}
+          accent={currentTab.accent}
+          rows={PIPE_SCHEDULE.map(function(r) {
+            const area40 = pipeFlowArea(r, "40");
+            const area80 = pipeFlowArea(r, "80");
+            return [
+              "DN" + r.dn,
+              r.nps,
+              r.od.toFixed(1),
+              r.sch40.toFixed(2),
+              pipeInsideDiameter(r, "40").toFixed(2),
+              (area40 * 10000).toFixed(1),
+              r.sch80.toFixed(2),
+              pipeInsideDiameter(r, "80").toFixed(2),
+              (area80 * 10000).toFixed(1)
+            ];
+          })}
+        />
+        <p className="standards-reference-note">{X.pipeNote}</p>
+      </>
     );
   } else if (tab === "testPressure") {
     tableContent = (
@@ -605,8 +961,109 @@ export default function StandardsTable({ locale, initialTab }) {
         })}
       </div>
 
+      {quickContent}
       {tableContent}
       <style jsx global>{`
+        .standards-quick {
+          margin-bottom: 14px;
+          padding: 13px 14px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: var(--bg-card);
+        }
+        .standards-quick-title {
+          margin-bottom: 9px;
+          font-size: 10.5px;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+        .standards-quick-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+        }
+        .standards-quick-input,
+        .standards-quick-select {
+          padding: 9px 11px;
+          border: 1.5px solid var(--border);
+          border-radius: 9px;
+          background: var(--bg-soft);
+          color: var(--text);
+          font-family: inherit;
+          font-size: 12.5px;
+          font-weight: 700;
+          outline: none;
+          min-width: 130px;
+          text-align: start;
+          transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .standards-quick-input {
+          text-align: left;
+        }
+        .standards-quick-input:focus,
+        .standards-quick-select:focus {
+          border-color: var(--gold);
+          background: var(--bg-card);
+          box-shadow: 0 0 0 3px var(--glow);
+        }
+        .standards-quick-btn {
+          padding: 9px 12px;
+          border: 1.5px solid var(--border);
+          border-radius: 9px;
+          background: var(--bg-soft);
+          color: var(--text-soft);
+          font-family: inherit;
+          font-size: 11px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .standards-quick-btn:hover {
+          border-color: var(--gold);
+        }
+        .standards-quick-chip {
+          display: inline-flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 68px;
+          padding: 7px 11px;
+          border: 1px solid var(--border);
+          border-radius: 9px;
+          background: var(--bg-soft);
+        }
+        .standards-quick-chip span {
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+        }
+        .standards-quick-chip strong {
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
+          font-variant-numeric: tabular-nums;
+          direction: ltr;
+          text-align: start;
+        }
+        .standards-quick-badge {
+          padding: 5px 9px;
+          border-radius: 7px;
+          background: var(--bg-soft);
+          border: 1px dashed var(--border);
+          color: var(--text-muted);
+          font-size: 10px;
+          font-weight: 800;
+        }
+        .standards-quick-note {
+          margin: 9px 0 0;
+          color: var(--text-muted);
+          font-size: 10.5px;
+          font-weight: 600;
+          line-height: 1.8;
+        }
         .standards-reference-note {
           margin: 12px 2px 0;
           padding: 11px 13px;

@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -61,7 +62,7 @@ export default function TestimonialsSection({ testimonials, locale }) {
               <div className="flex items-center gap-3 pt-4"
                 style={{ borderTop: "1px solid var(--border)" }}>
                 {t.image ? (
-                  <img src={t.image} alt="" className="w-11 h-11 rounded-full object-cover" />
+                  <MediaImage src={t.image} alt="" width={88} height={88} sizes="44px" className="w-11 h-11 rounded-full object-cover" />
                 ) : (
                   <div className="w-11 h-11 rounded-full grid place-items-center"
                     style={{ background: "linear-gradient(135deg, #E0A81A, #B8850A)" }}>

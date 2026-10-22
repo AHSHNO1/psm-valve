@@ -17,12 +17,16 @@ const extra = process.argv.slice(2).map(Number).filter((value) => Number.isFinit
 const points = [...new Set([...SWEEP, ...extra])].sort((a, b) => a - b);
 
 const products = getProducts();
-const catalog = buildSizingCatalog(products);
 const tables = getSizingTablesForClient().series;
+const catalog = buildSizingCatalog(products, tables);
 const summary = getCvCatalogSummary();
+// پوشش واقعی و پوشورد برآوردی دو چیزند؛ گزارش نباید آنها را یکی نشان دهد
+const provenanceOf = (seriesId) => tables[String(seriesId)]?.provenance || "none";
+const measuredCount = Object.values(tables).filter((entry) => entry.provenance === "measured").length;
+const estimatedCount = Object.values(tables).filter((entry) => entry.provenance === "estimated").length;
 
 console.log("PSM Valve — پوشش جدول Cv کاتالوگ\n" + "=".repeat(80));
-console.log(`محصولات: ${products.length} · سری‌های دارای بازهٔ سایز: ${catalog.length} · سری‌های دارای جدول Cv: ${countCvSeries(tables)}`);
+console.log(`محصولات: ${products.length} · سری‌های دارای بازهٔ سایز: ${catalog.length} · سری‌های دارای جدول Cv: ${countCvSeries(tables)} (${measuredCount} اندازه‌گیری‌شده + ${estimatedCount} برآورد)`);
 if (summary.stats) {
   console.log(`کاتالوگ: ${summary.stats.series} سری · ${summary.stats.sizes} سایز · ${summary.stats.trims} ترم · اصلاح‌شده: ${summary.repairedValues}`);
 }
@@ -32,7 +36,9 @@ console.log("-".repeat(80));
 for (const product of catalog) {
   const sizes = tables[product.series]?.sizes?.length || 0;
   const range = product.sizeRange ? `${product.sizeRange.min}–${product.sizeRange.max} inch` : "—";
-  const label = sizes > 0 ? `✅ ${sizes} سایز` : "— (جدول عمومی)";
+  const kind = provenanceOf(product.series);
+  const origin = sizes > 0 ? (kind === "estimated" ? " · برآورد" : kind === "mixed" ? " · مخلوط" : "") : "";
+  const label = sizes > 0 ? `✅ ${sizes} سایز${origin}` : "— (جدول عمومی)";
   console.log(`${String(product.series).slice(0, 20).padEnd(22)}${range.padEnd(14)}${label}`);
 }
 
@@ -54,7 +60,7 @@ for (const cv of points) {
     (pick.dn + nps).padEnd(12) +
     String(pick.cv).padStart(9) + "  " +
     String(pick.characteristic || "—").padEnd(10) +
-    `${pick.openingPercent}%${pick.withinMargin ? "" : "  ⚠ بالای ۸۰٪"}${pick.curveBased ? "" : "  (فرض خطی)"}`
+    `${pick.openingPercent}%${pick.withinMargin ? "" : "  ⚠ بالای ۸۰٪"}${pick.curveBased ? "" : "  (فرض خطی)"}${pick.source === "estimated" ? `  [برآورد ±${pick.errorPct}%]` : ""}`
   );
 }
 console.log(`\n${points.length - misses} از ${points.length} نقطه پوشش داده شد.`);

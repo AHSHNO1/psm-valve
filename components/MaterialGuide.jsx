@@ -92,7 +92,7 @@ export default function MaterialGuide({ form, fluid, locale = "fa" }) {
   }[locale] || {};
 
   const name = (m) => m.name[locale] || m.name.en;
-  const useText = (m) => m.use[locale] || m.use.en;
+  const pickUse = (m) => m.use[locale] || m.use.en;
 
   return (
     <div className="card-glass" style={{ padding: 16 }}>
@@ -198,7 +198,7 @@ export default function MaterialGuide({ form, fluid, locale = "fa" }) {
           }}>
             <Info size={12} color={recommended.color} style={{ marginTop: 2, flexShrink: 0 }} />
             <span style={{ fontSize: 10.5, fontWeight: 600, color: "var(--text-soft)", lineHeight: 1.55 }}>
-              {useText(recommended)}
+              {pickUse(recommended)}
             </span>
           </div>
 

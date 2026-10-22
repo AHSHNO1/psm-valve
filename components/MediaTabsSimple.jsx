@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
-import { FileText, Download, Film, Library, Camera, Newspaper, ArrowLeft, Calendar } from "lucide-react";
+import { FileText, Download, Film, Library, Camera, Newspaper, ArrowLeft, Calendar, Images } from "lucide-react";
 import Link from "next/link";
 import VideoEmbed from "./VideoEmbed";
+import { newsGallery, formatNewsDate } from "@/lib/news-utils";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -189,9 +190,22 @@ function NewsGrid({ items, locale, dict }) {
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {active.map(function(n) {
         const title = pick(n.title, locale) || fallbackText(locale, "newsEmpty");
+        const images = newsGallery(n);
         return (
-          <article key={n.id} className="card-glass group flex h-full flex-col overflow-hidden transition hover:border-gold-500/40">
-            <MediaCover src={n.image} title={title} fallback="/images/media/news-cover.svg" />
+          <Link
+            key={n.slug || n.id}
+            href={"/" + locale + "/news/" + n.slug}
+            className="card-glass group flex h-full flex-col overflow-hidden transition hover:border-gold-500/40"
+          >
+            <div className="relative">
+              <MediaCover src={images[0]} title={title} fallback="/images/media/news-cover.svg" />
+              {images.length > 1 && (
+                <span className="absolute bottom-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold text-white"
+                  style={{ insetInlineStart: 8, background: "rgba(0,0,0,0.65)" }}>
+                  <Images size={10} /> {images.length}
+                </span>
+              )}
+            </div>
             <div className="flex flex-1 flex-col p-5">
               <div className="mb-2 min-h-4 text-xs font-bold" style={{ color: "var(--gold)" }}>
                 {pick(n.category, locale) || fallbackText(locale, "news").split(".")[0]}
@@ -202,14 +216,14 @@ function NewsGrid({ items, locale, dict }) {
               </p>
               <div className="mt-5 flex items-center justify-between text-xs" style={{ color: "var(--text-muted)" }}>
                 <span className="flex items-center gap-1">
-                  <Calendar size={12} /> {n.date || "—"}
+                  <Calendar size={12} /> {formatNewsDate(n.date, locale) || "—"}
                 </span>
                 <span className="flex items-center gap-1 font-bold" style={{ color: "var(--gold)" }}>
                   {(dict.media && dict.media.readMore) || "ادامه"} <ArrowLeft size={12} />
                 </span>
               </div>
             </div>
-          </article>
+          </Link>
         );
       })}
     </div>

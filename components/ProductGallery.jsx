@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ImageOff } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 export default function ProductGallery({ images = [], name, noImage }) {
   const availableImages = images.filter(Boolean);
@@ -25,16 +26,19 @@ export default function ProductGallery({ images = [], name, noImage }) {
   return (
     <div className="space-y-3">
       <div
-        className="grid min-h-[320px] place-items-center overflow-hidden rounded-3xl bg-white sm:min-h-[460px]"
+        className="relative grid min-h-[320px] place-items-center overflow-hidden rounded-3xl bg-white sm:min-h-[460px]"
         style={{
           border: "1px solid var(--border)",
           background: "var(--bg-card)",
           boxShadow: "var(--shadow-sm)"
         }}
       >
-        <img
+        <MediaImage
           src={activeImage}
           alt={name}
+          fill
+          priority
+          sizes="(max-width: 1024px) 100vw, 50vw"
           className="max-h-[560px] w-full object-contain p-5 sm:p-8"
         />
       </div>
@@ -54,7 +58,14 @@ export default function ProductGallery({ images = [], name, noImage }) {
                 boxShadow: activeIndex === index ? "0 4px 16px var(--glow)" : "var(--shadow-sm)"
               }}
             >
-              <img src={image} alt="" className="h-full w-full object-contain p-2" />
+              <MediaImage
+                src={image}
+                alt=""
+                width={96}
+                height={80}
+                sizes="96px"
+                className="h-full w-full object-contain p-2"
+              />
             </button>
           ))}
         </div>

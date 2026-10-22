@@ -1,24 +1,27 @@
-import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getSession, updateAdmin, verifyAdminPassword } from "@/lib/auth";
+import { updateAdmin, verifyAdminPassword } from "@/lib/auth";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { guard, readJson, json, err, isResponse } from "@/lib/api-helpers";
 
 export async function PATCH(request) {
-  const session = await getSession(request);
-  if (!session || session.role !== "admin") {
-    return NextResponse.json({ ok: false }, { status: 401 });
+  const session = await guard(request, { role: "admin" });
+  if (isResponse(session)) return session;
+
+  // محدودسازی تغییر رمز (ضد حدس رمز فعلی): ۵ تلاش در هر ۱۵ دقیقه برای هر IP
+  const rate = consumeRateLimit(request, "password-change", 5, 15 * 60 * 1000);
+  if (!rate.allowed) {
+    return err("تعداد تلاش بیش از حد مجاز است؛ کمی بعد دوباره امتحان کنید.", 429, {
+      code: "rate_limited"
+    }, { headers: { "Retry-After": String(rate.retryAfter) } });
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "درخواست JSON معتبر نیست" }, { status: 400 });
-  }
+  const body = await readJson(request);
+  if (isResponse(body)) return body;
   const currentPassword = body?.currentPassword;
   const newPassword = body?.newPassword;
 
   if (typeof currentPassword !== "string" || currentPassword.length > 200) {
-    return NextResponse.json({ ok: false, error: "رمز فعلی معتبر نیست" }, { status: 400 });
+    return err("رمز فعلی معتبر نیست", 400);
   }
 
   let currentPasswordIsValid;
@@ -26,13 +29,13 @@ export async function PATCH(request) {
     currentPasswordIsValid = await verifyAdminPassword(currentPassword);
   } catch (error) {
     console.error("Failed to verify administrator password:", error);
-    return NextResponse.json({ ok: false, error: "بررسی رمز انجام نشد؛ دوباره تلاش کنید" }, { status: 500 });
+    return err("بررسی رمز انجام نشد؛ دوباره تلاش کنید", 500);
   }
   if (!currentPasswordIsValid) {
-    return NextResponse.json({ ok: false, error: "رمز فعلی اشتباه است" }, { status: 400 });
+    return err("رمز فعلی اشتباه است", 400);
   }
   if (typeof newPassword !== "string" || newPassword.length < 12 || Buffer.byteLength(newPassword, "utf8") > 72) {
-    return NextResponse.json({ ok: false, error: "رمز جدید باید حداقل ۱۲ کاراکتر و حداکثر ۷۲ بایت باشد" }, { status: 400 });
+    return err("رمز جدید باید حداقل ۱۲ کاراکتر و حداکثر ۷۲ بایت باشد", 400);
   }
 
   let newPasswordMatchesCurrent;
@@ -40,18 +43,18 @@ export async function PATCH(request) {
     newPasswordMatchesCurrent = await verifyAdminPassword(newPassword);
   } catch (error) {
     console.error("Failed to compare administrator passwords:", error);
-    return NextResponse.json({ ok: false, error: "بررسی رمز انجام نشد؛ دوباره تلاش کنید" }, { status: 500 });
+    return err("بررسی رمز انجام نشد؛ دوباره تلاش کنید", 500);
   }
   if (newPasswordMatchesCurrent) {
-    return NextResponse.json({ ok: false, error: "رمز جدید باید با رمز فعلی متفاوت باشد" }, { status: 400 });
+    return err("رمز جدید باید با رمز فعلی متفاوت باشد", 400);
   }
 
   try {
     const passwordHash = await bcrypt.hash(newPassword, 12);
     updateAdmin({ passwordHash });
-    return NextResponse.json({ ok: true });
+    return json();
   } catch (error) {
     console.error("Failed to update administrator password:", error);
-    return NextResponse.json({ ok: false, error: "تغییر رمز ذخیره نشد؛ دوباره تلاش کنید" }, { status: 500 });
+    return err("تغییر رمز ذخیره نشد؛ دوباره تلاش کنید", 500);
   }
 }

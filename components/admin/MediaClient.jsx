@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { Icon } from "./AdminIcons";
 import { DeleteBtn, EditBtn, SaveBtn, CancelBtn, ToggleBtn } from "./Actions";
 import ContentStudioNav from "./ContentStudioNav";
+import { useToast, Toast } from "./useToast";
 
 const TABS = [
   { id: "gallery", label: "تصاویر", icon: "image" },
@@ -14,13 +15,8 @@ export default function MediaClient({ initial }) {
   const [media, setMedia] = useState(initial || { videos: [], catalogs: [], gallery: [], introVideoUrl: "" });
   const [tab, setTab] = useState("gallery");
   const [editing, setEditing] = useState(null);
-  const [msg, setMsg] = useState({ type: "", text: "" });
   const [introUrl, setIntroUrl] = useState(media.introVideoUrl || "");
-
-  function notify(text, isError) {
-    setMsg({ type: isError ? "error" : "success", text: text });
-    setTimeout(function() { setMsg({ type: "", text: "" }); }, 3000);
-  }
+  const { notify, toast } = useToast();
 
   async function refresh() {
     const res = await fetch("/api/media");
@@ -44,14 +40,31 @@ export default function MediaClient({ initial }) {
     refresh().catch((error) => notify(error.message, true));
   }
 
-  async function removeItem(id, type) {
-    if (!confirm("این آیتم حذف شود؟")) return;
+  async function removeItem(id, type, force) {
+    if (!force && !confirm("این آیتم حذف شود؟")) return;
     try {
-      const res = await fetch("/api/media?id=" + encodeURIComponent(id) + "&type=" + type, { method: "DELETE" });
-      const data = await res.json();
+      let url = "/api/media?id=" + encodeURIComponent(id) + "&type=" + encodeURIComponent(type);
+      if (force) url += "&force=1";
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json().catch(function () { return {}; });
+
+      // فایل در بخش‌های دیگر استفاده شده → 409؛ تأیید ارجاع و حذف اجباری.
+      if (res.status === 409) {
+        const refs = Array.isArray(data.references) ? data.references : [];
+        const warning = "این فایل در بخش‌های دیگری از سایت استفاده شده است" +
+          (refs.length ? " (" + refs.join("، ") + ")" : "") +
+          ".\n\nحذف اجباری ممکن است آن بخش‌ها را خراب کند. با این حال حذف شود؟";
+        if (confirm(warning)) {
+          await removeItem(id, type, true);
+          return;
+        }
+        notify("حذف انجام نشد", true);
+        return;
+      }
+
       if (!res.ok || !data.ok) throw new Error(data.error || "حذف ناموفق بود");
       await refresh();
-      notify("حذف شد");
+      notify(data.fileDeleted ? "فایل و رکورد حذف شد" : "رکورد حذف شد");
     } catch (error) {
       notify(error.message || "حذف ناموفق بود", true);
     }
@@ -95,11 +108,7 @@ export default function MediaClient({ initial }) {
         </div>
       </div>
 
-      {msg.text && (
-        <div className={"msg anim-in " + (msg.type === "success" ? "msg-success" : "msg-error")}>
-          <Icon name={msg.type === "success" ? "check" : "alert"} /> {msg.text}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* Intro video tile */}
       <div className="anim-in" style={{

@@ -1,5 +1,8 @@
 import { getProjects, getContent } from "@/lib/content";
 import { Image as ImageIcon } from "lucide-react";
+import MediaImage from "@/components/MediaImage";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +10,19 @@ function pick(obj, locale) {
   if (!obj) return "";
   if (typeof obj === "string") return obj;
   return obj[locale] || obj.en || obj.fa || "";
+}
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const meta = getContent().projects || {};
+  const seo = pageSeo(locale, "projects");
+  return buildMetadata({
+    locale,
+    path: "/projects",
+    title: pick(meta.title, locale) || seo.title,
+    description: pick(meta.subtitle, locale) || seo.description,
+    keywords: seo.keywords
+  });
 }
 
 export default async function ProjectsPage({ params }) {
@@ -91,6 +107,7 @@ export default async function ProjectsPage({ params }) {
                 style={{ animationDelay: (i * 50) + "ms" }}
               >
                 <div style={{
+                  position: "relative",
                   aspectRatio: "16/10",
                   background: p.image ? "var(--bg-soft)" : "linear-gradient(135deg, rgba(79, 107, 237, 0.1), rgba(59, 82, 196, 0.04))",
                   overflow: "hidden",
@@ -98,7 +115,9 @@ export default async function ProjectsPage({ params }) {
                   placeItems: "center"
                 }}>
                   {p.image ? (
-                    <img src={p.image} alt={pick(p.title, locale)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <MediaImage src={p.image} alt={pick(p.title, locale)} fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <div style={{ display: "grid", justifyItems: "center", gap: 8, color: "var(--text-muted)" }}>
                       <ImageIcon size={28} strokeWidth={1.5} />

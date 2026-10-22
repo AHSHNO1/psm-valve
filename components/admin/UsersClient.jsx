@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "./AdminIcons";
+import { useToast, Toast } from "./useToast";
 
 const initialForm = { name: "", username: "", password: "" };
 
@@ -10,7 +11,7 @@ export default function UsersClient() {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState({ type: "", text: "" });
+  const { notify, toast, dismiss } = useToast();
 
   async function loadAuthors() {
     const response = await fetch("/api/admin/users", { cache: "no-store" });
@@ -21,14 +22,14 @@ export default function UsersClient() {
 
   useEffect(() => {
     loadAuthors()
-      .catch((error) => setNotice({ type: "error", text: error.message }))
+      .catch((error) => notify(error.message, true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [notify]);
 
   async function createAuthor(event) {
     event.preventDefault();
     setSaving(true);
-    setNotice({ type: "", text: "" });
+    dismiss();
     try {
       const response = await fetch("/api/admin/users", {
         method: "POST",
@@ -39,16 +40,16 @@ export default function UsersClient() {
       if (!response.ok || !data.ok) throw new Error(data.error || "ساخت حساب ناموفق بود");
       setAuthors((current) => [data.author, ...current]);
       setForm(initialForm);
-      setNotice({ type: "success", text: "حساب نویسنده ساخته شد. رمز اولیه را امن به او تحویل دهید." });
+      notify("حساب نویسنده ساخته شد. رمز اولیه را امن به او تحویل دهید.");
     } catch (error) {
-      setNotice({ type: "error", text: error.message });
+      notify(error.message, true);
     } finally {
       setSaving(false);
     }
   }
 
   async function toggleAuthor(author) {
-    setNotice({ type: "", text: "" });
+    dismiss();
     try {
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -61,7 +62,7 @@ export default function UsersClient() {
         current.map((item) => item.id === author.id ? { ...item, active: author.active === false } : item)
       );
     } catch (error) {
-      setNotice({ type: "error", text: error.message });
+      notify(error.message, true);
     }
   }
 
@@ -79,14 +80,7 @@ export default function UsersClient() {
         </div>
       </div>
 
-      {notice.text && (
-        <div
-          className={"msg " + (notice.type === "error" ? "msg-error" : "msg-success")}
-          role={notice.type === "error" ? "alert" : "status"}
-        >
-          {notice.text}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <form onSubmit={createAuthor} className="card-item anim-in" style={{ marginBottom: 18 }}>
         <h2 className="font-bold mb-4">افزودن نویسنده</h2>

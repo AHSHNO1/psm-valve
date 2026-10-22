@@ -1,10 +1,25 @@
 import { getContent } from "@/lib/content";
 import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 
 function pick(obj, locale) {
   if (!obj) return "";
   if (typeof obj === "string") return obj;
   return obj[locale] || obj.en || obj.fa || "";
+}
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const process = getContent().process || {};
+  const seo = pageSeo(locale, "process");
+  return buildMetadata({
+    locale,
+    path: "/process",
+    title: pick(process.title, locale) || seo.title,
+    description: pick(process.subtitle, locale) || seo.description,
+    keywords: seo.keywords
+  });
 }
 
 export default async function ProcessPage({ params }) {

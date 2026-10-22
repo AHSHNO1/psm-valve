@@ -2,7 +2,11 @@
 /**
  * چرخش رمز مدیر پنل.
  *
- *   node scripts/rotate-admin-password.mjs
+ *   node scripts/rotate-admin-password.mjs                       (تعاملی، امن‌ترین)
+ *   printf '%s' "$PASSWORD" | node scripts/rotate-admin-password.mjs --stdin
+ *   node scripts/rotate-admin-password.mjs --password-file <path>
+ *   node scripts/rotate-admin-password.mjs --password <pass>     (فقط سازگاری)
+ *   ... [--username <name>]   نام کاربری مدیر را هم تنظیم می‌کند (پیش‌فرض: مقدار فعلی)
  *
  * رمز به‌صورت bcrypt (cost 12) در data/admin.json ذخیره می‌شود؛ فایل قبلی
  * با پسوند .backup-<timestamp> کنار گذاشته می‌شود. رمز در تاریخچهٔ پوسته
@@ -45,18 +49,41 @@ function fail(message) {
   process.exit(1);
 }
 
+function parseArgs(argv) {
+  const opts = { password: "", passwordFile: "", stdin: false, username: "" };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--password") opts.password = argv[++i] || "";
+    else if (arg.startsWith("--password=")) opts.password = arg.slice("--password=".length);
+    else if (arg === "--password-file") opts.passwordFile = argv[++i] || "";
+    else if (arg.startsWith("--password-file=")) opts.passwordFile = arg.slice("--password-file=".length);
+    else if (arg === "--username") opts.username = argv[++i] || "";
+    else if (arg.startsWith("--username=")) opts.username = arg.slice("--username=".length);
+    else if (arg === "--stdin") opts.stdin = true;
+    else fail(`گزینهٔ ناشناخته: ${arg}`);
+  }
+  return opts;
+}
+
 async function main() {
-  const argPassword = process.argv[2] === "--password" ? process.argv[3] : "";
-  if (process.argv[2] === "--password") {
-    console.warn("⚠ رمز روی خط فرمان ممکن است در تاریخچهٔ شل بماند؛ روش تعاملی امن‌تر است.");
+  const opts = parseArgs(process.argv.slice(2));
+  if (opts.password) {
+    console.warn("⚠ رمز روی خط فرمان ممکن است در تاریخچهٔ شل بماند؛ روش تعاملی یا --stdin امن‌تر است.");
   }
 
-  if (!process.stdin.isTTY && !argPassword) {
-    fail("اجرای تعاملی ممکن نیست؛ از --password استفاده کنید یا در ترمینال اجرا کنید.");
-  }
-
-  const password = argPassword || (await askHidden("رمز جدید مدیر: "));
-  if (!argPassword) {
+  let password = "";
+  if (opts.passwordFile) {
+    if (!fs.existsSync(opts.passwordFile)) fail(`فایل رمز پیدا نشد: ${opts.passwordFile}`);
+    password = fs.readFileSync(opts.passwordFile, "utf8").replace(/\r?\n$/, "");
+  } else if (opts.stdin) {
+    password = fs.readFileSync(0, "utf8").replace(/\r?\n$/, "");
+  } else if (opts.password) {
+    password = opts.password;
+  } else {
+    if (!process.stdin.isTTY) {
+      fail("اجرای تعاملی ممکن نیست؛ از --stdin یا --password-file استفاده کنید یا در ترمینال اجرا کنید.");
+    }
+    password = await askHidden("رمز جدید مدیر: ");
     const again = await askHidden("تکرار رمز جدید: ");
     if (password !== again) fail("رمزها یکسان نیستند.");
   }
@@ -64,12 +91,15 @@ async function main() {
   if (password.length < MIN_LENGTH) {
     fail(`رمز باید دست‌کم ${MIN_LENGTH} کاراکتر باشد.`);
   }
+  if (opts.username && !/^[A-Za-z0-9._@-]{1,64}$/.test(opts.username)) {
+    fail("نام کاربری باید ۱ تا ۶۴ کاراکتر و شامل حروف، رقم یا . _ @ - باشد.");
+  }
 
   const existing = fs.existsSync(ADMIN_FILE)
     ? JSON.parse(fs.readFileSync(ADMIN_FILE, "utf8"))
     : {};
 
-  const username = existing.username || process.env.ADMIN_USERNAME || "admin";
+  const username = opts.username || existing.username || process.env.ADMIN_USERNAME || "admin";
   const passwordHash = await bcrypt.hash(password, COST);
 
   fs.mkdirSync(DATA_DIR, { recursive: true });

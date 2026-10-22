@@ -7,7 +7,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { GUIDELINES } from "@/lib/upload-guidelines";
-import { categories, getCategoryLabel } from "@/lib/categories";
+import { getCategoryLabel } from "@/lib/category-utils";
 import { SPEC_FIELDS } from "@/lib/spec-fields";
 import ProductGallery from "@/components/ProductGallery";
 import ProductTechnicalSpecifications from "@/components/ProductTechnicalSpecifications";
@@ -84,7 +84,7 @@ function ensureSpecifications(val, legacySpec) {
     .filter(function(row) { return Object.values(row.value).some(Boolean); });
 }
 
-export default function ProductWizard({ initial, isNew = false, initialStep = 1 }) {
+export default function ProductWizard({ initial, categories = [], isNew = false, initialStep = 1 }) {
   const router = useRouter();
   const [step, setStep] = useState(initialStep === 2 ? 2 : 1);
   const [activeLang, setActiveLang] = useState("fa");
@@ -96,7 +96,7 @@ export default function ProductWizard({ initial, isNew = false, initialStep = 1 
       return {
         slug: initial.slug || "",
         series: initial.series || "",
-        categoryId: initial.categoryId || "control-valves",
+        categoryId: initial.categoryId || categories.find(function(c) { return !c.children.length; })?.id || "control-valves",
         image: initial.image || "",
         image2: initial.image2 || "",
         name: ensureML(initial.name),
@@ -113,7 +113,7 @@ export default function ProductWizard({ initial, isNew = false, initialStep = 1 
     return {
       slug: "",
       series: "",
-      categoryId: "control-valves",
+      categoryId: categories.find(function(c) { return !c.children.length; })?.id || "control-valves",
       image: "",
       image2: "",
       name: emptyML(),
@@ -459,8 +459,8 @@ function Step1({ product, updateField, isNew }) {
             onChange={function(e) { updateField("categoryId", e.target.value); }}
             className="big-input"
           >
-            {categories.filter(function(c) { return !c.children; }).map(function(c) {
-              return <option key={c.id} value={c.id}>{getCategoryLabel(c)}</option>;
+            {categories.filter(function(c) { return !c.children.length && !c.hidden; }).map(function(c) {
+              return <option key={c.id} value={c.id}>{getCategoryLabel(c, "fa", categories)}</option>;
             })}
           </select>
         </div>

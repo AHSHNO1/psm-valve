@@ -5,6 +5,7 @@ import {
   Cog, Gauge, Wrench, Circle, Flame, Truck, Package, Settings,
   ArrowLeft, Sparkles, Crosshair, ShieldCheck, Zap, CheckCircle2
 } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck, Package, Settings };
 
@@ -352,6 +353,9 @@ export default function ServicesCombined({ services, locale }) {
         }
 
         /* ---- Shine Effect ---- */
+        /* به‌جای translateX که جعبهٔ عنصر را از لبه بیرون می‌برد و باعث سرریز افقی
+           می‌شود (حتی با overflow:hidden)، درخشش با جابه‌جایی background انجام می‌شود
+           تا جعبهٔ عنصر همیشه داخل کارت بماند. */
         .svc-fshine {
           position: absolute;
           inset: 0;
@@ -361,12 +365,14 @@ export default function ServicesCombined({ services, locale }) {
             rgba(255, 255, 255, 0.35) 50%,
             transparent 70%
           );
-          transform: translateX(-100%);
-          transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+          background-size: 250% 100%;
+          background-position: 115% 0;
+          background-repeat: no-repeat;
+          transition: background-position 0.8s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
         }
         .svc-fcard:hover .svc-fshine {
-          transform: translateX(100%);
+          background-position: -15% 0;
         }
 
         /* ---- Badge (Featured) ---- */
@@ -605,11 +611,12 @@ function FeaturedServiceCard({ service, locale, labels, index }) {
         <div className="svc-fnum">{String(index + 1).padStart(2, "0")}</div>
         {image ? (
           <>
-            <img
+            <MediaImage
               src={image}
               alt={title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="svc-fimage"
-              loading="lazy"
             />
             <div className="svc-fshine" />
           </>

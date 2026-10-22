@@ -65,25 +65,41 @@ function ConvertTo-ShellArg([string]$value) {
 
 $remoteArgs = @("--domain", (ConvertTo-ShellArg $Domain), "--repo", (ConvertTo-ShellArg $Repo), "--branch", (ConvertTo-ShellArg $Branch), "--app-dir", (ConvertTo-ShellArg $AppDir), "--app-user", (ConvertTo-ShellArg $AppUser), "--admin-user", (ConvertTo-ShellArg $AdminUser), "--port", $Port)
 if ($Email) { $remoteArgs += @("--email", (ConvertTo-ShellArg $Email)) }
-if ($AdminPassword) { $remoteArgs += @("--admin-password", (ConvertTo-ShellArg $AdminPassword)) }
 if ($NoSsl) { $remoteArgs += "--no-ssl" }
 if ($NoFirewall) { $remoteArgs += "--no-firewall" }
 if ($SkipBuild) { $remoteArgs += "--skip-build" }
 
 $prefix = if ($Sudo) { "sudo " } else { "" }
-$remoteCommand = "$prefix`bash $remoteScript " + ($remoteArgs -join " ")
 
 Write-Host "→ انتقال deploy/install.sh به سرور ..." -ForegroundColor Cyan
 & scp $installScript "${target}:${remoteScript}"
 if ($LASTEXITCODE -ne 0) { throw "انتقال install.sh ناموفق بود." }
-
+$remotePasswordFile = ""
 if ($AdminPassword) {
-    Write-Host "⚠ رمز مدیر روی خط فرمان سرور ارسال میشود؛ بعد از نصب از پنل عوضش کنید." -ForegroundColor Yellow
+    # رمز در آرگومان‌های SSH قرار نمی‌گیرد: فایل موقت 600 منتقل می‌شود و install.sh آن را می‌خواند و پاک می‌کند.
+    $remotePasswordFile = "/tmp/psm-admin-pass-$([guid]::NewGuid().ToString('N'))"
+    $localPasswordFile = [System.IO.Path]::GetTempFileName()
+    try {
+        [System.IO.File]::WriteAllText($localPasswordFile, $AdminPassword)
+        & scp $localPasswordFile "${target}:${remotePasswordFile}"
+        if ($LASTEXITCODE -ne 0) { throw "انتقال فایل رمز مدیر ناموفق بود." }
+        & ssh $target "chmod 600 '$remotePasswordFile'"
+        if ($LASTEXITCODE -ne 0) { throw "تنظیم دسترسی فایل رمز ناموفق بود." }
+    }
+    finally {
+        Remove-Item $localPasswordFile -Force -ErrorAction SilentlyContinue
+    }
+    $remoteArgs += @("--admin-password-file", (ConvertTo-ShellArg $remotePasswordFile))
 }
 
+
+
 Write-Host "→ اجرای نصب خودکار روی سرور (چند دقیقه طول میکشد) ..." -ForegroundColor Cyan
+$remoteCommand = "${prefix}bash $remoteScript " + ($remoteArgs -join " ")
 & ssh $target $remoteCommand
-if ($LASTEXITCODE -ne 0) { throw "نصب روی سرور ناموفق بود (کد $LASTEXITCODE)." }
+$installExit = $LASTEXITCODE
+if ($remotePasswordFile) { & ssh $target "rm -f '$remotePasswordFile'" | Out-Null }
+if ($installExit -ne 0) { throw "نصب روی سرور ناموفق بود (کد $installExit)." }
 
 if (-not $SkipAssets) {
     Write-Host "→ انتقال دادهٔ سایت و داراییهای آپلودشده ..." -ForegroundColor Cyan
@@ -92,8 +108,8 @@ if (-not $SkipAssets) {
     & (Join-Path $PSScriptRoot "push-assets.ps1") @pushArgs
 
     Write-Host "→ اصلاح مالکیت فایلها به کاربر $AppUser ..." -ForegroundColor Cyan
-    & ssh $target "$prefix`chown -R ${AppUser}:${AppUser} $AppDir"
-    & ssh $target "$prefix`su - $AppUser -c 'export PATH=`$PATH:/usr/bin; cd $AppDir && pm2 reload ecosystem.config.js --update-env'"
+    & ssh $target "${prefix}chown -R ${AppUser}:${AppUser} $AppDir"
+    & ssh $target "${prefix}su - $AppUser -c 'export PATH=`$PATH:/usr/bin; cd $AppDir && pm2 reload ecosystem.config.js --update-env'"
 }
 
 Write-Host ""

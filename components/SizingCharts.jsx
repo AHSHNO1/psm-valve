@@ -6,6 +6,7 @@ import {
   CheckCircle2, AlertTriangle, TrendingUp, Gauge, Target, Zap, Activity, BookOpen, Star, Award
 } from "lucide-react";
 import { velocityFromSI } from "@/lib/unit-system";
+import { velocityExceedsGuide } from "@/lib/sizing-advanced";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -157,24 +158,27 @@ export function TipsAndStandards({ result, form, units, locale = "fa" }) {
   const tips = useMemo(() => {
     if (!result) return [];
     const t = [];
-    if (result.openingPercent >= 20 && result.openingPercent <= 80) {
-      t.push({
-        icon: CheckCircle2, color: "#10B981",
-        title: locale === "fa" ? "بازشدگی بهینه" : "Optimal Opening",
-        desc: locale === "fa" ? "نقطه کاری در محدوده بهینه است. بهترین تعادل کنترل و راندمان." : "Operating point is optimal."
-      });
-    } else if (result.openingPercent < 20) {
-      t.push({
-        icon: AlertTriangle, color: "#F59E0B",
-        title: locale === "fa" ? "بازشدگی کم" : "Low Opening",
-        desc: locale === "fa" ? `بازشدگی ${result.openingPercent}٪ — سایز کوچکتر انتخاب کنید.` : `Opening ${result.openingPercent}% — smaller size.`
-      });
-    } else {
-      t.push({
-        icon: AlertTriangle, color: "#F59E0B",
-        title: locale === "fa" ? "بازشدگی بالا" : "High Opening",
-        desc: locale === "fa" ? `بازشدگی ${result.openingPercent}٪ — سایز بزرگتر انتخاب کنید.` : `Opening ${result.openingPercent}% — larger size.`
-      });
+    // حالت‌های سرویس (PSV / دسوپرهیتر) بازشدگی ندارند؛ توصیهٔ بی‌معنی ساخته نمی‌شود
+    if (Number.isFinite(result.openingPercent)) {
+      if (result.openingPercent >= 20 && result.openingPercent <= 80) {
+        t.push({
+          icon: CheckCircle2, color: "#10B981",
+          title: locale === "fa" ? "بازشدگی بهینه" : "Optimal Opening",
+          desc: locale === "fa" ? "نقطه کاری در محدوده بهینه است. بهترین تعادل کنترل و راندمان." : "Operating point is optimal."
+        });
+      } else if (result.openingPercent < 20) {
+        t.push({
+          icon: AlertTriangle, color: "#F59E0B",
+          title: locale === "fa" ? "بازشدگی کم" : "Low Opening",
+          desc: locale === "fa" ? `بازشدگی ${result.openingPercent}٪ — سایز کوچکتر انتخاب کنید.` : `Opening ${result.openingPercent}% — smaller size.`
+        });
+      } else {
+        t.push({
+          icon: AlertTriangle, color: "#F59E0B",
+          title: locale === "fa" ? "بازشدگی بالا" : "High Opening",
+          desc: locale === "fa" ? `بازشدگی ${result.openingPercent}٪ — سایز بزرگتر انتخاب کنید.` : `Opening ${result.openingPercent}% — larger size.`
+        });
+      }
     }
     if (result.size && result.Cv) {
       const headroom = Math.round(((result.size.cv - result.Cv) / result.Cv) * 100);
@@ -189,7 +193,7 @@ export function TipsAndStandards({ result, form, units, locale = "fa" }) {
     // سرعت موتور همیشه m/s است؛ برای نمایش در سیستم اینچی به ft/s تبدیل میشود
     const velocityUnit = (units && units.velocity) || "m/s";
     const velocityValue = velocityFromSI(result.velocity, velocityUnit);
-    if (result.velocity > 5) {
+    if (velocityExceedsGuide({ fluidType: result.fluidType || result.fluid, velocity: result.velocity, mach: result.mach })) {
       t.push({
         icon: Zap, color: "#F59E0B",
         title: locale === "fa" ? "سرعت بالا" : "High Velocity",
@@ -199,8 +203,38 @@ export function TipsAndStandards({ result, form, units, locale = "fa" }) {
     if (result.noise > 85) {
       t.push({
         icon: Gauge, color: "#E81123",
-        title: locale === "fa" ? "نویز بالا" : "High Noise",
-        desc: locale === "fa" ? `نویز ${result.noise} dB — از تریم کاهش نویز استفاده کنید.` : `Noise ${result.noise} dB — use noise trim.`
+        title: locale === "fa" ? "نویز بالا (برآورد)" : "High Noise (estimate)",
+        desc: locale === "fa"
+          ? `نویز ≈${result.noise} dB — برآورد راهنما، نه محاسبهٔ IEC 60534-8-3 — از تریم کاهش نویز استفاده کنید.`
+          : `Noise ≈${result.noise} dB — indicative estimate, not IEC 60534-8-3 — use noise trim.`
+      });
+    }
+    // فلشینگ: فشار خروجی پایین‌تر از فشار بخار (شرط ترمودینامیکی P2 < Pv)
+    if (result.flashing) {
+      t.push({
+        icon: AlertTriangle, color: "#E81123",
+        title: locale === "fa" ? "فلشینگ" : "Flashing",
+        desc: locale === "fa"
+          ? "P2 < Pv — بخار در خروجی پایدار می‌ماند؛ تریم مخصوص فلاشینگ و متریال سخت‌کاری‌شده لازم است."
+          : "P2 < Pv — vapour persists downstream; flashing trim and hardened materials required."
+      });
+    } else if (result.cavitationLevel === "high") {
+      t.push({
+        icon: AlertTriangle, color: "#F59E0B",
+        title: locale === "fa" ? "خطر کاویتاسیون بالا" : "High Cavitation Risk",
+        desc: locale === "fa"
+          ? `σ=${result.sigma} نزدیک/زیر حد اشباع — تریم ضدکاویتاسیون توصیه می‌شود.`
+          : `σ=${result.sigma} at/below the choked limit — anti-cavitation trim recommended.`
+      });
+    }
+    // جریان لامینار/گذار — تصحیح ویسکوزیته FR (IEC 60534-2-1 بند ۱۰)
+    if (result.Rev != null && result.Rev < 10000) {
+      t.push({
+        icon: Activity, color: "#F59E0B",
+        title: locale === "fa" ? "جریان لامینار/گذار" : "Laminar/Transition Flow",
+        desc: locale === "fa"
+          ? `Rev ≈${result.Rev}، ضریب FR=${result.FR} اعمال شد — Cv تصحیح ویسکوزیته دارد؛ با سازنده تأیید کنید.`
+          : `Rev ≈${result.Rev}, FR=${result.FR} applied — Cv is viscosity-corrected; verify with vendor.`
       });
     }
     if (result.choked) {

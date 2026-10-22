@@ -289,7 +289,7 @@ function WizField({ label, value, onChange, unit, step }) {
       <input
         type="number"
         step={step || 1}
-        value={value}
+        value={value == null ? "" : value}
         onChange={e => onChange(e.target.value)}
         style={{
           width: "100%", padding: "12px 14px", borderRadius: 10,

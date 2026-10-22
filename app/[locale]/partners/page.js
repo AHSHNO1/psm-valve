@@ -1,6 +1,20 @@
 import { getPartners } from "@/lib/content";
 import PartnersDirectory from "@/components/PartnersDirectory";
 import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const seo = pageSeo(locale, "partners");
+  return buildMetadata({
+    locale,
+    path: "/partners",
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords
+  });
+}
 
 export default async function PartnersPage({ params }) {
   const { locale } = params;

@@ -1,6 +1,19 @@
 import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata } from "@/lib/seo";
 import { getContent, getCertificates } from "@/lib/content";
 import CeoSection from "@/components/CeoSection";
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const dict = await getDictionary(locale);
+  const L = dict.about || {};
+  return buildMetadata({
+    locale,
+    path: "/about",
+    title: dict.nav?.about || [L.title1, L.title2].filter(Boolean).join(" ") || dict.common?.company,
+    description: typeof L.desc === "string" ? L.desc.slice(0, 160) : ""
+  });
+}
 
 export default async function AboutPage({ params }) {
   const { locale } = params;
@@ -47,8 +60,9 @@ export default async function AboutPage({ params }) {
         <div style={{
           position: "absolute",
           top: "-80px",
-          right: "-80px",
+          insetInlineEnd: 0,
           width: 300,
+          maxWidth: "100%",
           height: 300,
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(245, 197, 24, 0.20), transparent 70%)",
@@ -57,8 +71,9 @@ export default async function AboutPage({ params }) {
         <div style={{
           position: "absolute",
           bottom: "-80px",
-          left: "-80px",
+          insetInlineStart: 0,
           width: 260,
+          maxWidth: "100%",
           height: 260,
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(0, 120, 212, 0.10), transparent 70%)",

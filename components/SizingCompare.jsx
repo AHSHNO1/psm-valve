@@ -20,28 +20,32 @@ export default function SizingCompare({ isOpen, onClose, result, form, units = n
       size: "سایز", dn: "DN", cv: "Cv", opening: "بازشدگی", velocity: "سرعت", noise: "نویز", verdict: "ارزیابی",
       best: "بهترین انتخاب", tooSmall: "خیلی کوچک", small: "کوچک", optimal: "بهینه", large: "بزرگ", tooLarge: "خیلی بزرگ",
       reqQuote: "درخواست قیمت", rule: "قاعده: بازشدگی بهینه بین ۲۰٪ تا ۸۰٪", range: "محدوده بهینه",
-      note: "هر سه سایز محاسبه را قبول می‌کنند، اما کنترل و راندمان متفاوت است."
+      note: "هر سه سایز محاسبه را قبول می‌کنند، اما کنترل و راندمان متفاوت است.",
+      noiseNote: "ارقام نویز ≈ برآورد راهنما (log10) هستند، نه محاسبهٔ IEC 60534-8-3."
     },
     en: {
       title: "Compare Alternative Sizes", subtitle: "Three candidate sizes around your operating point",
       size: "Size", dn: "DN", cv: "Cv", opening: "Opening", velocity: "Velocity", noise: "Noise", verdict: "Verdict",
       best: "Best Choice", tooSmall: "Too Small", small: "Small", optimal: "Optimal", large: "Large", tooLarge: "Too Large",
       reqQuote: "Request Quote", rule: "Rule: optimal opening between 20% – 80%", range: "Optimal Range",
-      note: "All three sizes satisfy the calculation, but control & efficiency differ."
+      note: "All three sizes satisfy the calculation, but control & efficiency differ.",
+      noiseNote: "Noise figures (≈) are indicative estimates, not IEC 60534-8-3 calculations."
     },
     ar: {
       title: "مقارنة الأحجام", subtitle: "ثلاثة أحجام", size: "الحجم", dn: "DN", cv: "Cv",
       opening: "الفتح", velocity: "السرعة", noise: "الضجيج", verdict: "الحكم",
       best: "الأفضل", tooSmall: "صغير جدًا", small: "صغير", optimal: "أمثل", large: "كبير", tooLarge: "كبير جدًا",
       reqQuote: "طلب سعر", rule: "النطاق الأمثل ٢٠٪ – ٨٠٪", range: "الأمثل",
-      note: "الأحجام الثلاثة تفي بالحساب، لكن التحكم يختلف."
+      note: "الأحجام الثلاثة تفي بالحساب، لكن التحكم يختلف.",
+      noiseNote: "أرقام الضجيج ≈ تقدير إرشادي وليست حساب IEC 60534-8-3."
     },
     ru: {
       title: "Сравнение размеров", subtitle: "Три варианта", size: "Размер", dn: "DN", cv: "Cv",
       opening: "Открытие", velocity: "Скорость", noise: "Шум", verdict: "Оценка",
       best: "Лучший выбор", tooSmall: "Слишком мал", small: "Мал", optimal: "Оптимально", large: "Велик", tooLarge: "Слишком велик",
       reqQuote: "Запросить", rule: "Оптимум: 20% – 80%", range: "Оптимально",
-      note: "Все три размера подходят."
+      note: "Все три размера подходят.",
+      noiseNote: "Значения шума ≈ — ориентировочные оценки, не расчёт IEC 60534-8-3."
     }
   }[locale] || {};
 
@@ -256,7 +260,7 @@ export default function SizingCompare({ isOpen, onClose, result, form, units = n
 
                       <CompareRow label={L.cv} value={c.size.cv} />
                       <CompareRow label={L.velocity} value={velocityFromSI(c.velocity, velocityUnit) + " " + velocityUnit} />
-                      <CompareRow label={L.noise} value={c.noise + " dB"} last />
+                      <CompareRow label={L.noise} value={"≈" + c.noise + " dB"} last />
 
                       <div style={{
                         marginTop: 12, padding: "8px 12px", borderRadius: 10,
@@ -299,6 +303,7 @@ export default function SizingCompare({ isOpen, onClose, result, form, units = n
                 <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-soft)", lineHeight: 1.7 }}>
                   <div style={{ fontWeight: 900, color: "#0078D4", marginBottom: 4 }}>{L.rule}</div>
                   {L.note}
+                  <div style={{ marginTop: 4 }}>{L.noiseNote}</div>
                 </div>
               </div>
 

@@ -1,5 +1,7 @@
 import { getContent } from "@/lib/content";
 import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -15,6 +17,19 @@ const ICONS = {
   settings: "🔧",
   building: "🏢"
 };
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const whyUs = getContent().whyUs || {};
+  const seo = pageSeo(locale, "whyUs");
+  return buildMetadata({
+    locale,
+    path: "/why-us",
+    title: pick(whyUs.title, locale) || seo.title,
+    description: pick(whyUs.subtitle, locale) || seo.description,
+    keywords: seo.keywords
+  });
+}
 
 export default async function WhyUsPage({ params }) {
   const { locale } = params;

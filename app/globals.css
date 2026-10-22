@@ -17,6 +17,7 @@
   --border: rgba(26, 29, 33, 0.15);
   --border-strong: rgba(26, 29, 33, 0.25);
   --gold: #B8860B;           /* Darker gold for text - contrast 4.8:1 */
+  --gold-text: #7A5906;      /* Small gold text on light surfaces */
   --gold-bg: #D4A017;        /* Gold for backgrounds */
   --gold-light: #F5C518;
   --silver: #6B7280;
@@ -42,6 +43,7 @@
   --border: rgba(220, 224, 230, 0.13);
   --border-strong: rgba(220, 224, 230, 0.22);
   --gold: #E1C276;
+  --gold-text: #E1C276;
   --gold-bg: #D4AA52;
   --gold-light: #EBD28F;
   --silver: #AAB6C5;
@@ -180,7 +182,7 @@ body::-webkit-scrollbar-thumb {
   .chip {
     @apply inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold;
     border: 1px solid var(--gold);
-    color: var(--gold);
+    color: var(--gold-text);
     background: var(--glow);
   }
 

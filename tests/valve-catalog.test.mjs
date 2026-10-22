@@ -20,6 +20,22 @@ test("catalogue includes only products with a readable size range", () => {
   assert.equal(catalog[0].slug, "a");
 });
 
+test("table-backed series with unreadable size text still enter the sizing catalog", () => {
+  const tables = {
+    series: {
+      "35000": { sizes: [{ dn: "DN15", nps: 0.5 }, { dn: "DN600", nps: 24 }] }
+    }
+  };
+  const catalog = buildSizingCatalog([
+    { slug: "ball", series: "35000", name: { en: "Ball" }, categoryId: "ball-valves", spec: { size: { en: "" } } },
+    { slug: "globe", series: "51000", name: { en: "Globe" }, categoryId: "control-valves", spec: { size: { en: "2 – 24 inch" } } },
+    { slug: "none", series: "90000", name: { en: "None" }, categoryId: "control-valves", spec: { size: { en: "" } } }
+  ], tables);
+
+  assert.deepEqual(catalog.map((product) => product.slug).sort(), ["ball", "globe"]);
+  assert.deepEqual(catalog.find((product) => product.slug === "ball").sizeRange, { min: 0.5, max: 24 });
+});
+
 test("suggestValves returns real products covering the size, control valves first", () => {
   const catalog = buildSizingCatalog([
     { slug: "ball", series: "46000", name: { en: "Ball" }, categoryId: "ball-valves", spec: { size: { en: "1 – 24 inch" } } },

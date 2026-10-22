@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getArticles } from "@/lib/articles";
 import { getDictionary } from "@/lib/getDictionary";
+import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +10,18 @@ function pick(value, locale) {
   if (!value) return "";
   if (typeof value === "string") return value;
   return value[locale] || value.en || value.fa || "";
+}
+
+export async function generateMetadata({ params }) {
+  const { locale } = params;
+  const seo = pageSeo(locale, "articles");
+  return buildMetadata({
+    locale,
+    path: "/articles",
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords
+  });
 }
 
 export default async function ArticlesPage({ params }) {

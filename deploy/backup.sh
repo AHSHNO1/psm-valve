@@ -51,7 +51,7 @@ if [ -f .env.production ]; then
   chmod 600 "$BACKUP_DIR/env-production-$STAMP"
 fi
 
-# ۴) پاکسازی نسخههای قدیمی
+# ۵) پاکسازی نسخههای قدیمی
 find "$BACKUP_DIR" -type f \( -name "data-*.tar.gz" -o -name "uploads-*.tar.gz" -o -name "products-*.sqlite" \) -mtime +"$KEEP_DAYS" -delete
 find "$BACKUP_DIR" -type f \( -name "products.js-*" -o -name "products-seed-*.js" -o -name "ecosystem.config.js-*" -o -name "env-production-*" -o -name "app-port-*" \) -mtime +"$KEEP_DAYS" -delete
 

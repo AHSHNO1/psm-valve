@@ -8,7 +8,6 @@ import ThemeToggle from "./ThemeToggle";
 import LocaleSwitcher from "./LocaleSwitcher";
 import SearchButton from "./SearchButton";
 import { useDictionary } from "./Providers";
-import { categories } from "@/lib/categories";
 
 function pickName(obj, locale) {
   if (!obj) return "";
@@ -27,7 +26,7 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-export default function Navbar({ logo, logoIcon, products = [], chrome = {} }) {
+export default function Navbar({ logo, logoIcon, products = [], categories = [], chrome = {} }) {
   const { locale, t } = useDictionary();
   const pathname = usePathname();
   const isDesktop = useIsDesktop();
@@ -51,7 +50,7 @@ export default function Navbar({ logo, logoIcon, products = [], chrome = {} }) {
     ...chrome.header
   };
   const isNavHidden = (key) => headerSettings.hiddenNavItems.includes(key);
-  const rootCategories = categories.filter((category) => !category.parentId);
+  const rootCategories = categories.filter((category) => !category.parentId && !category.hidden);
   const categoriesById = new Map(rootCategories.map((category) => [category.id, category]));
   const orderedCategories = [
     ...headerSettings.categoryOrder.map((id) => categoriesById.get(id)).filter(Boolean),
@@ -64,7 +63,7 @@ export default function Navbar({ logo, logoIcon, products = [], chrome = {} }) {
       name: { ...category.name, ...headerSettings.categoryNames[category.id] },
       products: products.filter((product) => product.categoryId === category.id),
       childCategories: categories
-        .filter((child) => child.parentId === category.id)
+        .filter((child) => child.parentId === category.id && !child.hidden)
         .map((child) => ({
           ...child,
           products: products.filter((product) => product.categoryId === child.id)
@@ -185,7 +184,7 @@ export default function Navbar({ logo, logoIcon, products = [], chrome = {} }) {
       }}
     >
       <nav className={"container-x flex items-center justify-between gap-2 " + (headerSettings.layout === "compact" ? "h-14 lg:h-16" : "h-16 lg:h-20")}>
-        <Link href={"/" + locale} className="flex items-center gap-2 shrink-0">
+        <Link href={"/" + locale} aria-label={t.common.company} className="flex items-center gap-2 shrink-0">
           <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl grid place-items-center shadow-md shrink-0 overflow-hidden"
             style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
             {(logoIcon || logo) && (

@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Award } from "lucide-react";
+import MediaImage from "./MediaImage";
 
 function pick(obj, locale) {
   if (!obj) return "";
@@ -44,7 +45,7 @@ export default function CertificatesSection({ certificates, content, locale }) {
               className="pub-cert-card"
             >
               {c.image ? (
-                <img src={c.image} alt={pick(c.title, locale)} className="pub-cert-image" />
+                <MediaImage src={c.image} alt={pick(c.title, locale)} width={144} height={144} sizes="72px" className="pub-cert-image" />
               ) : (
                 <div className="pub-cert-badge">
                   <Award size={26} />

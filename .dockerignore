@@ -27,11 +27,20 @@ logs
 *.log
 archive/
 tmp-*
+.tmp-*
+.audit-shots/
 data/*.sqlite
 data/*.sqlite-*
+data/*.bak
 data/*.backup
 data/*.backup-*
+data/*.backup-*.json
 data/*.tmp
+
+# ⚠️ دادهٔ خصوصی — هرگز نباید در لایهٔ ایمیج باشد (در زمان اجرا از volume می‌آید)
+data/admin.json
+data/users.json
+data/messages.json
 
 # داراییهای بومی/مستندات
 *.xlsx

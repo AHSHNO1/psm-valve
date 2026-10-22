@@ -2,10 +2,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
-import { categories, getCategoryLabel } from "@/lib/categories";
+import { getCategoryLabel } from "@/lib/category-utils";
+import MediaImage from "./MediaImage";
 import { useDictionary } from "./Providers";
 
-export default function ProductGrid({ products, limit }) {
+export default function ProductGrid({ products, categories = [], limit }) {
   const { locale, t } = useDictionary();
   const isRtl = locale === "fa" || locale === "ar";
   const DirectionalArrow = isRtl ? ArrowLeft : ArrowRight;
@@ -19,7 +20,7 @@ export default function ProductGrid({ products, limit }) {
 
   const getCategory = (product) => {
     const category = categories.find((item) => item.id === product.categoryId);
-    return getCategoryLabel(category, locale) || "Product";
+    return getCategoryLabel(category, locale, categories) || "Product";
   };
 
   return (
@@ -71,11 +72,11 @@ export default function ProductGrid({ products, limit }) {
                   </div>
 
                   {p.image ? (
-                    <img
+                    <MediaImage
                       src={p.image}
                       alt={pick(p.name)}
-                      loading="lazy"
-                      decoding="async"
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="absolute inset-0 h-full w-full object-contain p-4 sm:p-5 transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (

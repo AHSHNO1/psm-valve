@@ -1,168 +1,344 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Html } from "@react-three/drei";
-import { useRef, useState } from "react";
-import { Play, RotateCcw } from "lucide-react";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
+import { DoubleSide, Vector2 } from "three";
 import { useDictionary } from "./Providers";
+import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage } from "./ExplodedCommon";
 
 const LABELS = {
-  fa: ["بدنه", "توپ", "نشیمن‌گاه", "ساقه", "فلنج"],
-  en: ["Body", "Ball", "Seat", "Stem", "End flange"],
-  ar: ["الجسم", "الكرة", "المقعد", "الساق", "شفة التوصيل"],
-  ru: ["Корпус", "Шар", "Седло", "Шток", "Фланец"]
+  fa: ["بدنه", "توپ", "نشیمن‌گاه", "ساقه", "فلنج", "اهرم"],
+  en: ["Body", "Ball", "Seat", "Stem", "End flange", "Lever"],
+  ar: ["الجسم", "الكرة", "المقعد", "الساق", "شفة التوصيل", "الذراع"],
+  ru: ["Корпус", "Шар", "Седло", "Шток", "Фланец", "Рычаг"]
 };
 
+const DRIVE_LABELS = {
+  fa: "زاویه توپ",
+  en: "Ball angle",
+  ar: "زاوية الكرة",
+  ru: "Угол шара"
+};
+
+const SEAT_PROFILE = [
+  [0.26, -0.06],
+  [0.34, -0.06],
+  [0.38, -0.03],
+  [0.38, 0.045],
+  [0.34, 0.075],
+  [0.26, 0.075],
+  [0.26, -0.06]
+].map(([x, y]) => new Vector2(x, y));
+
+const BALL_RADIUS = 0.55;
+const PORT_RADIUS = 0.24;
+const PORT_ARC = Math.acos(PORT_RADIUS / BALL_RADIUS);
+const PORT_HALF = Math.sqrt(BALL_RADIUS ** 2 - PORT_RADIUS ** 2);
+const BALL_PROFILE = Array.from({ length: 41 }, (_, step) => {
+  const angle = -PORT_ARC + (step / 40) * PORT_ARC * 2;
+  return new Vector2(Math.cos(angle) * BALL_RADIUS, Math.sin(angle) * BALL_RADIUS);
+});
+
 const PARTS = [
-  { id: "body", position: [0, 0, 0], offset: [0, 0, 0] },
-  { id: "ball", position: [0, 0, 0], offset: [0, 1.1, 0] },
-  { id: "seat", position: [0, 0, 0], offset: [0, -0.9, 0] },
-  { id: "stem", position: [0, 0.6, 0], offset: [0, 1.2, 0] },
-  { id: "flangeLeft", labelIndex: 4, position: [-1.7, 0, 0], offset: [-0.8, 0, 0] },
-  { id: "flangeRight", labelIndex: 4, position: [1.7, 0, 0], offset: [0.8, 0, 0] }
+  { id: "body", labelIndex: 0, position: [0, 0, 0], offset: [0, 0, 0], labelY: 0.78 },
+  { id: "seatLeft", labelIndex: 2, position: [-0.44, 0, 0], offset: [-0.7, -0.45, 0], labelY: 0.28 },
+  { id: "seatRight", labelIndex: 2, position: [0.44, 0, 0], offset: [0.7, -0.45, 0], labelY: 0.28 },
+  { id: "ball", labelIndex: 1, position: [0, 0, 0], offset: [0, 0.95, 0], labelY: 0.7 },
+  { id: "stem", labelIndex: 3, position: [0, 0.55, 0], offset: [0, 1.4, 0], labelY: 0.42 },
+  { id: "lever", labelIndex: 5, position: [0, 1.06, 0], offset: [0, 1.78, 0], labelY: 0.24 },
+  { id: "flangeLeft", labelIndex: 4, position: [-1.42, -0.05, 0], offset: [-0.7, 0, 0], labelY: 0.52 },
+  { id: "flangeRight", labelIndex: 4, position: [1.42, -0.05, 0], offset: [0.7, 0, 0], labelY: 0.52 }
 ];
 
-function BallValvePart({ item, index, explode, labels }) {
-  const ref = useRef(null);
+const PAINT = { color: "#566771", metalness: 0.38, roughness: 0.52, envMapIntensity: 0.9 };
+const PAINT_DARK = { color: "#3A464E", metalness: 0.48, roughness: 0.48 };
+const STEEL = { color: "#C6D0D8", metalness: 0.92, roughness: 0.22, envMapIntensity: 1.05 };
+const CHROME = { color: "#E0E7EC", metalness: 1, roughness: 0.12, envMapIntensity: 1.15 };
+const BRONZE = { color: "#8D7852", metalness: 0.7, roughness: 0.4 };
+const DARK = { color: "#242B31", metalness: 0.55, roughness: 0.42 };
+const GASKET = { color: "#B7A170", metalness: 0.6, roughness: 0.4 };
+const PTFE = { color: "#E9E4D4", metalness: 0.15, roughness: 0.5 };
+
+function highlight(material, emphasized) {
+  return emphasized
+    ? { ...material, emissive: "#C99312", emissiveIntensity: 0.32 }
+    : material;
+}
+
+function BallPart({ item, index, explode, drive, section, labels, selected, onSelect }) {
+  const group = useRef(null);
   const [hovered, setHovered] = useState(false);
-  const [selected, setSelected] = useState(false);
   const emphasized = hovered || selected;
 
+  useEffect(() => () => {
+    document.body.style.cursor = "";
+  }, []);
+
   useFrame((_, delta) => {
-    if (!ref.current) return;
+    if (!group.current) return;
     const smoothing = 1 - Math.exp(-8 * delta);
-    const stage = Math.max(0, Math.min(1, (explode - index * 0.055) / (1 - index * 0.055)));
-    const easedStage = stage * stage * (3 - 2 * stage);
-    const amount = easedStage * item.offset[1];
-    const x = item.position[0] + easedStage * item.offset[0];
-    const y = item.position[1] + amount;
-    ref.current.position.x += (x - ref.current.position.x) * smoothing;
-    ref.current.position.y += (y - ref.current.position.y) * smoothing;
-    const targetScale = emphasized ? 1.06 : 1;
-    ref.current.scale.x += (targetScale - ref.current.scale.x) * smoothing;
-    ref.current.scale.y += (targetScale - ref.current.scale.y) * smoothing;
-    ref.current.scale.z += (targetScale - ref.current.scale.z) * smoothing;
+    const stage = Math.max(0, Math.min(1, (explode - index * 0.04) / (1 - index * 0.04)));
+    const eased = stage * stage * (3 - 2 * stage);
+    const targetX = item.position[0] + item.offset[0] * eased;
+    const targetY = item.position[1] + item.offset[1] * eased;
+    group.current.position.x += (targetX - group.current.position.x) * smoothing;
+    group.current.position.y += (targetY - group.current.position.y) * smoothing;
+    const targetScale = emphasized ? 1.035 : 1;
+    group.current.scale.x += (targetScale - group.current.scale.x) * smoothing;
+    group.current.scale.y += (targetScale - group.current.scale.y) * smoothing;
+    group.current.scale.z += (targetScale - group.current.scale.z) * smoothing;
   });
 
-  const baseColor = index === 1 ? "#C4CDD5" : index === 2 ? "#D7B24B" : "#84919D";
-  const material = {
-    color: emphasized ? "#FFD34E" : baseColor,
-    metalness: 0.78,
-    roughness: 0.28,
-    transparent: item.id === "body",
-    opacity: item.id === "body" ? 0.38 : 1,
-    depthWrite: item.id !== "body"
+  const clip = {
+    clippingPlanes: section ? [SECTION_PLANE] : [],
+    clipShadows: section
   };
+  const paint = highlight(PAINT, emphasized);
+  const paintDark = highlight(PAINT_DARK, emphasized);
+  const steel = highlight(STEEL, emphasized);
+  const chrome = highlight(CHROME, emphasized);
+  const bronze = highlight(BRONZE, emphasized);
+  const dark = highlight(DARK, emphasized);
+  const inward = item.id === "flangeLeft" ? 1 : -1;
 
   return (
     <group
-      ref={ref}
+      ref={group}
       position={item.position}
-      onPointerOver={(event) => { event.stopPropagation(); setHovered(true); }}
-      onPointerOut={() => setHovered(false)}
-      onClick={(event) => { event.stopPropagation(); setSelected((value) => !value); }}
+      onPointerOver={(event) => {
+        event.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = "";
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(selected ? null : item.id);
+      }}
     >
       {item.id === "body" && (
         <>
-          <mesh castShadow scale={[1.05, 0.88, 0.78]}>
-            <sphereGeometry args={[0.86, 32, 24]} />
-            <meshStandardMaterial {...material} />
+          <mesh scale={[0.95, 0.82, 0.78]}>
+            <sphereGeometry args={[0.86, 48, 32]} />
+            <meshStandardMaterial {...paint} {...clip} side={DoubleSide} />
           </mesh>
           {[-1, 1].map((side) => (
-            <group key={side} position={[side * 0.95, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-              <mesh castShadow>
-                <cylinderGeometry args={[0.43, 0.43, 1.15, 32]} />
-                <meshStandardMaterial {...material} />
+            <group key={side}>
+              <mesh position={[side * 0.85, -0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.27, 0.27, 0.95, 36]} />
+                <meshStandardMaterial {...paint} {...clip} side={DoubleSide} />
+              </mesh>
+              <mesh position={[side * 0.62, -0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <torusGeometry args={[0.3, 0.045, 10, 36]} />
+                <meshStandardMaterial {...paintDark} {...clip} side={DoubleSide} />
+              </mesh>
+              <mesh position={[side * 0.52, 0.2, 0]} rotation={[0, 0, side * 0.55]}>
+                <boxGeometry args={[0.26, 0.055, 0.19]} />
+                <meshStandardMaterial {...paintDark} {...clip} />
+              </mesh>
+              <mesh position={[side * 0.52, -0.32, 0]} rotation={[0, 0, -side * 0.5]}>
+                <boxGeometry args={[0.26, 0.055, 0.19]} />
+                <meshStandardMaterial {...paintDark} {...clip} />
               </mesh>
             </group>
           ))}
-          <mesh position={[0, 0.48, 0]} castShadow>
-            <cylinderGeometry args={[0.32, 0.4, 0.34, 32]} />
-            <meshStandardMaterial {...material} />
+          <mesh position={[0, 0.55, 0]}>
+            <cylinderGeometry args={[0.24, 0.3, 0.28, 32]} />
+            <meshStandardMaterial {...paint} {...clip} side={DoubleSide} />
+          </mesh>
+          <mesh position={[0, 0.72, 0]}>
+            <cylinderGeometry args={[0.3, 0.3, 0.08, 32]} />
+            <meshStandardMaterial {...paintDark} {...clip} />
+          </mesh>
+          <BoltRing axis="y" count={4} radius={0.22} at={0.72} length={0.1} size={0.018} />
+          <mesh position={[0, -0.58, 0]}>
+            <cylinderGeometry args={[0.17, 0.2, 0.16, 24]} />
+            <meshStandardMaterial {...paintDark} {...clip} />
+          </mesh>
+          <mesh position={[0.72, 0.24, 0]}>
+            <boxGeometry args={[0.22, 0.075, 0.1]} />
+            <meshStandardMaterial color="#D3A21A" metalness={0.5} roughness={0.35} />
+          </mesh>
+          <mesh position={[0.9, 0.24, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <coneGeometry args={[0.075, 0.16, 3]} />
+            <meshStandardMaterial color="#D3A21A" metalness={0.5} roughness={0.35} />
           </mesh>
         </>
       )}
+
       {item.id === "ball" && (
-        <>
-          <mesh castShadow>
-            <sphereGeometry args={[0.61, 40, 32]} />
-            <meshStandardMaterial {...material} />
-          </mesh>
-          <mesh position={[0.59, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-            <torusGeometry args={[0.255, 0.035, 12, 32]} />
-            <meshStandardMaterial color="#D5DCE2" metalness={0.82} roughness={0.22} />
-          </mesh>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.25, 0.25, 1.45, 32]} />
-            <meshStandardMaterial color="#27313A" metalness={0.25} roughness={0.55} />
-          </mesh>
-        </>
-      )}
-      {item.id === "seat" && (
-        <>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <torusGeometry args={[0.56, 0.1, 16, 40]} />
-            <meshStandardMaterial {...material} />
-          </mesh>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <torusGeometry args={[0.41, 0.045, 12, 40]} />
-            <meshStandardMaterial color="#E6D9AC" metalness={0.25} roughness={0.45} />
-          </mesh>
-        </>
-      )}
-      {item.id === "stem" && (
-        <>
-          <mesh position={[0, 0.04, 0]} castShadow>
-            <cylinderGeometry args={[0.1, 0.13, 0.85, 24]} />
-            <meshStandardMaterial {...material} />
-          </mesh>
-          <mesh position={[0, -0.32, 0]}>
-            <cylinderGeometry args={[0.24, 0.24, 0.12, 24]} />
-            <meshStandardMaterial color="#596673" metalness={0.7} roughness={0.3} />
-          </mesh>
-        </>
-      )}
-      {item.id.indexOf("flange") === 0 && (
-        <>
-          <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-            <cylinderGeometry args={[0.62, 0.62, 0.22, 40]} />
-            <meshStandardMaterial {...material} />
-          </mesh>
-          <mesh rotation={[0, 0, Math.PI / 2]} position={[item.id === "flangeLeft" ? -0.14 : 0.14, 0, 0]}>
-            <torusGeometry args={[0.45, 0.055, 12, 40]} />
-            <meshStandardMaterial color="#C4CDD5" metalness={0.82} roughness={0.26} />
-          </mesh>
-          {Array.from({ length: 8 }).map((_, bolt) => {
-            const angle = (bolt / 8) * Math.PI * 2;
-            return (
-              <mesh key={bolt} position={[0, Math.cos(angle) * 0.49, Math.sin(angle) * 0.49]}>
-                <cylinderGeometry args={[0.045, 0.045, 0.12, 8]} />
-                <meshStandardMaterial color="#E2E7EB" metalness={0.86} roughness={0.22} />
+        <group rotation={[0, (1 - drive) * Math.PI / 2, 0]}>
+          <group rotation={[0, 0, Math.PI / 2]}>
+            <mesh>
+              <latheGeometry args={[BALL_PROFILE, 48]} />
+              <meshStandardMaterial {...steel} side={DoubleSide} />
+            </mesh>
+            <mesh>
+              <cylinderGeometry args={[PORT_RADIUS, PORT_RADIUS, PORT_HALF * 2, 40, 1, true]} />
+              <meshStandardMaterial color="#222A30" metalness={0.55} roughness={0.45} side={DoubleSide} />
+            </mesh>
+            <mesh>
+              <cylinderGeometry args={[PORT_RADIUS * 0.9, PORT_RADIUS * 0.9, PORT_HALF * 2 + 0.02, 40, 1, true]} />
+              <meshStandardMaterial color="#39444C" metalness={0.75} roughness={0.32} side={DoubleSide} />
+            </mesh>
+            {[-1, 1].map((side) => (
+              <mesh key={side} position={[0, side * PORT_HALF, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[PORT_RADIUS, 0.014, 10, 44]} />
+                <meshStandardMaterial {...chrome} />
               </mesh>
-            );
-          })}
-        </>
+            ))}
+          </group>
+          <mesh position={[0, 0.55, 0]}>
+            <cylinderGeometry args={[0.17, 0.17, 0.1, 24]} />
+            <meshStandardMaterial {...steel} />
+          </mesh>
+          <mesh position={[0, -0.55, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 0.08, 20]} />
+            <meshStandardMaterial {...steel} />
+          </mesh>
+        </group>
       )}
+
+      {item.id.indexOf("seat") === 0 && (
+        <group rotation={[0, 0, Math.PI / 2]}>
+          <mesh>
+            <latheGeometry args={[SEAT_PROFILE, 40]} />
+            <meshStandardMaterial {...bronze} />
+          </mesh>
+          <mesh position={[0, 0.078, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.28, 0.028, 12, 40]} />
+            <meshStandardMaterial {...PTFE} />
+          </mesh>
+          <mesh position={[0, -0.068, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.33, 0.016, 8, 40]} />
+            <meshStandardMaterial color="#5C675F" metalness={0.3} roughness={0.6} />
+          </mesh>
+        </group>
+      )}
+
+      {item.id === "stem" && (
+        <group>
+          <mesh position={[0, 0.22, 0]}>
+            <cylinderGeometry args={[0.065, 0.075, 0.78, 24]} />
+            <meshStandardMaterial {...chrome} />
+          </mesh>
+          <mesh position={[0, 0.17, 0]}>
+            <cylinderGeometry args={[0.17, 0.16, 0.24, 28]} />
+            <meshStandardMaterial {...paintDark} />
+          </mesh>
+          {[0.12, 0.16, 0.2].map((y) => (
+            <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.09, 0.019, 8, 24]} />
+              <meshStandardMaterial color="#C9B78C" metalness={0.3} roughness={0.55} />
+            </mesh>
+          ))}
+          <mesh position={[0, 0.32, 0]}>
+            <cylinderGeometry args={[0.15, 0.15, 0.06, 24]} />
+            <meshStandardMaterial {...steel} />
+          </mesh>
+          <BoltRing axis="y" count={2} radius={0.105} at={0.32} length={0.12} size={0.015} />
+          <mesh position={[0, 0.6, 0]}>
+            <cylinderGeometry args={[0.1, 0.1, 0.08, 20]} />
+            <meshStandardMaterial {...steel} />
+          </mesh>
+        </group>
+      )}
+
+      {item.id === "lever" && (
+        <group rotation={[0, (1 - drive) * Math.PI / 2, 0]}>
+          <mesh>
+            <cylinderGeometry args={[0.13, 0.13, 0.1, 24]} />
+            <meshStandardMaterial {...dark} />
+          </mesh>
+          <mesh position={[0.32, 0, 0]}>
+            <boxGeometry args={[0.56, 0.075, 0.115]} />
+            <meshStandardMaterial {...steel} />
+          </mesh>
+          <mesh position={[0.61, 0, 0]}>
+            <boxGeometry args={[0.18, 0.105, 0.145]} />
+            <meshStandardMaterial color="#1B2126" metalness={0.25} roughness={0.65} />
+          </mesh>
+          <mesh position={[0, 0.08, 0]}>
+            <cylinderGeometry args={[0.055, 0.055, 0.06, 16]} />
+            <meshStandardMaterial color="#D3A21A" metalness={0.5} roughness={0.35} />
+          </mesh>
+        </group>
+      )}
+
+      {item.id.indexOf("flange") === 0 && (
+        <group>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.5, 0.5, 0.18, 40]} />
+            <meshStandardMaterial {...paintDark} {...clip} />
+          </mesh>
+          <mesh position={[-inward * 0.1, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.37, 0.37, 0.04, 40]} />
+            <meshStandardMaterial {...steel} {...clip} />
+          </mesh>
+          <mesh position={[-inward * 0.13, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <torusGeometry args={[0.31, 0.028, 10, 40]} />
+            <meshStandardMaterial {...GASKET} />
+          </mesh>
+          <mesh position={[inward * 0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.36, 0.31, 0.16, 36]} />
+            <meshStandardMaterial {...paintDark} {...clip} />
+          </mesh>
+          <BoltRing axis="x" count={8} radius={0.41} at={0} length={0.22} />
+        </group>
+      )}
+
       {emphasized && (
-        <Html center distanceFactor={8}>
-          <span className="whitespace-nowrap rounded-lg bg-[#F5C518] px-3 py-1.5 text-xs font-bold text-[#15181C] shadow-lg">
-            {labels[item.labelIndex === undefined ? index : item.labelIndex]}
-          </span>
-        </Html>
+        <group position={[0, item.labelY === undefined ? 0.4 : item.labelY, 0]}>
+          <PartLabel>{labels[item.labelIndex === undefined ? index : item.labelIndex]}</PartLabel>
+        </group>
       )}
     </group>
   );
 }
 
-function BallValveModel({ explode, locale }) {
-  const labels = LABELS[locale] || LABELS.en;
+function FramedModel({ explode, children }) {
+  const group = useRef(null);
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    const smoothing = 1 - Math.exp(-7 * delta);
+    const leverRaw = Math.max(0, Math.min(1, (explode - 0.2) / 0.8));
+    const leverEased = leverRaw * leverRaw * (3 - 2 * leverRaw);
+    const seatRaw = Math.max(0, Math.min(1, (explode - 0.04) / 0.96));
+    const seatEased = seatRaw * seatRaw * (3 - 2 * seatRaw);
+    const height = 1.6 + 1.78 * leverEased + 0.45 * seatEased;
+    const center = 0.34 + 0.89 * leverEased - 0.225 * seatEased;
+    const targetScale = Math.min(1.35, (2.75 + 0.65 * leverEased) / height);
+    const targetY = 0.55 - targetScale * center;
+    group.current.scale.x += (targetScale - group.current.scale.x) * smoothing;
+    group.current.scale.y += (targetScale - group.current.scale.y) * smoothing;
+    group.current.scale.z += (targetScale - group.current.scale.z) * smoothing;
+    group.current.position.y += (targetY - group.current.position.y) * smoothing;
+  });
+  return (
+    <group ref={group} position={[0, -0.08, 0]} scale={1.3}>
+      {children}
+    </group>
+  );
+}
+
+function BallModel({ explode, drive, section, labels, selectedId, onSelect }) {
   return (
     <>
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[4, 7, 5]} intensity={2} />
-      <pointLight position={[-4, 2, -3]} intensity={35} color="#F5C518" />
       {PARTS.map((part, index) => (
-        <BallValvePart key={part.id} item={part} index={index} explode={explode} labels={labels} />
+        <BallPart
+          key={part.id}
+          item={part}
+          index={index}
+          explode={explode}
+          drive={drive}
+          section={section}
+          labels={labels}
+          selected={selectedId === part.id}
+          onSelect={onSelect}
+        />
       ))}
     </>
   );
@@ -170,52 +346,47 @@ function BallValveModel({ explode, locale }) {
 
 export default function ExplodedBallValve() {
   const { locale } = useDictionary();
-  const [explode, setExplode] = useState(0.75);
   const labels = LABELS[locale] || LABELS.en;
-  const expanded = explode > 0.5;
-  const actionLabel = expanded
-    ? ({ fa: "مونتاژ", en: "Assemble", ar: "تجميع", ru: "Собрать" }[locale] || "Assemble")
-    : ({ fa: "بازکردن کامل", en: "Explode view", ar: "تفكيك كامل", ru: "Разнести детали" }[locale] || "Explode view");
+  const [explode, setExplode] = useState(0.45);
+  const [section, setSection] = useState(true);
+  const [drive, setDrive] = useState(0.35);
+  const [selectedId, setSelectedId] = useState(null);
+  const selected = PARTS.find((part) => part.id === selectedId);
 
   return (
-    <div className="relative h-[440px] sm:h-[520px]">
-      <Canvas camera={{ position: [4.5, 3.2, 7], fov: 40 }} dpr={[1, 1.5]}>
-        <group position={[0, -0.25, 0]} scale={1}>
-          <BallValveModel explode={explode} locale={locale} />
-        </group>
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          enableDamping
-          dampingFactor={0.08}
-          autoRotate={false}
-          minPolarAngle={0.65}
-          maxPolarAngle={2.35}
-        />
-      </Canvas>
-      <div className="absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-xl border px-3 py-2 backdrop-blur-md"
-        style={{ background: "rgba(15,17,20,.72)", borderColor: "rgba(255,255,255,.16)" }}>
-        <button
-          type="button"
-          onClick={() => setExplode(expanded ? 0 : 1)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/20 px-2.5 py-1.5 text-[10px] font-bold text-white transition hover:border-[#F5C518] hover:text-[#F5C518]"
-          aria-label={actionLabel}
+    <div>
+      <div className="relative h-[440px] sm:h-[520px]">
+        <SceneStage
+          camera={[3.4, 2.4, 5.6]}
+          fov={38}
+          target={[0, 0.6, 0]}
+          floorY={-1.5}
+          onPointerMissed={() => setSelectedId(null)}
         >
-          {expanded ? <RotateCcw size={13} /> : <Play size={13} />}
-          {actionLabel}
-        </button>
-        <span className="text-[10px] font-bold text-white/75">{labels[0]}</span>
-        <input
-          aria-label={locale === "fa" ? "میزان بازشدن قطعات" : locale === "ar" ? "مقدار تفكيك الأجزاء" : locale === "ru" ? "Степень разнесения деталей" : "Exploded view amount"}
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={explode}
-          onChange={(event) => setExplode(Number(event.target.value))}
-          className="w-full accent-[#E0A81A]"
-        />
+          <FramedModel explode={explode}>
+            <BallModel
+              explode={explode}
+              drive={drive}
+              section={section}
+              labels={labels}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+          </FramedModel>
+        </SceneStage>
       </div>
+      <ControlPanel
+        locale={locale}
+        explode={explode}
+        setExplode={setExplode}
+        section={section}
+        setSection={setSection}
+        drive={drive}
+        setDrive={setDrive}
+        driveLabel={DRIVE_LABELS[locale] || DRIVE_LABELS.en}
+        driveText={Math.round(drive * 90) + "°"}
+        selectedLabel={selected ? labels[selected.labelIndex] : null}
+      />
     </div>
   );
 }

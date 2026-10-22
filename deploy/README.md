@@ -8,6 +8,7 @@
 | مسیر | برای چه کسی | دستور اصلی | زمان تقریبی |
 | --- | --- | --- | --- |
 | **۱) VPS تازه (توصیهشده)** | سرور Ubuntu/Debian با دسترسی `root`/`sudo` | `sudo bash deploy/install.sh --domain psmvalve.com --email you@…` | ۱۰–۲۰ دقیقه |
+| **۱b) لانچر یکخطی VPS** | اوبونتو یا **Windows Server** — بدون آمادهسازی دستی | `sudo bash deploy/start-vps-ubuntu.sh` · `.\deploy\start-vps-windows.ps1` | ۱۰–۲۵ دقیقه |
 | **۲) Docker** | هر سروری که Docker دارد؛ یا نصب ساده و تکرارپذیر | `bash deploy/docker.sh` | ۵–۱۵ دقیقه (بیلد اول) |
 | **۳) هاست اشتراکی cPanel/CloudLinux** | هاست با Node.js Selector | [`deploy/cpanel/README.md`](./cpanel/README.md) | ۱۵–۳۰ دقیقه |
 | **۴) سرور از قبل نصبشده** | انتشار نسخهٔ جدید روی نصب موجود | `bash deploy/update.sh` | ۳–۸ دقیقه |
@@ -48,7 +49,9 @@ sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com
 | `--email <email>` | ایمیل Let's Encrypt (پیشفرض `admin@<domain>`) |
 | `--admin-user <user>` | نام کاربری پنل مدیریت (پیشفرض `admin`) |
 | `--admin-password <pass>` | رمز پنل؛ اگر ندهی رمز تصادفی ساخته و **یکبار** نمایش داده میشود |
+| `--admin-password-file <path>` | رمز را از خط اول فایل می‌خواند و فایل را پس از استفاده پاک می‌کند (مناسب اسکریپت‌های خودکار) |
 | `--repo <git-url>` · `--branch <name>` | مخزن/شاخهٔ انتشار |
+| `--source <path>` | نصب از کد آماده در این مسیر (بدون گیت)؛ داده/آپلود/env سرور حفظ میشود و `admin.json` و SQLite منتقل نمیشوند |
 | `--app-dir <path>` · `--app-user <user>` | مسیر نصب (پیشفرض `/var/www/psm-valve`) و کاربر اجرا (پیشفرض `psm`) |
 | `--no-ssl` | فقط HTTP (وقتی DNS/SSL آماده نیست) |
 | `--no-firewall` · `--no-cron` | بدون ufw/fail2ban · بدون cron بکاپ |
@@ -181,10 +184,88 @@ node scripts/rotate-admin-password.mjs
 | استقرار | دستور |
 | --- | --- |
 | PM2/سرور | `su - psm -c 'bash /var/www/psm-valve/deploy/update.sh'` |
+| Windows Server | اجرای دوبارهٔ `.\deploy\start-vps-windows.ps1` (داده، آپلود و env حفظ میشوند) |
 | Docker | `git pull && docker compose up -d --build` |
 | cPanel | `git pull && npm ci && npm run build` + Restart در پنل |
 
 پیشبررسی را میتوان محلی هم اجرا کرد: `node scripts/preflight.mjs` (همین بررسی در `update.sh` روی سرور هم انجام میشود).
+
+---
+
+## لانچر یکخطی — اوبونتو و Windows Server
+
+اگر نمیخواهی گزینهها را یکییکی بچرخانی، همین دو اسکریپت کل مسیر نصب را با **یک خط فرمان**
+تمام میکنند (پیشنیازها، کد، اسرار، رمز پنل، بیلد، سرویس دائمی، فایروال، بررسی سلامت، خلاصه).
+
+### اوبونتو ۲۲.۰۴ / ۲۴.۰۴ — `start-vps-ubuntu.sh`
+
+```bash
+# از داخل پوشهٔ پروژه (sudo را خودش میگیرد)
+sudo bash deploy/start-vps-ubuntu.sh --domain psmvalve.com --email admin@psmvalve.com
+
+# بدون دامنه: IP عمومی سرور را تشخیص میدهد و با --no-ssl نصب میکند
+sudo bash deploy/start-vps-ubuntu.sh
+
+# کد هنوز push نشده؟ از همان پوشهٔ محلی نصب کن (دادهٔ سرور حفظ میشود)
+sudo bash deploy/start-vps-ubuntu.sh --source /srv/psm-valve --domain 5.1.2.3
+
+# مستقیم از GitHub، بدون کلون کردن مخزن
+curl -fsSL https://raw.githubusercontent.com/AHSHNO1/psm-valve/main/deploy/start-vps-ubuntu.sh \
+  | sudo bash -s -- --domain psmvalve.com --email admin@psmvalve.com
+```
+
+این لانچر `deploy/install.sh` را پیدا (یا دانلود) میکند و گزینههایش را به همان میسپارد؛ پس همهٔ
+گزینههای جدول بالا (`--port`، `--app-dir`، `--admin-password-file`، `--no-cron` و…) اینجا هم کار میکنند.
+گزینهٔ مخصوص خودش: `--repo <git-url>` برای وقتی که `install.sh` کنار اسکریپت نیست.
+
+### Windows Server 2012 R2 به بعد — `start-vps-windows.ps1`
+
+```powershell
+# با دامنه (Caddy گواهی Let's Encrypt میگیرد)
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -Domain psmvalve.com -Email admin@psmvalve.com
+
+# بدون دامنه: IP عمومی تشخیص داده میشود و سایت روی HTTP بالا میآید
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1
+
+# نصب از کد آماده یا ZIP (نیازی به Git روی سرور نیست)
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -SourceDir C:\psm-valve -Domain 5.1.2.3
+powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -ZipPath C:\psm-valve.zip
+```
+
+| گزینه | کار |
+| --- | --- |
+| `-Domain <domain\|ip>` | دامنه یا IP؛ اگر ندهی IP عمومی سرور را تشخیص میدهد |
+| `-Email <email>` | ایمیل گواهی Let's Encrypt (فقط با دامنه) |
+| `-AppDir <path>` · `-Port <number>` | مسیر نصب (پیشفرض `C:\PSMValve`) و پورت داخلی اپ |
+| `-AdminUser` · `-AdminPassword` · `-AdminPasswordFile` | کاربر/رمز پنل؛ بدون رمز، رمز تصادفی در `C:\ProgramData\PSMValve\initial-admin-password.txt` |
+| `-SourceDir` · `-ZipPath` · `-Repo` · `-Branch` | منبع کد؛ اولویت با SourceDir، بعد ZipPath، بعد پوشهٔ پروژه، بعد گیت‌هاب |
+| `-NodeMajor <number>` | نسخهٔ اصلی Node.js (پیشفرض `20`؛ MSI رسمی از nodejs.org) |
+| `-NoHttps` · `-NoFirewall` · `-SkipBuild` · `-ForceEnv` | فقط HTTP · دست‌نزدن به فایروال · پرش از بیلد · بازنویسی اسرار env |
+| `-Help` | فهرست گزینهها |
+
+**چطور سرویس را نگه میدارد:** دو Scheduled Task با حساب `SYSTEM` ساخته میشود — `PSM-VALVE`
+(اپ Next.js، ریاستارت خودکار در هر خطا، شروع در بوت) و `PSM-VALVE-Proxy` (Caddy). روزمره:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -Action status
+powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -Action restart
+powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -Action logs
+```
+
+**نکتههای مهم ویندوز**
+- فایل `ps1` باید **UTF-8 با BOM** بماند؛ بی‌آن PowerShell ۵.۱ متن فارسی را خراب میخواند.
+  `.env.production` برعکس، باید **بدون BOM** باشد (لانچر خودش همین کار را میکند).
+- اگر **IIS** پورت ۸۰ را گرفته باشد، لانچر پروکسی را خاموش میکند و سایت مستقیم روی
+  پورت `3000` سرو میشود؛ برای آدرس تمیز IIS را ببند و دوباره اجرا کن.
+- HTTPS فقط با دامنه صادر میشود. روی IP، لاگین هم کار میکند (کوکی `Secure` بر اساس
+  `x-forwarded-proto` تنظیم میشود) ولی گواهی نمیگیری.
+- اگر `npm ci` در بیلد `better-sqlite3` شکست، Visual Studio Build Tools ۲۰۲۲
+  (Desktop development with C++) را نصب کن و لانچر را دوباره اجرا کن.
+- اسرار، رمز اولیه و دیتای Caddy در `C:\ProgramData\PSMValve` با ACL محدود به
+  `SYSTEM` و `Administrators` نگه داشته میشوند.
+- اجرای دوباره بیخطر است: `data\`، `public\uploads\` و `.env.production` حفظ میشوند.
+
+جزئیات بیشتر و عیبیابی: بخش ۱۳ در [`INSTALL-STEPS.txt`](../INSTALL-STEPS.txt)
 
 ---
 
@@ -194,6 +275,8 @@ node scripts/rotate-admin-password.mjs
 | --- | --- |
 | `install.sh` | **نصب یکدستوری کل سرور** (Node/PM2/Nginx/SSL/بکاپ/cron/فایروال) |
 | `install-remote.ps1` | اجرای `install.sh` روی سرور از ویندوز + انتقال داده |
+| `start-vps-ubuntu.sh` | لانچر یکخطی اوبونتو: sudo، IP خودکار، دانلود/یافتن `install.sh` و سپردن گزینهها |
+| `start-vps-windows.ps1` | لانچر یکخطی Windows Server: Node، اسرار، بیلد، Caddy، Scheduled Task، فایروال، `manage.ps1` |
 | `docker.sh` | نصب/اجرا با Docker (بیلد، بالا آوردن، بررسی سلامت، رمز پنل) |
 | `docker-entrypoint.sh` | نقطهٔ ورود کانتینر: بازگردانی seed در اجرای اول + بیلد در زمان اجرا |
 | `backup-docker.sh` | بکاپ در استقرار Docker |
@@ -233,6 +316,7 @@ node scripts/rotate-admin-password.mjs
 | کار | دستور |
 | --- | --- |
 | وضعیت سرویس | `su - psm -c 'pm2 status'` · `su - psm -c 'pm2 logs psm-valve'` |
+| وضعیت (ویندوز) | `powershell -File "C:\ProgramData\PSMValve\manage.ps1" -Action status` |
 | بررسی سلامت | `curl -I "http://127.0.0.1:$(cat /var/www/psm-valve/.app-port)/fa"` (هر پورتی) · `curl -I https://www.<domain>/admin` (باید ۳۰۷ شود) |
 | تغییر پورت | بخش «پورت اپ» در بالا (`.app-port` + Nginx + `pm2 reload ecosystem.config.js --update-env`) |
 | بکاپ دستی | `su - psm -c 'bash deploy/backup.sh'` |

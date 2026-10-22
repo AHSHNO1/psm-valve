@@ -8,11 +8,19 @@ import DatasheetPrint from "@/components/DatasheetPrint";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const DATASHEET_LABEL = {
+  fa: "دیتاشیت",
+  en: "Datasheet",
+  ar: "صحيفة بيانات",
+  ru: "Паспорт изделия"
+};
+
 export async function generateMetadata({ params }) {
   const product = getProduct(params.slug);
+  const name = product?.name?.[params.locale] || product?.name?.en || product?.name?.fa || product?.series;
   return {
     title: product
-      ? `Datasheet — ${product.name?.fa || product.name?.en || product.series}`
+      ? `${DATASHEET_LABEL[params.locale] || "Datasheet"} — ${name}`
       : "Datasheet",
     robots: { index: false, follow: false }
   };

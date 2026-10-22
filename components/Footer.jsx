@@ -153,7 +153,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
 
           {/* ========== Column 2: Quick Links ========== */}
           {footerSettings.showLinks && <div>
-            <h4 className="footer-heading">{t.footer.quickLinks}</h4>
+            <h2 className="footer-heading">{t.footer.quickLinks}</h2>
             <ul className="footer-links">
               {links.map(function (l) {
                 return (
@@ -169,7 +169,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
 
           {/* ========== Column 3: Contact (Compact) ========== */}
           {footerSettings.showContact && <div className="footer-contact-col">
-            <h4 className="footer-heading">{t.footer.contact}</h4>
+            <h2 className="footer-heading">{t.footer.contact}</h2>
 
             {/* Address */}
             <div className="fc-row fc-address">
@@ -248,7 +248,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
 
           {/* ========== Column 4: Social ========== */}
           {footerSettings.showSocial && <div>
-            <h4 className="footer-heading">{L.socialTitle}</h4>
+            <h2 className="footer-heading">{L.socialTitle}</h2>
 
             <div className="footer-social-block">
               <div className="footer-social-label">{L.socialIntl}</div>
@@ -408,7 +408,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
           font-size: 10.5px;
           font-weight: 800;
           letter-spacing: 0.12em;
-          color: var(--gold);
+          color: var(--gold-text);
           margin-top: 2px;
         }
         .footer-slogans {
@@ -422,7 +422,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
           text-wrap: pretty;
         }
         .footer-slogan-primary {
-          color: var(--gold);
+          color: var(--gold-text);
           font-size: 13px;
           font-weight: 900;
         }
@@ -460,14 +460,14 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
         .footer-knowledge-type {
           font-size: 9.5px;
           font-weight: 800;
-          color: var(--gold);
+          color: var(--gold-text);
           margin-top: 1px;
         }
 
         .footer-heading {
           font-size: 12px;
           font-weight: 900;
-          color: var(--gold);
+          color: var(--gold-text);
           margin-bottom: 14px;
           letter-spacing: 0.03em;
         }
@@ -537,6 +537,8 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
            و ترتیب ارقام/جداکننده‌ها در حالت فارسی به‌هم می‌ریزد. */
         .fc-num {
           display: inline-block;
+          min-height: 24px;
+          line-height: 24px;
           direction: ltr;
           unicode-bidi: isolate;
           white-space: nowrap;
@@ -613,15 +615,20 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
           display: inline-flex;
           align-items: center;
           gap: 5px;
+          min-height: 28px;
           padding: 5px 10px;
           border-radius: 8px;
-          background: color-mix(in srgb, var(--sc) 15%, transparent);
+          background: color-mix(in srgb, var(--sc) 10%, var(--bg-card));
           border: 1px solid color-mix(in srgb, var(--sc) 40%, transparent);
-          color: var(--sc);
+          color: color-mix(in srgb, var(--sc) 52%, #000000);
           text-decoration: none;
           font-size: 10.5px;
           font-weight: 900;
           transition: all 0.2s;
+        }
+        .dark .footer-messenger-pill {
+          background: color-mix(in srgb, var(--sc) 18%, transparent);
+          color: color-mix(in srgb, var(--sc) 55%, #FFFFFF);
         }
         .footer-messenger-pill:hover {
           background: var(--sc);
@@ -650,7 +657,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
           flex-wrap: wrap;
         }
         .footer-bottom-it {
-          color: var(--gold);
+          color: var(--gold-text);
           font-weight: 900;
         }
         .footer-bottom-sep {
