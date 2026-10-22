@@ -319,78 +319,87 @@ export default function ContactClient({ dict, locale, company, branding, content
       </section>
 
       {/* ============ Careers / فرصت همکاری ============ */}
-      <section className="container-x py-16 sm:py-20" id="careers">
-        <div className="card-glass mx-auto max-w-4xl p-6 sm:p-9">
-          <div className="text-center">
-            <span className="chip">{careerInfo.badge}</span>
-            <h2 className="mt-3 text-xl font-black sm:text-2xl md:text-3xl" style={{ color: "var(--text)" }}>
-              <span className="heading-gold">{careerTitle}</span>
-            </h2>
-            {careerSubtitle ? (
-              <p className="mx-auto mt-3 max-w-2xl text-xs leading-7 sm:text-sm" style={{ color: "var(--text-soft)" }}>{careerSubtitle}</p>
-            ) : null}
-          </div>
+      <section className="container-x py-12 sm:py-16" id="careers">
+        <div className="career-panel mx-auto max-w-4xl">
+          <div className="grid-pattern" style={{ position: "absolute", inset: 0, opacity: 0.06 }} />
+          <div style={{
+            position: "absolute",
+            top: -70,
+            insetInlineEnd: -40,
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(245, 197, 24, 0.16), transparent 70%)",
+            filter: "blur(48px)"
+          }} />
 
-          {careerRoles.length > 0 ? (
-            <div className="mt-7 border-t pt-6" style={{ borderColor: "var(--border)" }}>
-              <h3 className="text-xs font-black" style={{ color: "var(--text-muted)" }}>{careerInfo.rolesTitle}</h3>
-              <ul className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                {careerRoles.map(function(role, index) {
-                  const showEn = role.en && role.en.toLowerCase() !== role.title.toLowerCase();
-                  return (
-                    <li key={role.title + index} className="flex items-start gap-2.5">
-                      <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--gold)" }} />
-                      <div className="min-w-0">
-                        <div className="text-sm font-bold" style={{ color: "var(--text)" }}>
-                          {role.title}
-                          {showEn ? (
-                            <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)", marginInlineStart: 8 }} dir="ltr">{role.en}</span>
-                          ) : null}
-                        </div>
-                        {role.desc ? (
-                          <div className="mt-0.5 text-[11px] leading-6" style={{ color: "var(--text-muted)" }}>{role.desc}</div>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
+          <div className="relative" style={{ padding: "clamp(20px, 3.2vw, 32px)" }}>
+            <div className="career-grid">
+              <div className="min-w-0">
+                <span className="chip">{careerInfo.badge}</span>
+                <h2 className="career-title">
+                  <span className="heading-gold">{careerTitle}</span>
+                </h2>
+                <div className="career-rule" aria-hidden="true" />
+                {careerSubtitle ? <p className="career-lead">{careerSubtitle}</p> : null}
 
-          {careerOffers.length > 0 ? (
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
-              {careerInfo.offersTitle ? (
-                <span className="text-[11px] font-black" style={{ color: "var(--text)" }}>{careerInfo.offersTitle}</span>
+                {careerOffers.length > 0 ? (
+                  <div className="career-offers-block">
+                    {careerInfo.offersTitle ? <h3 className="career-offers-title">{careerInfo.offersTitle}</h3> : null}
+                    <div className="career-offers">
+                      {careerOffers.map(function(item) {
+                        return (
+                          <span key={item} className="career-offer">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            {item}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {careerRoles.length > 0 ? (
+                <div className="min-w-0">
+                  <h3 className="career-subtitle">{careerInfo.rolesTitle}</h3>
+                  <ul className="career-roles">
+                    {careerRoles.map(function(role, index) {
+                      const showEn = role.en && role.en.toLowerCase() !== role.title.toLowerCase();
+                      return (
+                        <li key={role.title + index} className="career-role">
+                          <span className="career-role-num" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                          <div className="min-w-0">
+                            <div className="career-role-title">{role.title}</div>
+                            {showEn ? <div className="career-role-en">{role.en}</div> : null}
+                            {role.desc ? <div className="career-role-desc">{role.desc}</div> : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               ) : null}
-              {careerOffers.map(function(item) {
-                return (
-                  <span key={item} className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-soft)" }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E0A81A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {item}
-                  </span>
-                );
-              })}
             </div>
-          ) : null}
 
-          <div className="mt-7 flex flex-col gap-4 rounded-2xl px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5" style={{ background: "var(--bg-soft)", border: "1px solid var(--border)" }}>
-            <div className="min-w-0">
-              <div className="text-xs font-black" style={{ color: "var(--text)" }}>{careerInfo.applyTitle}</div>
-              {careerInfo.applyDesc ? (
-                <div className="mt-1 text-[11px] leading-6" style={{ color: "var(--text-muted)" }}>{careerInfo.applyDesc}</div>
-              ) : null}
-              <div className="mt-1.5 truncate text-[11px] font-bold" style={{ color: "var(--gold)" }} dir="ltr">{emailPrimary}</div>
+            <div className="career-apply">
+              <div className="min-w-0">
+                <div className="career-apply-title">{careerInfo.applyTitle}</div>
+                {careerInfo.applyDesc ? (
+                  <div className="career-apply-desc">{careerInfo.applyDesc}</div>
+                ) : null}
+                <a href={"mailto:" + emailPrimary} className="career-apply-mail" dir="ltr">{emailPrimary}</a>
+              </div>
+              <a href={careerMailto("")} className="btn-gold shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+                {careerInfo.applyCta}
+              </a>
             </div>
-            <a href={careerMailto("")} className="btn-gold shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-              {careerInfo.applyCta}
-            </a>
           </div>
         </div>
       </section>
@@ -450,6 +459,204 @@ export default function ContactClient({ dict, locale, company, branding, content
           </div>
         </div>
       </section>
+
+      <style jsx global>{`
+        /* بخش فرصت همکاری — پنل فشرده با کارت موقعیت‌ها و چیپ مزایا */
+        .career-panel {
+          position: relative;
+          overflow: hidden;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          background:
+            linear-gradient(135deg, color-mix(in srgb, var(--gold) 8%, transparent), transparent 55%),
+            var(--surface-glass);
+          box-shadow: var(--shadow-sm);
+        }
+        .career-grid {
+          display: grid;
+          gap: 22px;
+        }
+        @media (min-width: 768px) {
+          .career-grid {
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+            gap: 28px;
+            align-items: start;
+          }
+        }
+        .career-title {
+          margin: 12px 0 0;
+          font-size: clamp(1.2rem, 1rem + 0.8vw, 1.55rem);
+          line-height: 1.45;
+          font-weight: 900;
+          letter-spacing: -0.01em;
+          color: var(--text);
+        }
+        .career-rule {
+          width: 56px;
+          height: 3px;
+          margin-top: 12px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, var(--gold-bg), transparent);
+        }
+        .career-lead {
+          margin: 12px 0 0;
+          max-width: 46ch;
+          font-size: 12.5px;
+          line-height: 1.95;
+          color: var(--text-soft);
+          text-wrap: pretty;
+        }
+        .career-subtitle,
+        .career-offers-title {
+          margin: 0;
+          font-size: 11.5px;
+          font-weight: 900;
+          color: var(--gold-text);
+        }
+        .career-offers-block {
+          margin-top: 16px;
+        }
+        .career-offers {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 8px;
+        }
+        .career-roles {
+          display: grid;
+          gap: 7px;
+          margin-top: 10px;
+          list-style: none;
+          padding: 0;
+        }
+        .career-role {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          height: 100%;
+          padding: 9px 11px;
+          border-radius: 12px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+        .career-role:hover {
+          border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-sm);
+        }
+        .career-role-num {
+          flex-shrink: 0;
+          width: 24px;
+          height: 24px;
+          border-radius: 7px;
+          display: grid;
+          place-items: center;
+          font-size: 10px;
+          font-weight: 900;
+          font-family: monospace;
+          direction: ltr;
+          background: var(--glow);
+          color: var(--gold);
+        }
+        .career-role-title {
+          font-size: 12.5px;
+          font-weight: 900;
+          line-height: 1.6;
+          color: var(--text);
+        }
+        .career-role-en {
+          margin-top: 1px;
+          font-size: 8.5px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          color: var(--text-muted);
+        }
+        .career-role-desc {
+          margin-top: 2px;
+          font-size: 10.5px;
+          line-height: 1.75;
+          color: var(--text-muted);
+          text-wrap: pretty;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .career-offer {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 9px;
+          border-radius: 999px;
+          font-size: 10.5px;
+          font-weight: 800;
+          color: var(--text-soft);
+          background: color-mix(in srgb, var(--gold) 9%, var(--bg-card));
+          border: 1px solid color-mix(in srgb, var(--gold) 28%, transparent);
+        }
+        .career-offer svg {
+          color: var(--gold);
+          flex-shrink: 0;
+        }
+        .career-apply {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 20px;
+          padding: 13px 15px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 14%, transparent), color-mix(in srgb, var(--gold) 3%, transparent));
+          border: 1px solid color-mix(in srgb, var(--gold) 32%, transparent);
+        }
+        .career-apply .btn-gold {
+          padding: 9px 16px;
+          border-radius: 10px;
+          font-size: 12px;
+        }
+        .career-apply-title {
+          font-size: 12.5px;
+          font-weight: 900;
+          color: var(--text);
+        }
+        .career-apply-desc {
+          margin-top: 3px;
+          max-width: 52ch;
+          font-size: 10.5px;
+          line-height: 1.8;
+          color: var(--text-muted);
+          text-wrap: pretty;
+        }
+        .career-apply-mail {
+          display: inline-block;
+          margin-top: 5px;
+          font-family: monospace;
+          font-size: 11.5px;
+          font-weight: 900;
+          color: var(--gold-text);
+          text-decoration: none;
+          direction: ltr;
+          unicode-bidi: isolate;
+        }
+        .career-apply-mail:hover {
+          text-decoration: underline;
+        }
+        @media (max-width: 640px) {
+          .career-apply {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: center;
+          }
+          .career-apply-desc {
+            margin-inline: auto;
+          }
+          .career-apply .btn-gold {
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 }

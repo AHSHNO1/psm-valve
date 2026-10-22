@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FileText, Download, Film, Library, Camera, Newspaper, ArrowLeft, Calendar, Images } from "lucide-react";
+import { FileText, Download, Film, Library, Camera, Newspaper, ArrowLeft, Calendar, Images, Clock } from "lucide-react";
 import Link from "next/link";
 import VideoEmbed from "./VideoEmbed";
 import { newsGallery, formatNewsDate } from "@/lib/news-utils";
@@ -16,6 +16,8 @@ const MEDIA_COPY = {
     news: "تازه‌ترین خبرها و اطلاعیه‌های پتروسازه میهن را در این بخش دنبال کنید.",
     article: "مطالب تخصصی و آموزشی برای آشنایی بیشتر با محصولات و مهندسی شیرآلات.",
     video: "ویدئو را پخش کنید تا با محصولات، فرایندها و فعالیت‌های شرکت بیشتر آشنا شوید.",
+    videoTag: "ویدئو",
+    videoCaption: "ویدئوی رسمی پتروسازه میهن؛ برای پخش روی تصویر کلیک کنید.",
     catalog: "برای مشاهده اطلاعات تکمیلی، کاتالوگ PDF را باز کنید یا آن را دانلود کنید.",
     gallery: "تصاویری از محصولات، امکانات و فعالیت‌های پتروسازه میهن.",
     newsEmpty: "خبر تازه‌ای منتشر نشده است. خبرها پس از انتشار در این بخش نمایش داده می‌شوند.",
@@ -30,6 +32,8 @@ const MEDIA_COPY = {
     news: "Follow the latest news and announcements from Petro Sazeh Mihan.",
     article: "Technical and educational resources about our products and valve engineering.",
     video: "Play the video to learn more about our products, processes, and activities.",
+    videoTag: "Video",
+    videoCaption: "Official Petro Sazeh Mihan video — click to play.",
     catalog: "Open or download the PDF catalog for additional product information.",
     gallery: "Images of Petro Sazeh Mihan products, facilities, and activities.",
     newsEmpty: "There is no recent news to display. New announcements will appear here.",
@@ -44,6 +48,8 @@ const MEDIA_COPY = {
     news: "تابعوا أحدث أخبار وإعلانات شركة بترو سازه ميهن.",
     article: "مواد فنية وتعليمية للتعرف على منتجاتنا وهندسة الصمامات.",
     video: "شغّل الفيديو للتعرف أكثر على منتجاتنا وعملياتنا وأنشطتنا.",
+    videoTag: "فيديو",
+    videoCaption: "فيديو رسمي من بترو سازه ميهن — انقر للتشغيل.",
     catalog: "افتح كتالوج PDF أو نزّله للاطلاع على معلومات إضافية عن المنتجات.",
     gallery: "صور منتجات ومرافق وأنشطة شركة بترو سازه ميهن.",
     newsEmpty: "لا توجد أخبار حديثة للعرض. ستظهر الإعلانات الجديدة هنا.",
@@ -58,6 +64,8 @@ const MEDIA_COPY = {
     news: "Следите за последними новостями и объявлениями Petro Sazeh Mihan.",
     article: "Технические и образовательные материалы о продукции и арматуре.",
     video: "Посмотрите видео, чтобы узнать больше о продукции, процессах и работе компании.",
+    videoTag: "Видео",
+    videoCaption: "Официальное видео Petro Sazeh Mihan — нажмите, чтобы воспроизвести.",
     catalog: "Откройте или скачайте PDF-каталог для получения дополнительной информации.",
     gallery: "Фотографии продукции, объектов и деятельности Petro Sazeh Mihan.",
     newsEmpty: "Свежих новостей пока нет. Новые объявления появятся здесь.",
@@ -72,6 +80,26 @@ const MEDIA_COPY = {
 
 function fallbackText(locale, key) {
   return MEDIA_COPY[locale]?.[key] || MEDIA_COPY.en[key];
+}
+
+function videoTitle(video, locale) {
+  const title = video && video.title;
+  if (!title) return "";
+  if (typeof title === "string") return title;
+  return title[locale] || title.fa || title.en || "";
+}
+
+function formatVideoDuration(value, locale) {
+  if (typeof value === "string" && value.includes(":")) return value;
+  const seconds = Math.round(Number(value) || 0);
+  if (seconds <= 0) return "";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  const padded = new Intl.NumberFormat(locale, { minimumIntegerDigits: 2, useGrouping: false });
+  return hours
+    ? `${hours}:${padded.format(minutes)}:${padded.format(rest)}`
+    : `${padded.format(minutes)}:${padded.format(rest)}`;
 }
 
 function MediaCover({ src, title, fallback }) {
@@ -290,15 +318,34 @@ function VideosGrid({ videos, locale, dict, aparatUnavailable }) {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {videos.map(function(v) {
-            const title = (v.title && (v.title[locale] || v.title.fa || v.title.en)) || "Video";
+            const title = videoTitle(v, locale) || fallbackText(locale, "videoTag");
+            const caption = pick(v.description, locale) || fallbackText(locale, "videoCaption");
+            const duration = formatVideoDuration(v.duration, locale);
+            const date = v.publishedAt ? formatNewsDate(v.publishedAt, locale) : "";
             return (
               <div key={v.id} className="card-glass group flex h-full flex-col overflow-hidden">
                 <VideoEmbed url={v.url} title={title} poster={v.poster || "/images/media/video-cover.svg"} />
-                <div className="flex flex-1 flex-col p-5">
-                  <h3 className="font-bold text-base leading-7" style={{ color: "var(--text)" }}>{title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-6 text-soft">
-                    {pick(v.description, locale) || fallbackText(locale, "video")}
-                  </p>
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold" style={{ color: "var(--gold)" }}>
+                    <Film size={11} aria-hidden="true" />
+                    {fallbackText(locale, "videoTag")}
+                    {duration ? (
+                      <span className="ms-auto inline-flex items-center gap-1 font-semibold" style={{ color: "var(--text-muted)" }}>
+                        <Clock size={10} aria-hidden="true" />
+                        {duration}
+                      </span>
+                    ) : null}
+                  </div>
+                  <h3 className="line-clamp-2 text-sm font-bold leading-6 transition group-hover:text-gold-500" style={{ color: "var(--text)" }}>
+                    {title}
+                  </h3>
+                  <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-5 text-soft">{caption}</p>
+                  {date ? (
+                    <div className="mt-3 flex items-center gap-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                      <Calendar size={10} aria-hidden="true" />
+                      {date}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

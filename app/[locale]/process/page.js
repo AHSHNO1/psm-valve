@@ -13,11 +13,12 @@ export async function generateMetadata({ params }) {
   const { locale } = params;
   const process = getContent().process || {};
   const seo = pageSeo(locale, "process");
+  const customDescription = pick(process.subtitle, locale);
   return buildMetadata({
     locale,
     path: "/process",
     title: pick(process.title, locale) || seo.title,
-    description: pick(process.subtitle, locale) || seo.description,
+    description: customDescription.length >= 80 ? customDescription : seo.description,
     keywords: seo.keywords
   });
 }

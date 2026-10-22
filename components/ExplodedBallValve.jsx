@@ -50,12 +50,12 @@ const PARTS = [
   { id: "flangeRight", labelIndex: 4, position: [1.42, -0.05, 0], offset: [0.7, 0, 0], labelY: 0.52 }
 ];
 
-const PAINT = { color: "#566771", metalness: 0.38, roughness: 0.52, envMapIntensity: 0.9 };
-const PAINT_DARK = { color: "#3A464E", metalness: 0.48, roughness: 0.48 };
-const STEEL = { color: "#C6D0D8", metalness: 0.92, roughness: 0.22, envMapIntensity: 1.05 };
-const CHROME = { color: "#E0E7EC", metalness: 1, roughness: 0.12, envMapIntensity: 1.15 };
-const BRONZE = { color: "#8D7852", metalness: 0.7, roughness: 0.4 };
-const DARK = { color: "#242B31", metalness: 0.55, roughness: 0.42 };
+const PAINT = { color: "#71838E", metalness: 0.38, roughness: 0.52, envMapIntensity: 1.05 };
+const PAINT_DARK = { color: "#56646E", metalness: 0.48, roughness: 0.48, envMapIntensity: 1 };
+const STEEL = { color: "#C6D0D8", metalness: 0.92, roughness: 0.22, envMapIntensity: 1.1 };
+const CHROME = { color: "#E0E7EC", metalness: 1, roughness: 0.12, envMapIntensity: 1.2 };
+const BRONZE = { color: "#9A8560", metalness: 0.7, roughness: 0.4, envMapIntensity: 0.95 };
+const DARK = { color: "#37424A", metalness: 0.55, roughness: 0.42, envMapIntensity: 0.9 };
 const GASKET = { color: "#B7A170", metalness: 0.6, roughness: 0.4 };
 const PTFE = { color: "#E9E4D4", metalness: 0.15, roughness: 0.5 };
 
@@ -361,6 +361,7 @@ export default function ExplodedBallValve() {
           fov={38}
           target={[0, 0.6, 0]}
           floorY={-1.5}
+          brightness={1.3}
           onPointerMissed={() => setSelectedId(null)}
         >
           <FramedModel explode={explode}>

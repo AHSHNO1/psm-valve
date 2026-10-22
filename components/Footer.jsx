@@ -187,7 +187,7 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
               <Phone size={13} className="fc-icon" />
               <div className="fc-text fc-inline">
                 <span className="fc-label">{L.phone}:</span>
-                {[...new Set([company.phone.office, company.phone.factory].filter(Boolean))].map((phone, index) => (
+                {[...new Set([company.phone.office, company.phone.factory, company.phone.secondary].filter(Boolean))].map((phone, index) => (
                   <span key={phone}>
                     {index > 0 && <span className="fc-sep">·</span>}
                     <a href={"tel:" + phone.replace(/\s/g, "")} className="fc-link fc-num" dir="ltr">{phone}</a>

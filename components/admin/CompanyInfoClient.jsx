@@ -155,6 +155,7 @@ export default function CompanyInfoClient({ initial }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           <Field label="تلفن دفتر" type="tel" value={company.phone.office} onChange={(value) => update("phone.office", value)} />
           <Field label="تلفن کارخانه" type="tel" value={company.phone.factory} onChange={(value) => update("phone.factory", value)} />
+          <Field label="تلفن دوم" type="tel" value={company.phone.secondary} onChange={(value) => update("phone.secondary", value)} hint="در فوتر، کنار تلفن نمایش داده می‌شود" />
           <Field label="فکس دفتر" type="tel" value={company.fax.office} onChange={(value) => update("fax.office", value)} />
           <Field label="فکس کارخانه" type="tel" value={company.fax.factory} onChange={(value) => update("fax.factory", value)} />
           <Field label="ایمیل اصلی" type="email" value={company.email.primary} onChange={(value) => update("email.primary", value)} />

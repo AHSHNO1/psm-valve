@@ -1,17 +1,19 @@
 import { getDictionary } from "@/lib/getDictionary";
 import { buildMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/seo-copy";
 import { getContent, getCertificates } from "@/lib/content";
 import CeoSection from "@/components/CeoSection";
 
 export async function generateMetadata({ params }) {
   const { locale } = params;
-  const dict = await getDictionary(locale);
-  const L = dict.about || {};
+  const seo = pageSeo(locale, "about");
   return buildMetadata({
     locale,
     path: "/about",
-    title: dict.nav?.about || [L.title1, L.title2].filter(Boolean).join(" ") || dict.common?.company,
-    description: typeof L.desc === "string" ? L.desc.slice(0, 160) : ""
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords,
+    titleAbsolute: true
   });
 }
 

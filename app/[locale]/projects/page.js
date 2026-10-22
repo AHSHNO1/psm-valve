@@ -16,11 +16,12 @@ export async function generateMetadata({ params }) {
   const { locale } = params;
   const meta = getContent().projects || {};
   const seo = pageSeo(locale, "projects");
+  const customDescription = pick(meta.subtitle, locale);
   return buildMetadata({
     locale,
     path: "/projects",
     title: pick(meta.title, locale) || seo.title,
-    description: pick(meta.subtitle, locale) || seo.description,
+    description: customDescription.length >= 80 ? customDescription : seo.description,
     keywords: seo.keywords
   });
 }

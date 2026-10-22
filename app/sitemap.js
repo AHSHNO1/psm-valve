@@ -14,6 +14,15 @@ export const runtime = "nodejs";
 
 const BASE = "https://www.psmvalve.com";
 
+function alternateLanguages(path) {
+  const languages = {};
+  locales.forEach(function (locale) {
+    languages[locale] = BASE + "/" + locale + path;
+  });
+  languages["x-default"] = BASE + "/" + locales[0] + path;
+  return languages;
+}
+
 const STATIC_ROUTES = [
   { path: "", priority: 1.0, changeFrequency: "daily" },
   { path: "/products", priority: 0.9, changeFrequency: "weekly" },
@@ -47,7 +56,8 @@ export default function sitemap() {
         url: BASE + "/" + locale + route.path,
         lastModified: now,
         changeFrequency: route.changeFrequency,
-        priority: route.priority
+        priority: route.priority,
+        alternates: { languages: alternateLanguages(route.path) }
       });
     });
 
@@ -56,7 +66,8 @@ export default function sitemap() {
         url: BASE + "/" + locale + "/products/" + p.slug,
         lastModified: now,
         changeFrequency: "monthly",
-        priority: 0.7
+        priority: 0.7,
+        alternates: { languages: alternateLanguages("/products/" + p.slug) }
       });
     });
 
@@ -66,7 +77,8 @@ export default function sitemap() {
         url: BASE + "/" + locale + "/services/" + s.slug,
         lastModified: now,
         changeFrequency: "monthly",
-        priority: 0.6
+        priority: 0.6,
+        alternates: { languages: alternateLanguages("/services/" + s.slug) }
       });
     });
 
@@ -76,7 +88,8 @@ export default function sitemap() {
         url: BASE + "/" + locale + "/articles/" + a.slug,
         lastModified: iso ? new Date(iso) : now,
         changeFrequency: "monthly",
-        priority: 0.6
+        priority: 0.6,
+        alternates: { languages: alternateLanguages("/articles/" + a.slug) }
       });
     });
 
@@ -87,7 +100,8 @@ export default function sitemap() {
         url: BASE + "/" + locale + "/news/" + item.slug,
         lastModified: iso ? new Date(iso) : now,
         changeFrequency: "monthly",
-        priority: 0.6
+        priority: 0.6,
+        alternates: { languages: alternateLanguages("/news/" + item.slug) }
       });
     });
   });

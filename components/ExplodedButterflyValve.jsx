@@ -50,12 +50,12 @@ const PARTS = [
   { id: "actuator", labelIndex: 5, position: [0, 1.42, 0], offset: [0, 1.5, 0], labelY: 0.9 }
 ];
 
-const PAINT = { color: "#54656F", metalness: 0.38, roughness: 0.52, envMapIntensity: 0.9 };
-const PAINT_DARK = { color: "#3C4851", metalness: 0.48, roughness: 0.48 };
-const STEEL = { color: "#C6D0D8", metalness: 0.93, roughness: 0.22, envMapIntensity: 1.05 };
-const CHROME = { color: "#DFE7EC", metalness: 1, roughness: 0.13, envMapIntensity: 1.15 };
+const PAINT = { color: "#71838E", metalness: 0.38, roughness: 0.52, envMapIntensity: 1.05 };
+const PAINT_DARK = { color: "#56646E", metalness: 0.48, roughness: 0.48, envMapIntensity: 1 };
+const STEEL = { color: "#C6D0D8", metalness: 0.93, roughness: 0.22, envMapIntensity: 1.1 };
+const CHROME = { color: "#DFE7EC", metalness: 1, roughness: 0.13, envMapIntensity: 1.2 };
 const GOLD = { color: "#D3A21A", metalness: 0.5, roughness: 0.33, envMapIntensity: 0.9 };
-const DARK = { color: "#242B31", metalness: 0.55, roughness: 0.42 };
+const DARK = { color: "#37424A", metalness: 0.55, roughness: 0.42, envMapIntensity: 0.9 };
 const RUBBER = { color: "#252E33", metalness: 0.05, roughness: 0.84 };
 const PTFE = { color: "#E7E1D0", metalness: 0.1, roughness: 0.5 };
 
@@ -365,6 +365,7 @@ export default function ExplodedButterflyValve() {
           fov={40}
           target={[0, 0.55, 0]}
           floorY={-1.6}
+          brightness={1.3}
           onPointerMissed={() => setSelectedId(null)}
         >
           <FramedModel explode={explode}>

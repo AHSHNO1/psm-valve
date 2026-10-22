@@ -22,11 +22,12 @@ export async function generateMetadata({ params }) {
   const { locale } = params;
   const whyUs = getContent().whyUs || {};
   const seo = pageSeo(locale, "whyUs");
+  const customDescription = pick(whyUs.subtitle, locale);
   return buildMetadata({
     locale,
     path: "/why-us",
     title: pick(whyUs.title, locale) || seo.title,
-    description: pick(whyUs.subtitle, locale) || seo.description,
+    description: customDescription.length >= 80 ? customDescription : seo.description,
     keywords: seo.keywords
   });
 }

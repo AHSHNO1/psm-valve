@@ -12,7 +12,8 @@ export const SECTION = {
   clipShadows: true
 };
 
-export function SceneStage({ camera, fov = 36, target = [0, 0, 0], floorY = -1.7, onPointerMissed, children }) {
+export function SceneStage({ camera, fov = 36, target = [0, 0, 0], floorY = -1.7, onPointerMissed, children, brightness = 1 }) {
+  const gain = brightness;
   return (
     <Canvas
       dpr={[1, 1.6]}
@@ -21,15 +22,15 @@ export function SceneStage({ camera, fov = 36, target = [0, 0, 0], floorY = -1.7
       onCreated={({ gl }) => {
         gl.localClippingEnabled = true;
         gl.toneMapping = NeutralToneMapping;
-        gl.toneMappingExposure = 1.06;
+        gl.toneMappingExposure = 1.06 * (1 + (gain - 1) * 0.4);
       }}
       onPointerMissed={onPointerMissed}
     >
-      <ambientLight intensity={0.58} />
-      <hemisphereLight args={["#f2f7fb", "#6b5a3a", 0.75]} />
-      <directionalLight position={[4.5, 6, 4.5]} intensity={2.5} />
-      <directionalLight position={[-4, 2, -3]} intensity={0.75} color="#bcd6e6" />
-      <directionalLight position={[-2.5, 1.4, 6]} intensity={1.1} color="#dcebf3" />
+      <ambientLight intensity={0.58 * gain} />
+      <hemisphereLight args={["#f2f7fb", "#6b5a3a", 0.75 * gain]} />
+      <directionalLight position={[4.5, 6, 4.5]} intensity={2.5 * gain} />
+      <directionalLight position={[-4, 2, -3]} intensity={0.75 * gain} color="#bcd6e6" />
+      <directionalLight position={[-2.5, 1.4, 6]} intensity={1.1 * gain} color="#dcebf3" />
       <pointLight position={[-3, 1, 4]} intensity={12} color="#F5C518" />
       <Environment resolution={64}>
         <Lightformer form="ring" intensity={2} position={[0, 4, -5]} scale={4} color="#ffffff" />

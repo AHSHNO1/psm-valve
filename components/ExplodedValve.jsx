@@ -64,13 +64,13 @@ const PARTS = [
   { id: "actuator", labelIndex: 7, position: [0, 2.08, 0], offset: [0, 1.05, 0], labelY: 1.0 }
 ];
 
-const PAINT = { color: "#52636D", metalness: 0.38, roughness: 0.52, envMapIntensity: 0.9 };
-const PAINT_DARK = { color: "#3A454D", metalness: 0.48, roughness: 0.48, envMapIntensity: 0.85 };
-const STEEL = { color: "#BEC9D1", metalness: 0.92, roughness: 0.24, envMapIntensity: 1 };
-const CHROME = { color: "#DCE4EA", metalness: 1, roughness: 0.14, envMapIntensity: 1.1 };
-const BRONZE = { color: "#907C55", metalness: 0.7, roughness: 0.4, envMapIntensity: 0.9 };
+const PAINT = { color: "#70828D", metalness: 0.38, roughness: 0.52, envMapIntensity: 1.05 };
+const PAINT_DARK = { color: "#56646E", metalness: 0.48, roughness: 0.48, envMapIntensity: 1 };
+const STEEL = { color: "#C7D2D9", metalness: 0.92, roughness: 0.24, envMapIntensity: 1.05 };
+const CHROME = { color: "#E1E8ED", metalness: 1, roughness: 0.14, envMapIntensity: 1.15 };
+const BRONZE = { color: "#9C8861", metalness: 0.7, roughness: 0.4, envMapIntensity: 0.95 };
 const GOLD = { color: "#D3A21A", metalness: 0.5, roughness: 0.33, envMapIntensity: 0.9 };
-const DARK = { color: "#232A30", metalness: 0.55, roughness: 0.42, envMapIntensity: 0.8 };
+const DARK = { color: "#37424A", metalness: 0.55, roughness: 0.42, envMapIntensity: 0.9 };
 const GASKET = { color: "#B7A170", metalness: 0.6, roughness: 0.4 };
 
 function highlight(material, emphasized) {
@@ -460,6 +460,7 @@ export default function ExplodedValve() {
           fov={38}
           target={[0, 0.45, 0]}
           floorY={-1.85}
+          brightness={1.34}
           onPointerMissed={() => setSelectedId(null)}
         >
           <FramedModel explode={explode}>
