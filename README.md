@@ -46,6 +46,7 @@ npm run start         # http://localhost:3000
 | `ADMIN_PASSWORD` | ✅* | رمز متنی، حداقل ۱۲ کاراکتر |
 | `ADMIN_PASSWORD_HASH` | ✅* | هش bcrypt رمز (اولویت بر `ADMIN_PASSWORD`) |
 | `ADMIN_ALLOW_INSECURE_DEV_CREDENTIALS` | ❌ | فقط توسعه: `true` اجازهٔ `admin/admin` میدهد. در تولید هرگز. |
+| `ADMIN_RECOVERY_EMAIL` | ❌ | ایمیل دریافت لینک بازیابی رمز مدیر («فراموشی رمز» در صفحهٔ ورود). خالی → بهترتیب `CONTACT_TO` و `SMTP_USER`. نیاز به تنظیم `SMTP_*` دارد. |
 | `CONTACT_CHALLENGE_SECRET` | ❌ | اختیاری برای چالش ضداسپم فرم تماس (پیشفرض: `JWT_SECRET`) |
 | `PSM_DATABASE_PATH` | ❌ | مسیر فایل SQLite محصولات؛ پیشفرض `data/psm-valve.sqlite` و باید روی دیسک پایدار باشد. |
 

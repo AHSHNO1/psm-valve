@@ -1311,6 +1311,58 @@ textarea.form-input { resize: vertical; line-height: 1.7; min-height: 80px; }
 
 .admin-login-submit:disabled { cursor: wait; opacity: 0.78; }
 
+.admin-login-forgot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 14px;
+  border: 0;
+  background: none;
+  color: #7C8796;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  transition: color 140ms ease;
+}
+
+.admin-login-forgot:hover { color: #C49A3D; }
+
+.admin-login-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid rgba(74, 155, 120, 0.35);
+  border-radius: 12px;
+  background: rgba(74, 155, 120, 0.08);
+  color: #2E7A5B;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.admin-login-note svg { flex: 0 0 auto; margin-top: 2px; }
+
+.admin-login-alt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-login-alt-actions .admin-login-forgot { margin-top: 0; }
+
+.admin-login-field-hint {
+  margin: 6px 2px 0;
+  color: #7C8796;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
 .admin-login-secure-note {
   display: flex;
   align-items: center;
