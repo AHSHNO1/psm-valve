@@ -113,5 +113,5 @@ if [ -n "$GENERATED_PASSWORD" ]; then
   echo "    ⚠️ این رمز فقط یکبار نمایش داده میشود؛ بعد از اولین ورود از بخش «امنیت» پنل عوضش کنید."
 fi
 echo "    بهروزرسانی: $COMPOSE up -d --build   (بیلد خودکار انجام میشود)"
-echo "    بکاپ روزانه: bash deploy/backup-docker.sh  (در cron بگذارید)"
+echo "    بکاپ هفتگی: bash deploy/backup-docker.sh  (در cron بگذارید)"
 echo "    متوقفکردن:  $COMPOSE down"

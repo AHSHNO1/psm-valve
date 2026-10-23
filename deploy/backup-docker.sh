@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# PSM VALVE — بکاپ روزانه در استقرار Docker
+# PSM VALVE — بکاپ هفتگی در استقرار Docker
 #
 #   bash deploy/backup-docker.sh
-#   cron:  0 3 * * * cd /opt/psm-valve && /bin/bash deploy/backup-docker.sh >> logs/backup.log 2>&1
+#   cron:  0 3 * * 5 cd /opt/psm-valve && /bin/bash deploy/backup-docker.sh >> logs/backup.log 2>&1
 #
 # چه میکند؟
 #   ۱) snapshot تراکنشی SQLite محصولات «داخل کانتینر» (بدون توقف سرویس)
@@ -16,7 +16,7 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/psm-valve}"
-KEEP_DAYS="${KEEP_DAYS:-14}"
+KEEP_DAYS="${KEEP_DAYS:-7}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 cd "$APP_DIR"

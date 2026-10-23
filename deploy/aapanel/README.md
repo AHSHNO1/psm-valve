@@ -412,7 +412,7 @@ curl -I -H 'Host: www.psmvalve.com' http://127.0.0.1/fa
 - [ ] `ADMIN_ALLOW_INSECURE_DEV_CREDENTIALS` خالی است
 - [ ] رمز مدیر از رمز قبلی/افشاشده متفاوت است
 - [ ] `JWT_SECRET` تصادفی ≥۳۲ بایت و بعد از آخرین تغییر، بیلد شده است
-- [ ] بکاپ روزانه + یک نسخهٔ خارج از سرور
+- [ ] بکاپ هفتگی + یک نسخهٔ خارج از سرور
 - [ ] `https://www.<domain>/admin` بدون ورود به `/admin/login` می‌رود
 - [ ] `https://www.<domain>/api/cv-tables` بدون کوکی `401` می‌دهد
 
@@ -425,15 +425,15 @@ sudo -u www -H bash -c 'cd /www/wwwroot/psm-valve && node scripts/preflight.mjs'
 
 ---
 
-## ۹) بکاپ روزانه با Cron پنل
+## ۹) بکاپ هفتگی با Cron پنل
 
-**Cron → Add Cron → Shell Script** (روزانه، مثلاً ۰۳:۰۰):
+**Cron → Add Cron → Shell Script** (چرخهٔ هفتگی، روز جمعه، مثلاً ۰۳:۰۰):
 
 ```bash
 cd /www/wwwroot/psm-valve && \
 APP_DIR=/www/wwwroot/psm-valve \
 BACKUP_DIR=/www/backup/psm-valve \
-KEEP_DAYS=14 \
+KEEP_DAYS=7 \
 bash deploy/backup.sh >> /www/wwwlogs/psm-backup.log 2>&1
 ```
 
@@ -442,7 +442,7 @@ bash deploy/backup.sh >> /www/wwwlogs/psm-backup.log 2>&1
 - `data/*.json` را tar می‌کند،
 - از SQLite یک snapshot تراکنشی می‌گیرد (کپی خام در حین نوشتن امن نیست)،
 - `public/uploads` و `.env.production` را بکاپ می‌کند،
-- نسخه‌های قدیمی‌تر از ۱۴ روز را پاک می‌کند.
+- نسخه‌های قدیمی‌تر از ۷ روز را پاک می‌کند (یعنی همیشه یک بکاپ هفتگی در دسترس است).
 
 بکاپ روی همان سرور کافی نیست. یکی از این‌ها را فعال کنید:
 
@@ -580,7 +580,7 @@ journalctl -u pm2-www --no-pager -n 100
 - [ ] SSL پنل صادر شده و snippet اعمال و `nginx -t` سبز است
 - [ ] `/fa` روی HTTPS باز می‌شود و `/admin` به login می‌رود
 - [ ] آپلود فایل بزرگ‌تر از ۱MB از پنل کار می‌کند (سقف ۵۰MB)
-- [ ] cron بکاپ روزانه فعال و یک بکاپ خارج از سرور تست شده
+- [ ] cron بکاپ هفتگی فعال و یک بکاپ خارج از سرور تست شده
 - [ ] پورت ۳۰۰۰ از اینترنت بسته است
 - [ ] SMTP فرم تماس تست شده (اگر فعال است)
 

@@ -1,5 +1,5 @@
 import HeroStatsCombined from "@/components/HeroStatsCombined";
-import ExplodedViewer from "@/components/ExplodedViewer";
+import ExplodedViewerLazy from "@/components/ExplodedViewerLazy";
 import ProductGrid from "@/components/ProductGrid";
 import ServicesCombined from "@/components/ServicesCombined";
 import SizingVideoCombined from "@/components/SizingVideoCombined";
@@ -71,7 +71,7 @@ export default async function Home({ params }) {
         logo={branding.logo}
       />
 
-      <ExplodedViewer locale={locale} />
+      <ExplodedViewerLazy locale={locale} />
 
       <ProductGrid products={homeProducts} categories={categories} />
 

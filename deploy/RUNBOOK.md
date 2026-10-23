@@ -23,7 +23,7 @@
 | ۱ | `.env.production` با دسترسی `600`؛ `JWT_SECRET` قوی؛ `SMTP_*` و `CONTACT_TO` و `ALERT_EMAIL_TO` پر | `ls -l .env.production` → `-rw-------`؛ `node scripts/test-email.mjs` ایمیل می‌فرستد |
 | ۲ | HTTPS فعال + هدایت اجباری http→https | `curl -sI http://دامنه` → `301` به https؛ قفل سبز مرورگر |
 | ۳ | بقا بعد از ریبوت: `pm2 save` + `pm2 startup` اجرا شده | `pm2 startup` خروجی «already configured» یا دستور systemd فعال؛ بعد از یک `sudo reboot` سایت خودش بالا می‌آید |
-| ۴ | cron بکاپ روزانه فعال | `crontab -l -u psm` شامل `backup.sh`؛ در `/var/backups/psm-valve` بکاپ امروز هست |
+| ۴ | cron بکاپ هفتگی فعال | `crontab -l -u psm` شامل `backup.sh`؛ در `/var/backups/psm-valve` بکاپ این هفته هست |
 | ۵ | **رزمایش بازیابی** (بخش ۳) حداقل یک‌بار کامل و موفق | فایل نوتِ زمان رزمایش؛ هدف بازگردانی کامل < ۳۰ دقیقه |
 | ۶ | بازبینی واقعی پنل ادمین: ورود، ویرایش یک محتوا، ذخیره، مشاهده روی سایت عمومی، خروج | ویرایش در سایت عمومی دیده می‌شود |
 | ۷ | مانیتورینگ: ثبت `https://دامنه/api/health` در مانیتور (aaPanel / UptimeRobot) | پاسخ `200` و بدنهٔ `{"status":"ok"}`؛ آستانهٔ هشدار ۵ دقیقه |
@@ -118,7 +118,7 @@ ss -tlnp | grep "$(cat /var/www/psm-valve/.app-port)"
 ```bash
 df -h                                # کدام پارتیشن پر است
 du -sh /var/backups/psm-valve/* | sort -h   # بکاپ‌های قدیمی
-find /var/backups/psm-valve -mtime +14 -delete     # خارج از سیاست نگهداری
+find /var/backups/psm-valve -mtime +7 -delete     # خارج از سیاست نگهداری
 sudo journalctl --vacuum-size=200M
 npm cache clean --force              # در پوشهٔ اپ
 pm2 flush                            # لاگ‌های PM2

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# PSM VALVE — بکاپ روزانهٔ دادهٔ سایت و داراییهای آپلودشده
+# PSM VALVE — بکاپ هفتگی دادهٔ سایت و داراییهای آپلودشده
 #
-# نصب روی cron (ساعت ۳ بامداد):
-#   0 3 * * * /var/www/psm-valve/deploy/backup.sh >> /var/www/psm-valve/logs/backup.log 2>&1
+# نصب روی cron (جمعهها ساعت ۳ بامداد):
+#   0 3 * * 5 /var/www/psm-valve/deploy/backup.sh >> /var/www/psm-valve/logs/backup.log 2>&1
 #
 # چرا مهم است؟ دادهٔ سایت روی دیسک سرور است:
 #   data/*.json            → محتوا، تنظیمات، پیامهای تماس، کاربران
@@ -16,7 +16,7 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/var/www/psm-valve}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/psm-valve}"
-KEEP_DAYS="${KEEP_DAYS:-14}"
+KEEP_DAYS="${KEEP_DAYS:-7}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 cd "$APP_DIR"

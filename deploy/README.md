@@ -43,7 +43,7 @@ sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com
 8. `npm run build` (بعد از ساخت env — چون میدلور `JWT_SECRET` را در زمان بیلد درونریزی میکند)
 9. اجرای دائمی با PM2 + `pm2 save` + `pm2 startup` (بالا آمدن خودکار بعد از ریاستارت سرور)
 10. Nginx (reverse proxy + کش داراییها) و **SSL رایگان Let's Encrypt** + هدایت `http→https` و `domain→www.domain` + ufw و fail2ban
-11. cron بکاپ روزانه (۳ بامداد) + بررسی سلامت + چاپ خلاصهٔ کاربر و رمز پنل
+11. cron بکاپ هفتگی (جمعه ۳ بامداد) + بررسی سلامت + چاپ خلاصهٔ کاربر و رمز پنل
 
 ### گزینههای مهم
 
@@ -144,7 +144,7 @@ bash deploy/docker.sh --admin-password 'رمز-قوی'   # با رمز دلخو�
 | `bash deploy/docker.sh` | نصب/بهروزرسانی کامل (بیلد ایمیج + اجرا + رمز پنل) |
 | `docker compose logs -f app` | مشاهدهٔ لاگ زنده |
 | `docker compose restart app` | ریاستارت سرویس |
-| `bash deploy/backup-docker.sh` | بکاپ روزانه (snapshot SQLite داخل کانتینر + tar داده و آپلود) |
+| `bash deploy/backup-docker.sh` | بکاپ هفتگی (snapshot SQLite داخل کانتینر + tar داده و آپلود) |
 | `PSM_FORCE_BUILD=1 docker compose up -d` | اجبار به بیلد مجدد Next داخل کانتینر |
 | `docker compose down` | توقف (داده در volume/پوشه باقی میماند) |
 
@@ -303,7 +303,7 @@ powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -A
 | `make-env.sh` | ساخت `.env.production` با اسرار تصادفی (بیخطر برای اجرای دوباره) |
 | `update.sh` | انتشار نسخهٔ جدید (preflight → deploy → تست → healthcheck) |
 | `deploy.sh` | موتور انتشار روی سرور (بکاپ دادهٔ زنده → reset به origin → بیلد → reload) |
-| `backup.sh` | بکاپ روزانهٔ داده/آپلود + snapshot SQLite + پیکربندی |
+| `backup.sh` | بکاپ هفتگی داده/آپلود + snapshot SQLite + پیکربندی |
 | `backup-products-db.cjs` | snapshot تراکنشی SQLite (استفاده در `backup.sh` و کانتینر) |
 | `bootstrap-server.sh` | نصب پیشنیازهای سرور (نسخهٔ سبکتر `install.sh`) |
 | `nginx-psmvalve.conf` | کانفیگ Nginx (SSL، کش داراییها، ریدایرکت به www) |

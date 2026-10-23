@@ -227,7 +227,7 @@ export default function Navbar({ logo, logoIcon, products = [], categories = [],
               {t.common.company}
             </div>
             {headerSettings.showTagline && (
-              <div className="text-[9px] lg:text-[10px] font-bold tracking-widest whitespace-nowrap" style={{ color: "var(--gold)" }}>
+              <div className="text-[9px] lg:text-[10px] font-bold tracking-widest whitespace-nowrap" style={{ color: "var(--gold-text)" }}>
                 {t.common.tagline}
               </div>
             )}

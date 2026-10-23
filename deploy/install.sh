@@ -17,7 +17,7 @@
 #    ۸) بیلد نسخهٔ تولید
 #    ۹) اجرای دائمی با PM2 + راهاندازی خودکار پس از ریاستارت سرور
 #   ۱۰) Nginx + گواهی SSL رایگان Let's Encrypt (+ فایروال و fail2ban)
-#   ۱۱) cron بکاپ روزانه + بررسی سلامت + خلاصهٔ پایان کار
+#   ۱۱) cron بکاپ هفتگی + بررسی سلامت + خلاصهٔ پایان کار
 #
 # اجرای دوباره بیخطر است (idempotent) و دادهٔ موجود (data/, public/uploads)
 # را پاک نمیکند.
@@ -68,7 +68,7 @@ PSM VALVE — نصب خودکار روی سرور (Ubuntu/Debian)
   --no-ssl                  بدون SSL (فقط HTTP؛ موقت — با IP خودکار فعال می‌شود)
   --no-firewall             بدون تنظیم ufw و fail2ban
   --skip-build              پرش از بیلد (اگر .next از قبل آماده است)
-  --no-cron                 بدون نصب cron بکاپ روزانه
+  --no-cron                 بدون نصب cron بکاپ هفتگی
   -h, --help                همین راهنما
 
 متغیرهای محیطی همپوشان: DOMAIN · EMAIL · REPO_URL · BRANCH · APP_DIR · APP_USER · APP_PORT
@@ -504,16 +504,16 @@ if [ "$ENABLE_FIREWALL" = true ]; then
   ok "فایروال (OpenSSH + 80/443) و fail2ban فعال شد"
 fi
 
-# ---------- ۱۱) بکاپ روزانه، بررسی سلامت و خلاصه ----------
-step "بکاپ روزانه، بررسی سلامت و خلاصهٔ انتشار"
+# ---------- ۱۱) بکاپ هفتگی، بررسی سلامت و خلاصه ----------
+step "بکاپ هفتگی، بررسی سلامت و خلاصهٔ انتشار"
 if [ "$ENABLE_CRON" = true ]; then
-  CRON_LINE="0 3 * * * su - $APP_USER -c 'cd $APP_DIR && bash deploy/backup.sh' >> $APP_DIR/logs/backup.log 2>&1"
+  CRON_LINE="0 3 * * 5 su - $APP_USER -c 'cd $APP_DIR && bash deploy/backup.sh' >> $APP_DIR/logs/backup.log 2>&1"
   TMP_CRON="$(mktemp)"
   crontab -l 2>/dev/null | grep -v 'psm-valve' > "$TMP_CRON" || true
   echo "$CRON_LINE" >> "$TMP_CRON"
   crontab "$TMP_CRON"
   rm -f "$TMP_CRON"
-  ok "بکاپ روزانه ساعت ۳ بامداد در cron ثبت شد (نگهداری ۱۴ روز → $BACKUP_DIR)"
+  ok "بکاپ هفتگی جمعهها ساعت ۳ بامداد در cron ثبت شد (نگهداری ۷ روز → $BACKUP_DIR)"
 else
   warn "cron بکاپ نصب نشد (--no-cron)"
 fi

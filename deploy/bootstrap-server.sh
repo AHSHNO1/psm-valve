@@ -84,7 +84,7 @@ cat <<EOF
   5) pm2 start ecosystem.config.js && pm2 save && pm2 startup
   6) Nginx: sudo cp deploy/nginx-psmvalve.conf /etc/nginx/sites-available/psmvalve.conf
   7) certbot --nginx -d psmvalve.com -d www.psmvalve.com
-  8) cron بکاپ روزانه (گام ۵ در DEPLOY.md)
+  8) cron بکاپ هفتگی (گام ۵ در DEPLOY.md)
 
 راهنمای کامل: DEPLOY.md
 EOF

@@ -516,7 +516,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
     <div style={{ position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <label htmlFor={inputId} style={{ fontSize: 11, fontWeight: 900, color: isError ? "#E81123" : "var(--text-muted)" }}>
+          <label htmlFor={inputId} style={{ fontSize: 11, fontWeight: 900, color: isError ? "var(--danger)" : "var(--text-muted)" }}>
             {label}
             {required && <span aria-hidden="true" style={{ color: "#E0A81A", marginInlineStart: 3 }}>*</span>}
           </label>
@@ -549,7 +549,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
             aria-label={label + " — unit"}
             title={label + " — unit"}
             style={{
-              fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
+              fontSize: 10, color: isError ? "var(--danger)" : "var(--text-soft)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
               fontWeight: 800, padding: "2px 4px", borderRadius: 5,
               background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)",
               border: "1px solid var(--border)", whiteSpace: "nowrap", cursor: "pointer",
@@ -569,7 +569,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
           </select>
         ) : unit && (
           <span style={{
-            fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
+            fontSize: 10, color: isError ? "var(--danger)" : "var(--text-soft)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
             fontWeight: 800, padding: "2px 7px", borderRadius: 5,
             background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)",
             border: "1px solid var(--border)", whiteSpace: "nowrap"
@@ -592,7 +592,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
           width: "100%", padding: "10px 12px", borderRadius: 9,
           border: "1.5px solid " + (isError ? "#E81123" : "var(--border)"),
           background: isError ? "rgba(232,17,35,0.06)" : "var(--bg-soft)",
-          color: isError ? "#E81123" : "var(--text)",
+          color: isError ? "var(--danger)" : "var(--text)",
           fontFamily: "monospace", fontVariantNumeric: "tabular-nums", fontSize: 13.5, fontWeight: 700,
           transition: "all 0.2s"
         }}
@@ -614,7 +614,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
       {isError && (
         <div id={errorId} role="alert" style={{
           display: "flex", alignItems: "center", gap: 4,
-          marginTop: 4, fontSize: 10, fontWeight: 800, color: "#E81123"
+          marginTop: 4, fontSize: 10, fontWeight: 800, color: "var(--danger)"
         }}>
           <AlertTriangle size={10} /> {error}
         </div>
@@ -2132,6 +2132,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
         <button
           onClick={() => { setWizardMode(true); track.wizardOpened(); }}
           className="tb-btn tb-wizard"
+          aria-label={L.wizardBtn}
         >
           <Wand2 size={14} />
           <span>{L.wizardBtn}</span>
@@ -2157,7 +2158,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
           </div>
         </div>
 
-        <button onClick={handleReset} className="tb-btn tb-reset" title={L.reset}>
+        <button onClick={handleReset} className="tb-btn tb-reset" title={L.reset} aria-label={L.reset}>
           <RotateCcw size={14} />
         </button>
       </div>
@@ -2315,7 +2316,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-muted)" }}>{L.completion}</span>
-                <span style={{ fontSize: 10, fontWeight: 900, color: completion === 100 ? "#10B981" : "var(--gold)" }}>{completion}%</span>
+                <span style={{ fontSize: 10, fontWeight: 900, color: completion === 100 ? "var(--success)" : "var(--gold-text)" }}>{completion}%</span>
               </div>
               <div className="progress-bar">
                 <div className="progress-fill" style={{
@@ -2442,7 +2443,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                     <div style={{
                       fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
                       color: desuperGuide.margin == null ? "var(--text-muted)"
-                        : desuperGuide.margin < NEAR_SATURATION_REJECT_C ? "#E81123"
+                        : desuperGuide.margin < NEAR_SATURATION_REJECT_C ? "var(--danger)"
                           : desuperGuide.margin < NEAR_SATURATION_WARN_C ? "#B45309" : "#059669"
                     }}>
                       {desuperGuide.margin == null ? "—" : (desuperGuide.margin > 0 ? "+" : "") + desuperGuide.margin + " °C"}
@@ -2453,7 +2454,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                     <div style={{
                       fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
                       color: desuperGuide.valveDp == null ? "var(--text-muted)"
-                        : desuperGuide.valveDp <= 0 ? "#E81123"
+                        : desuperGuide.valveDp <= 0 ? "var(--danger)"
                           : desuperGuide.valveDp < 0.5 * desuperGuide.atomizingDp ? "#B45309" : "#059669"
                     }}>
                       {desuperGuide.valveDp == null ? "—" : desuperGuide.valveDp + " bar"}
@@ -2536,10 +2537,10 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
               <div className="error-box">
                 <AlertTriangle size={14} color="#E81123" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <div style={{ fontSize: 11.5, fontWeight: 900, color: "#E81123", marginBottom: 2 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 900, color: "var(--danger)", marginBottom: 2 }}>
                     {L.errorsTitle}
                   </div>
-                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "#E81123", opacity: 0.85 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--danger)" }}>
                     {L.errorsHint}
                   </div>
                 </div>
@@ -2586,7 +2587,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                         <button onClick={() => handleRemove(s.id)}
                           style={{
                             width: 22, height: 22, borderRadius: 6,
-                            background: "rgba(232, 17, 35, 0.1)", color: "#E81123",
+                            background: "rgba(232, 17, 35, 0.1)", color: "var(--danger)",
                             border: "none", cursor: "pointer", display: "grid", placeItems: "center"
                           }}>
                           <X size={10} />
@@ -2595,7 +2596,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                     ))}
                   </div>
                   <button onClick={handleClearAll} style={{
-                    marginTop: 8, fontSize: 10.5, fontWeight: 900, color: "#E81123",
+                    marginTop: 8, fontSize: 10.5, fontWeight: 900, color: "var(--danger)",
                     background: "transparent", border: "none", cursor: "pointer",
                     display: "flex", alignItems: "center", gap: 4
                   }}>
@@ -2624,7 +2625,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
               <div className="result-empty-icon" style={{ color: "#E81123", background: "rgba(232, 17, 35, 0.08)" }}>
                 <AlertTriangle size={28} />
               </div>
-              <div className="result-empty-title" style={{ color: "#E81123" }}>{L.calcErrorTitle}</div>
+              <div className="result-empty-title" style={{ color: "var(--danger)" }}>{L.calcErrorTitle}</div>
               <div className="result-empty-desc" style={{ maxWidth: 460, color: "var(--text)", fontWeight: 700 }}>
                 {result.mode === "desuper" || result.errorKey
                   ? desuperErrorText(result, locale)
@@ -2855,7 +2856,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                         <div className="hero-metric" role="note">
                           <AlertTriangle size={12} color="#E81123" />
                           <span className="hero-metric-label">{L.xOutLbl}</span>
-                          <span className="hero-metric-value" style={{ color: "#E81123" }}>—</span>
+                          <span className="hero-metric-value" style={{ color: "var(--danger)" }}>—</span>
                         </div>
                       )}
                     </>
@@ -2932,7 +2933,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                         <span style={{ fontSize: 11, fontWeight: 900, color: "var(--text)" }}>
                           {row.model === "omega" ? "ω Leung" : row.model === "additive" ? "Cv₁+Cv₂" : row.model.toUpperCase()}
                         </span>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: row.error ? "#E81123" : "var(--text)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
+                        <span style={{ fontSize: 11, fontWeight: 900, color: row.error ? "var(--danger)" : "var(--text)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
                           {row.error ? "—" : "Cv " + row.Cv}
                         </span>
                         <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
@@ -3050,7 +3051,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
             const Icon = t.icon;
             const active = referenceTab === t.id;
             return (
-              <button key={t.id} onClick={() => setReferenceTab(t.id)} className={active ? "active" : ""}>
+              <button key={t.id} onClick={() => setReferenceTab(t.id)} className={active ? "active" : ""} aria-label={t.label}>
                 <Icon size={13} />
                 <span>{t.label}</span>
               </button>
@@ -3290,13 +3291,13 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
         .tb-live.on {
           background: rgba(16, 185, 129, 0.10);
           border-color: rgba(16, 185, 129, 0.35);
-          color: #10B981;
+          color: var(--success);
         }
         .tb-live-dot {
           width: 7px; height: 7px; border-radius: 50%;
           background: #9CA3AF;
         }
-        .tb-live.on .tb-live-dot { background: #10B981; }
+        .tb-live.on .tb-live-dot { background: var(--success); }
         .tb-live-dot.pulse { animation: pulse 1.8s infinite; }
         .tb-live-state {
           font-size: 9.5px;
@@ -3772,7 +3773,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
           border: 1px solid var(--border);
         }
         .warning-chip svg { flex-shrink: 0; margin-top: 2px; }
-        .warning-chip.danger { background: rgba(232, 17, 35, 0.08); color: #E81123; border-color: rgba(232, 17, 35, 0.35); }
+        .warning-chip.danger { background: rgba(232, 17, 35, 0.08); color: var(--danger); border-color: rgba(232, 17, 35, 0.35); }
         .warning-chip.warning { background: rgba(224, 168, 26, 0.10); color: #92400E; border-color: rgba(224, 168, 26, 0.4); }
         .warning-chip.info { background: var(--bg-soft); color: var(--text-soft); }
 
@@ -3793,7 +3794,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
           margin-inline-start: auto;
           font-size: 10px;
           font-weight: 900;
-          color: var(--gold);
+          color: var(--gold-text);
           white-space: nowrap;
         }
 
