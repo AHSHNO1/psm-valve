@@ -7,6 +7,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import Providers from "@/components/Providers";
 import BottomPopup from "@/components/BottomPopup";
 import BackToTop from "@/components/BackToTop";
+import FloatingInquiry from "@/components/FloatingInquiry";
 import ScrollProgress from "@/components/ScrollProgress";
 import SkipLink from "@/components/SkipLink";
 import PwaRegister from "@/components/PwaRegister";
@@ -196,6 +197,7 @@ export default async function LocaleLayout({ children, params }) {
             <Footer logo={branding.logo} company={company} socialLinks={branding.socialLinks} chrome={siteChrome} />
             <BottomPopup />
             <BackToTop />
+            <FloatingInquiry />
           </SmoothScroll>
         </Providers>
       </body>

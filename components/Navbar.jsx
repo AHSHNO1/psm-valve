@@ -31,6 +31,7 @@ export default function Navbar({ logo, logoIcon, products = [], categories = [],
   const pathname = usePathname();
   const isDesktop = useIsDesktop();
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const headerRef = useRef(null);
@@ -79,6 +80,18 @@ export default function Navbar({ logo, logoIcon, products = [], categories = [],
     onScroll();
     return function() { window.removeEventListener("scroll", onScroll); };
   }, []);
+
+  // هدر هوشمند: با اسکرول به پایین جمع می‌شود، با اولین حرکت به بالا برمی‌گردد
+  useEffect(function() {
+    let lastY = window.scrollY;
+    function onScroll() {
+      const y = window.scrollY;
+      setHidden(y > lastY && y > 160 && !mobileOpen && !openMenu);
+      lastY = y;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return function() { window.removeEventListener("scroll", onScroll); };
+  }, [mobileOpen, openMenu]);
 
   useEffect(function() {
     setMobileOpen(false);
@@ -180,7 +193,9 @@ export default function Navbar({ logo, logoIcon, products = [], categories = [],
         borderBottom: "1px solid var(--border)",
         boxShadow: scrolled ? "0 8px 24px rgba(4, 10, 18, 0.16)" : "none",
         backdropFilter: "blur(16px) saturate(1.12)",
-        WebkitBackdropFilter: "blur(16px) saturate(1.12)"
+        WebkitBackdropFilter: "blur(16px) saturate(1.12)",
+        transform: hidden ? "translateY(-110%)" : "translateY(0)",
+        transition: "transform var(--motion-med) var(--ease-out-cubic)"
       }}
     >
       <nav className={"container-x flex items-center justify-between gap-2 " + (headerSettings.layout === "compact" ? "h-14 lg:h-16" : "h-16 lg:h-20")}>

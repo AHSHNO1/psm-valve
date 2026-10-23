@@ -5,7 +5,7 @@ import { RoundedBox } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import { DoubleSide, Vector2 } from "three";
 import { useDictionary } from "./Providers";
-import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage } from "./ExplodedCommon";
+import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage, useEntranceExplode } from "./ExplodedCommon";
 
 const LABELS = {
   fa: ["بدنه ویفری", "دیسک", "لاینر / نشیمن‌گاه", "ساقه", "یاتاقان و گلند", "اکچویتور"],
@@ -351,7 +351,8 @@ function ButterflyModel({ explode, drive, section, labels, selectedId, onSelect 
 export default function ExplodedButterflyValve() {
   const { locale } = useDictionary();
   const labels = LABELS[locale] || LABELS.en;
-  const [explode, setExplode] = useState(0.35);
+  const [explode, setExplode] = useState(0);
+  const stageRef = useEntranceExplode(0.35, setExplode);
   const [section, setSection] = useState(false);
   const [drive, setDrive] = useState(0.55);
   const [selectedId, setSelectedId] = useState(null);
@@ -359,7 +360,7 @@ export default function ExplodedButterflyValve() {
 
   return (
     <div>
-      <div className="relative h-[440px] sm:h-[520px]">
+      <div ref={stageRef} className="relative h-[440px] sm:h-[520px]">
         <SceneStage
           camera={[4.5, 3.0, 6.7]}
           fov={40}

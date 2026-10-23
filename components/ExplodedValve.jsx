@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { DoubleSide, Vector2 } from "three";
 import { useDictionary } from "./Providers";
-import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage } from "./ExplodedCommon";
+import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage, useEntranceExplode } from "./ExplodedCommon";
 
 const LABELS = {
   fa: ["بدنه", "فلنج انتهایی", "قفسه", "نشیمن‌گاه", "پلاگ", "ساقه", "کلاهک و پکینگ", "اکچویتور"],
@@ -446,7 +446,8 @@ function GlobeModel({ explode, drive, section, labels, selectedId, onSelect }) {
 export default function ExplodedValve() {
   const { locale } = useDictionary();
   const labels = LABELS[locale] || LABELS.en;
-  const [explode, setExplode] = useState(0.4);
+  const [explode, setExplode] = useState(0);
+  const stageRef = useEntranceExplode(0.4, setExplode);
   const [section, setSection] = useState(true);
   const [drive, setDrive] = useState(0.35);
   const [selectedId, setSelectedId] = useState(null);
@@ -454,7 +455,7 @@ export default function ExplodedValve() {
 
   return (
     <div>
-      <div className="relative h-[440px] sm:h-[520px]">
+      <div ref={stageRef} className="relative h-[440px] sm:h-[520px]">
         <SceneStage
           camera={[4.0, 2.4, 5.6]}
           fov={38}

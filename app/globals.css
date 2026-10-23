@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== MOTION TOKENS (theme-independent) ===== */
+:root {
+  --motion-fast: 160ms;
+  --motion-med: 320ms;
+  --motion-slow: 560ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
 /* ===== LIGHT THEME (WCAG AA Compliant) ===== */
 :root, .light {
   --bg: #F6F8FB;
@@ -289,13 +298,20 @@ body::-webkit-scrollbar-thumb {
   .product-grid-masonelian { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* ===== RESPONSIVE TYPOGRAPHY ===== */
-@media (max-width: 640px) {
-  html { font-size: 14px; }
+/* ===== FLUID TYPOGRAPHY =====
+   مقیاس پیوسته بین موبایل و دسکتاپ: 360px→14px ، 1024px→15px ، 1690px+→16px */
+html {
+  font-size: clamp(14px, 13.46px + 0.15vw, 16px);
 }
-@media (min-width: 641px) and (max-width: 1024px) {
-  html { font-size: 15px; }
+
+/* تیترها به‌جای شکستن ناجور در وسط کلمه، متعادل شکسته می‌شوند */
+.section-title, h1, h2, h3 {
+  text-wrap: balance;
 }
+p { text-wrap: pretty; }
+
+/* اعداد جدولی برای هر جایی که رقم‌ها زیر هم می‌شینند */
+.tnum { font-variant-numeric: tabular-nums lining-nums; }
 
 /* ===== SAFE AREA FOR MOBILE ===== */
 @supports (padding: max(0px)) {
@@ -481,6 +497,50 @@ body::-webkit-scrollbar-thumb {
 }
 .skeleton-card {
   padding: 22px;
+}
+
+/* فید-این تصویر: هر تصویر lazy تا زمان لود روی سطح نرم می‌نشیند */
+img[loading="lazy"] {
+  background-color: var(--bg-soft);
+}
+/* افکت blur-up: تصویر هنگام لود محو و کمی بزرگتر است و شارپ میشود */
+.img-fade {
+  opacity: 0;
+  filter: blur(14px);
+  transform: scale(1.04);
+  transition:
+    opacity var(--motion-med) ease,
+    filter var(--motion-med) ease,
+    transform var(--motion-slow) var(--ease-out-expo);
+}
+.img-fade.img-loaded {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .img-fade {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ===== PAGE ENTER (انتقال نرم بین صفحات) ===== */
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-in var(--motion-med) var(--ease-out-expo) both;
+  }
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ===== PRESS FEEDBACK — بازخورد لمسی یکدست همهٔ دکمه‌ها ===== */
+:where(.btn-gold, .btn-silver, .btn-outline, .qa-card):active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* ===== SKIP LINK (accessibility) ===== */

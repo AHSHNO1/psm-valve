@@ -41,6 +41,20 @@
   color: #FFFFFF;
   transform: translateY(-50%);
 }
+/* لایه‌های پارالاکس اسکرول‌محور هیرو (فقط transform روی GPU) */
+.hero-photo-parallax {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.hero-slide-copy-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-photo-parallax, .hero-slide-copy-wrap { will-change: auto; }
+}
 .hero-slide-brand {
   display: inline-flex;
   align-items: center;

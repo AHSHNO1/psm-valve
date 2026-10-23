@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { DoubleSide } from "three";
 import { useDictionary } from "./Providers";
-import { BoltRing, ControlPanel, PartLabel, SceneStage } from "./ExplodedCommon";
+import { BoltRing, ControlPanel, PartLabel, SceneStage, useEntranceExplode } from "./ExplodedCommon";
 
 const LABELS = {
   fa: ["پایه", "محور اول", "شانه", "بازوی اصلی", "آرنج", "مچ", "تورچ HVOF"],
@@ -338,14 +338,15 @@ function HvofRobot({ explode, plume, labels, selectedId, onSelect }) {
 export default function ExplodedHvofRobot() {
   const { locale } = useDictionary();
   const labels = LABELS[locale] || LABELS.en;
-  const [explode, setExplode] = useState(0.35);
+  const [explode, setExplode] = useState(0);
+  const stageRef = useEntranceExplode(0.35, setExplode);
   const [plume, setPlume] = useState(0.55);
   const [selectedId, setSelectedId] = useState(null);
   const selected = PARTS.find((part) => part.id === selectedId);
 
   return (
     <div>
-      <div className="relative h-[440px] sm:h-[520px]">
+      <div ref={stageRef} className="relative h-[440px] sm:h-[520px]">
         <SceneStage
           camera={[3.8, 2.3, 6.1]}
           fov={37}

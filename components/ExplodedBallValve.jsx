@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { DoubleSide, Vector2 } from "three";
 import { useDictionary } from "./Providers";
-import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage } from "./ExplodedCommon";
+import { BoltRing, ControlPanel, PartLabel, SECTION_PLANE, SceneStage, useEntranceExplode } from "./ExplodedCommon";
 
 const LABELS = {
   fa: ["بدنه", "توپ", "نشیمن‌گاه", "ساقه", "فلنج", "اهرم"],
@@ -347,7 +347,8 @@ function BallModel({ explode, drive, section, labels, selectedId, onSelect }) {
 export default function ExplodedBallValve() {
   const { locale } = useDictionary();
   const labels = LABELS[locale] || LABELS.en;
-  const [explode, setExplode] = useState(0.45);
+  const [explode, setExplode] = useState(0);
+  const stageRef = useEntranceExplode(0.45, setExplode);
   const [section, setSection] = useState(true);
   const [drive, setDrive] = useState(0.35);
   const [selectedId, setSelectedId] = useState(null);
@@ -355,7 +356,7 @@ export default function ExplodedBallValve() {
 
   return (
     <div>
-      <div className="relative h-[440px] sm:h-[520px]">
+      <div ref={stageRef} className="relative h-[440px] sm:h-[520px]">
         <SceneStage
           camera={[3.4, 2.4, 5.6]}
           fov={38}

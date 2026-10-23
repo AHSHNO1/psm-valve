@@ -549,7 +549,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
             aria-label={label + " — unit"}
             title={label + " — unit"}
             style={{
-              fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace",
+              fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
               fontWeight: 800, padding: "2px 4px", borderRadius: 5,
               background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)",
               border: "1px solid var(--border)", whiteSpace: "nowrap", cursor: "pointer",
@@ -569,7 +569,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
           </select>
         ) : unit && (
           <span style={{
-            fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace",
+            fontSize: 10, color: isError ? "#E81123" : "var(--text-soft)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
             fontWeight: 800, padding: "2px 7px", borderRadius: 5,
             background: isError ? "rgba(232,17,35,0.08)" : "var(--bg-soft)",
             border: "1px solid var(--border)", whiteSpace: "nowrap"
@@ -593,7 +593,7 @@ function Field({ label, unit, unitGroups, onUnitChange, value, onChange, step, h
           border: "1.5px solid " + (isError ? "#E81123" : "var(--border)"),
           background: isError ? "rgba(232,17,35,0.06)" : "var(--bg-soft)",
           color: isError ? "#E81123" : "var(--text)",
-          fontFamily: "monospace", fontSize: 13.5, fontWeight: 700,
+          fontFamily: "monospace", fontVariantNumeric: "tabular-nums", fontSize: 13.5, fontWeight: 700,
           transition: "all 0.2s"
         }}
         onFocus={e => {
@@ -2427,20 +2427,20 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 9.5, fontWeight: 800, color: "var(--text-muted)" }}>{L.satAtP1}</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", color: "var(--text)" }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", fontVariantNumeric: "tabular-nums", color: "var(--text)" }}>
                       {desuperGuide.tsat == null ? "—" : desuperGuide.tsat + " °C"}
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: 9.5, fontWeight: 800, color: "var(--text-muted)" }}>{L.minTarget}</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", color: "var(--text)" }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", fontVariantNumeric: "tabular-nums", color: "var(--text)" }}>
                       {desuperGuide.minTarget == null ? "—" : desuperGuide.minTarget + " °C"}
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: 9.5, fontWeight: 800, color: "var(--text-muted)" }}>{L.currentMargin}</div>
                     <div style={{
-                      fontSize: 12.5, fontWeight: 900, fontFamily: "monospace",
+                      fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
                       color: desuperGuide.margin == null ? "var(--text-muted)"
                         : desuperGuide.margin < NEAR_SATURATION_REJECT_C ? "#E81123"
                           : desuperGuide.margin < NEAR_SATURATION_WARN_C ? "#B45309" : "#059669"
@@ -2451,7 +2451,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                   <div>
                     <div style={{ fontSize: 9.5, fontWeight: 800, color: "var(--text-muted)" }}>{L.waterDpLabel}</div>
                     <div style={{
-                      fontSize: 12.5, fontWeight: 900, fontFamily: "monospace",
+                      fontSize: 12.5, fontWeight: 900, fontFamily: "monospace", fontVariantNumeric: "tabular-nums",
                       color: desuperGuide.valveDp == null ? "var(--text-muted)"
                         : desuperGuide.valveDp <= 0 ? "#E81123"
                           : desuperGuide.valveDp < 0.5 * desuperGuide.atomizingDp ? "#B45309" : "#059669"
@@ -2579,7 +2579,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                       }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 11.5, fontWeight: 900, color: "var(--text)" }}>{s.name}</div>
-                          <div style={{ fontSize: 9.5, color: "var(--text-muted)", fontFamily: "monospace", direction: "ltr" }}>
+                          <div style={{ fontSize: 9.5, color: "var(--text-muted)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums", direction: "ltr" }}>
                             Cv {s.result.Cv} · {s.result.size.size} · {s.result.openingPercent}%
                           </div>
                         </div>
@@ -2932,10 +2932,10 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                         <span style={{ fontSize: 11, fontWeight: 900, color: "var(--text)" }}>
                           {row.model === "omega" ? "ω Leung" : row.model === "additive" ? "Cv₁+Cv₂" : row.model.toUpperCase()}
                         </span>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: row.error ? "#E81123" : "var(--text)", fontFamily: "monospace" }}>
+                        <span style={{ fontSize: 11, fontWeight: 900, color: row.error ? "#E81123" : "var(--text)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
                           {row.error ? "—" : "Cv " + row.Cv}
                         </span>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", fontFamily: "monospace" }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", fontFamily: "monospace", fontVariantNumeric: "tabular-nums" }}>
                           {row.error ? "" : (row.ratioVsOmega != null ? row.ratioVsOmega + "×" : "—")}
                         </span>
                         <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-soft)" }} title={row.error || ""}>
@@ -2996,7 +2996,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
                       </div>
                       <div style={{
                         fontSize: 10.5, color: "var(--text-muted)", fontWeight: 700,
-                        marginTop: 3, fontFamily: "monospace", direction: "ltr"
+                        marginTop: 3, fontFamily: "monospace", fontVariantNumeric: "tabular-nums", direction: "ltr"
                       }}>
                         {topProduct.matchedSize.dn} · Cv {topProduct.matchedSize.cv} · {L.opening} {topProduct.openingPercent}%
                       </div>
@@ -3648,9 +3648,11 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
           color: #FFFFFF;
         }
         .result-hero-value {
-          font-size: 52px; font-weight: 900;
+          font-size: clamp(38px, 9vw, 52px); font-weight: 900;
           line-height: 1; text-align: center;
           font-family: monospace;
+          font-variant-numeric: tabular-nums;
+          direction: ltr;
           margin: 6px 0;
           color: #FFFFFF;
         }
@@ -3658,6 +3660,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
           font-size: 11px; font-weight: 800;
           opacity: 0.85; text-align: center;
           font-family: monospace;
+          font-variant-numeric: tabular-nums;
           color: #FFFFFF;
         }
         .result-hero-grid {
@@ -3685,6 +3688,7 @@ export default function SizingTool({ catalog = [], cvTables = {} }) {
         .result-mini-value {
           font-size: 22px; font-weight: 900;
           font-family: monospace;
+          font-variant-numeric: tabular-nums;
           line-height: 1;
           color: #FFFFFF;
         }

@@ -115,34 +115,47 @@ export default function SmartField({
         value={value}
         onChange={onChange}
         onBlur={function() { setTouched(true); }}
+        aria-invalid={hasError ? "true" : undefined}
+        className="smart-field-input"
         style={{
-          width: "100%",
-          padding: "11px 12px",
-          borderRadius: 10,
-          border: "2px solid " + (
-            hasError ? "#E81123" :
+          "--smart-border": hasError ? "#E81123" :
             hasWarn ? "#F59E0B" :
-            hasSuccess ? "#10B981" : "var(--border)"
-          ),
-          background: hasError
+            hasSuccess ? "#10B981" : "var(--border)",
+          "--smart-bg": hasError
             ? "rgba(232, 17, 35, 0.04)"
             : hasWarn
             ? "rgba(245, 158, 11, 0.04)"
             : hasSuccess
             ? "rgba(16, 185, 129, 0.03)"
-            : "var(--bg-soft)",
-          color: "var(--text)",
-          fontFamily: "monospace",
-          fontSize: 14.5,
-          fontWeight: 700,
-          transition: "all 0.15s"
-        }}
-        onFocus={function(e) {
-          e.target.style.borderColor = hasError ? "#E81123" : "#E0A81A";
-          e.target.style.background = "#FFFFFF";
-          e.target.style.boxShadow = "0 0 0 3px " + (hasError ? "rgba(232, 17, 35, 0.12)" : "rgba(201, 149, 13, 0.12)");
+            : "var(--bg-soft)"
         }}
       />
+
+      <style jsx global>{`
+        .smart-field-input {
+          width: 100%;
+          padding: 11px 12px;
+          border-radius: 10px;
+          border: 2px solid var(--smart-border, var(--border));
+          background: var(--smart-bg, var(--bg-soft));
+          color: var(--text);
+          font-family: monospace;
+          font-variant-numeric: tabular-nums;
+          font-size: 14.5px;
+          font-weight: 700;
+          transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease, background-color var(--motion-fast) ease;
+        }
+        .smart-field-input:focus {
+          outline: none;
+          background: var(--bg-card);
+          border-color: #E0A81A;
+          box-shadow: 0 0 0 3px rgba(201, 149, 13, 0.12);
+        }
+        .smart-field-input[aria-invalid="true"]:focus {
+          border-color: #E81123;
+          box-shadow: 0 0 0 3px rgba(232, 17, 35, 0.12);
+        }
+      `}</style>
 
       {/* Live validation message */}
       {validation && touched && (

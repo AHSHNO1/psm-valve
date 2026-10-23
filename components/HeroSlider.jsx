@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import MediaImage from "./MediaImage";
@@ -59,6 +59,15 @@ export default function HeroSlider({ sliders, locale, logo, fallbackDict }) {
   const [engaged, setEngaged] = useState(false);
   const reduceMotion = useReducedMotion();
   const labels = t.slider;
+
+  // پارالاکس ظریف اسکرول‌محور (فقط transform — بدون اثر بر LCP/CLS)
+  const sectionRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"]
+  });
+  const copyY = useTransform(scrollYProgress, [0, 1], [0, 64]);
+  const imageScale = useTransform(scrollYProgress, [0, 1], [1, 1.07]);
 
   useEffect(function() {
     setSequence(active.map(function(_, index) { return index; }));
@@ -135,37 +144,53 @@ export default function HeroSlider({ sliders, locale, logo, fallbackDict }) {
   }
 
   return (
-    <section className="hero-photo-slider" aria-label={labels.label}>
+    <section ref={sectionRef} className="hero-photo-slider" aria-label={labels.label}>
       {active.length > 0 ? (
-        active.map(function(slide, index) {
-          return (
-            <MediaImage
-              key={(slide.id || "slide") + "-" + index}
-              src={slide.image || fallbackImage}
-              alt=""
-              fill
-              sizes="100vw"
-              priority={index === 0}
-              loading={index === 0 ? undefined : "eager"}
-              className={
-                "hero-photo-slider-image hero-photo-slide" +
-                (index === currentIndex ? " is-active" : "")
-              }
-            />
-          );
-        })
+        <motion.div
+          className="hero-photo-parallax"
+          aria-hidden="true"
+          style={reduceMotion ? undefined : { scale: imageScale }}
+        >
+          {active.map(function(slide, index) {
+            return (
+              <MediaImage
+                key={(slide.id || "slide") + "-" + index}
+                src={slide.image || fallbackImage}
+                alt=""
+                fill
+                sizes="100vw"
+                priority={index === 0}
+                loading={index === 0 ? undefined : "eager"}
+                className={
+                  "hero-photo-slider-image hero-photo-slide" +
+                  (index === currentIndex ? " is-active" : "")
+                }
+              />
+            );
+          })}
+        </motion.div>
       ) : (
-        <MediaImage
-          src={image}
-          alt=""
-          fill
-          sizes="100vw"
-          priority
-          className="hero-photo-slider-image hero-photo-slide is-active"
-        />
+        <motion.div
+          className="hero-photo-parallax"
+          aria-hidden="true"
+          style={reduceMotion ? undefined : { scale: imageScale }}
+        >
+          <MediaImage
+            src={image}
+            alt=""
+            fill
+            sizes="100vw"
+            priority
+            className="hero-photo-slider-image hero-photo-slide is-active"
+          />
+        </motion.div>
       )}
       <div className="hero-photo-slider-overlay" aria-hidden="true" />
 
+      <motion.div
+        className="hero-slide-copy-wrap"
+        style={reduceMotion ? undefined : { y: copyY }}
+      >
       <div className="hero-slide-copy" dir={locale === "fa" || locale === "ar" ? "rtl" : "ltr"}>
         <div className="hero-slide-brand" dir="ltr">
           {logo && (
@@ -199,6 +224,7 @@ export default function HeroSlider({ sliders, locale, logo, fallbackDict }) {
           )
         )}
       </div>
+      </motion.div>
 
       {active.length > 1 && (
         <>

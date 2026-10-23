@@ -40,10 +40,22 @@ export default function ThemeToggle() {
   const current = resolvedTheme || theme;
   const isDark = current === "dark";
 
+  function toggleTheme() {
+    const next = isDark ? "light" : "dark";
+    // کراس‌فید نرم در مرورگرهای دارای View Transition؛ در بقیه سوییچ فوری مثل قبل
+    if (typeof document !== "undefined" &&
+        typeof document.startViewTransition === "function" &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.startViewTransition(() => setTheme(next));
+    } else {
+      setTheme(next);
+    }
+  }
+
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={toggleTheme}
       aria-label={isDark ? labels.light : labels.dark}
       className="header-control w-10 h-10 rounded-lg border transition grid place-items-center"
       style={{ color: "var(--gold)", borderColor: "var(--border-strong)", background: "var(--bg-card)" }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Environment, Html, Lightformer, OrbitControls } from "@react-three/drei";
 import { Layers, Play, RotateCcw } from "lucide-react";
@@ -14,10 +15,27 @@ export const SECTION = {
 
 export function SceneStage({ camera, fov = 36, target = [0, 0, 0], floorY = -1.7, onPointerMissed, children, brightness = 1 }) {
   const gain = brightness;
+  const wrapRef = useRef(null);
+  const [inView, setInView] = useState(true);
+
+  // رندر مداوم فقط وقتی صحنه در دید است؛ خارج از دید فریم رندر نمیشود
+  useEffect(function() {
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      function(entries) { setInView(entries[0].isIntersecting); },
+      { rootMargin: "160px" }
+    );
+    io.observe(el);
+    return function() { io.disconnect(); };
+  }, []);
+
   return (
-    <Canvas
-      dpr={[1, 1.6]}
-      camera={{ position: camera, fov }}
+    <div ref={wrapRef} style={{ width: "100%", height: "100%" }}>
+      <Canvas
+        dpr={[1, 1.6]}
+        frameloop={inView ? "always" : "never"}
+        camera={{ position: camera, fov }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
         gl.localClippingEnabled = true;
@@ -58,8 +76,43 @@ export function SceneStage({ camera, fov = 36, target = [0, 0, 0], floorY = -1.7
         minPolarAngle={0.55}
         maxPolarAngle={2.4}
       />
-    </Canvas>
+      </Canvas>
+    </div>
   );
+}
+
+// ورود انفجاری: وقتی صحنه اولین بار در دید میآید، انفجار از ۰ به مقدار پیشفرض میرسد
+export function useEntranceExplode(target, setExplode, duration = 900) {
+  const ref = useRef(null);
+  const done = useRef(false);
+  useEffect(function() {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setExplode(target);
+      return;
+    }
+    const io = new IntersectionObserver(function(entries) {
+      if (!entries[0].isIntersecting || done.current) return;
+      done.current = true;
+      io.disconnect();
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        setExplode(target);
+        return;
+      }
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setExplode(eased * target);
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }, { rootMargin: "0px 0px -10% 0px" });
+    io.observe(el);
+    return function() { io.disconnect(); };
+  }, [target, setExplode, duration]);
+  return ref;
 }
 
 export function BoltRing({ axis = "x", count = 8, radius = 0.4, at = 0, length = 0.28, nut = true, size = 0.024 }) {
