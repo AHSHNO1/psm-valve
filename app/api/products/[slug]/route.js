@@ -12,9 +12,10 @@ function productPaths(slug) {
 export async function GET(request, { params }) {
   const session = await guard(request);
   if (isResponse(session)) return session;
+  const { slug } = await params;
 
   try {
-    const product = getProduct(params.slug);
+    const product = getProduct(slug);
     if (!product) return err("محصول پیدا نشد.", 404);
     return json({ product });
   } catch (error) {
@@ -29,6 +30,7 @@ export async function PATCH(request, { params }) {
 
   const updates = await readJson(request);
   if (isResponse(updates)) return updates;
+  const { slug } = await params;
   if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
     return err("اطلاعات محصول معتبر نیست.", 400);
   }
@@ -37,10 +39,10 @@ export async function PATCH(request, { params }) {
   }
 
   try {
-    if (!updateProduct(params.slug, updates)) {
+    if (!updateProduct(slug, updates)) {
       return err("محصول پیدا نشد.", 404);
     }
-    revalidatePublic(productPaths(params.slug));
+    revalidatePublic(productPaths(slug));
     return json();
   } catch (error) {
     console.error("Unable to update product:", error);
@@ -51,12 +53,13 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   const session = await guard(request);
   if (isResponse(session)) return session;
+  const { slug } = await params;
 
   try {
-    if (!deleteProduct(params.slug)) {
+    if (!deleteProduct(slug)) {
       return err("محصول پیدا نشد.", 404);
     }
-    revalidatePublic(productPaths(params.slug));
+    revalidatePublic(productPaths(slug));
     return json();
   } catch (error) {
     console.error("Unable to delete product:", error);

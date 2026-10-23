@@ -92,12 +92,12 @@ function buildNotifications(messages, media, articles, news) {
 }
 
 export default async function AdminLayout({ children }) {
-  const session = await getSession({ cookies: cookies() }, { allowAuthor: true });
+  const session = await getSession({ cookies: await cookies() }, { allowAuthor: true });
   const isAdmin = session && session.role === "admin";
 
   // دفاع لایه‌ای: فقط middleware نباید نگهبان باشد. مسیر جاری را middleware
   // در هدر می‌گذارد؛ اگر هدر نبود (دور زدن middleware) رفتار fail-closed است.
-  const pathname = headers().get("x-psm-pathname") || "";
+  const pathname = (await headers()).get("x-psm-pathname") || "";
   const isLoginPage = pathname === "/admin/login";
   const isAuthorArea = pathname === "/admin/author" || pathname.startsWith("/admin/author/");
 

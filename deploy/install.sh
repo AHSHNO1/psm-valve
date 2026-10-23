@@ -8,7 +8,7 @@
 #
 # این یک فایل، همهٔ کارهای انتشار را انجام میدهد:
 #    ۱) بررسی پیشنیازها و سیستمعامل
-#    ۲) نصب Node.js 20 LTS، PM2، Nginx، Certbot و ابزار بیلد
+#    ۲) نصب Node.js 22 LTS، PM2، Nginx، Certbot و ابزار بیلد
 #    ۳) ساخت کاربر اجراکننده، پوشهها و سواپ (برای بیلد روی سرور کمحافظه)
 #    ۴) دریافت کد از گیت یا منبع محلی (--source) و به روزرسانی امن
 #    ۵) نصب وابستگیها (npm ci)
@@ -38,7 +38,7 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 ADMIN_PASSWORD_FILE="${ADMIN_PASSWORD_FILE:-}"
 SOURCE_DIR="${SOURCE_DIR:-}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/psm-valve}"
-NODE_MAJOR="${NODE_MAJOR:-20}"
+NODE_MAJOR="${NODE_MAJOR:-22}"
 ENABLE_SSL=true
 ENABLE_FIREWALL=true
 RUN_BUILD=true
@@ -157,6 +157,12 @@ fi
 
 if [ "$(id -u)" -ne 0 ]; then
   die "این اسکریپت باید با root اجرا شود:  sudo bash deploy/install.sh --domain $DOMAIN"
+fi
+
+# روی سرور aaPanel، این اسکریپت Nginx/PM2 سیستمی را مدیریت می‌کند و با پنل تعارض دارد.
+if [ -d /www/server/panel ] && [ "${ALLOW_AAPANEL:-false}" != "true" ]; then
+  die "این سرور پنل aaPanel دارد. از راهنمای deploy/aapanel/README.md استفاده کنید.
+اگر آگاهانه می‌خواهید Nginx/PM2 سیستمی را جایگزین پنل کنید: ALLOW_AAPANEL=true sudo bash deploy/install.sh ..."
 fi
 
 case "${APP_PORT:-}" in
@@ -423,6 +429,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;
     }

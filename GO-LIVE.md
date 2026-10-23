@@ -1,6 +1,6 @@
 # GO-LIVE — انتشار PSM Valve روی هاست و دامنه
 
-**تاریخ:** ۲۰۲۶-۱۰-۲۲ · **بازبینی تست‌ها:** ۲۰۲۶-۱۰-۲۲ · **نسخهٔ کد:** Next 14.2.35 · **آخرین بیلد:** موفق (۱۳۴ صفحهٔ استاتیک) · **تست‌ها:** ۲۱۷/۲۱۷
+**تاریخ:** ۲۰۲۶-۱۰-۲۳ · **بازبینی تست‌ها:** ۲۰۲۶-۱۰-۲۳ · **نسخهٔ کد:** Next 16.4.2 (Turbopack) · **آخرین بیلد:** موفق (۱۲۲ صفحهٔ استاتیک) · **تست‌ها:** ۲۲۴/۲۲۴ · **Lint:** ۰ خطا
 
 > راهنمای متنی ساده و همیشه‌به‌روز این چک‌لیست: [`INSTALL-STEPS.txt`](INSTALL-STEPS.txt)
 
@@ -10,7 +10,7 @@
 
 **کد سایت آمادهٔ انتشار است؛ داده و چند تنظیم امنیتی نه.**
 
-- فنی: بیلد موفق، ۱۳۴ صفحهٔ استاتیک، تست‌ها سبز، سایزینگ/دیتاشیت/پنل ادمین کار می‌کنند.
+- فنی: بیلد موفق روی Next 16، ۱۲۲ صفحهٔ استاتیک، تست‌ها سبز، سایزینگ/دیتاشیت/پنل ادمین کار می‌کنند.
 - مسدودکننده‌ها: رمز مدیر هنوز عوض نشده، ریپوی گیت‌هاب عمومی است، دامنه یکسان نشده، بکاپ offsite ندارد.
 - با یک VPS معمولی و نیم‌روز کار، سایت بالا می‌آید.
 
@@ -21,7 +21,7 @@
 | مورد | وضعیت |
 |---|---|
 | بیلد تولید | ✅ `npm run build` |
-| تست‌ها | ✅ ۲۱۷/۲۱۷ (`npm test`) |
+| تست‌ها | ✅ ۲۲۴/۲۲۴ (`npm test`) |
 | چهار زبان + RTL | ✅ |
 | پنل ادمین (۲۵ صفحه) | ✅ با احراز هویت و نگهبانی لایه‌ای |
 | دیتاشیت چاپی مستقل | ✅ با اطلاعات تماس واقعی |
@@ -30,7 +30,7 @@
 | هدرهای امنیتی | ✅ |
 | آیکون PWA و OG | ✅ |
 | اسکریپت‌های استقرار/بکاپ | ✅ `deploy/*` |
-| نصب خودکار سرور (یکدستوری) | ✅ `deploy/install.sh` · لانچر یک‌خط‌فرمانی: `deploy/start-vps-ubuntu.sh` (اوبونتو) و `deploy/start-vps-windows.ps1` (ویندوز) · `deploy/docker.sh` · `deploy/cpanel/` |
+| نصب خودکار سرور (یکدستوری) | ✅ `deploy/install.sh` · لانچر یک‌خط‌فرمانی: `deploy/start-vps-ubuntu.sh` (اوبونتو) و `deploy/start-vps-windows.ps1` (ویندوز) · `deploy/docker.sh` · `deploy/cpanel/` · `deploy/aapanel/` |
 | پیش‌بررسی خودکار | ✅ `node scripts/preflight.mjs` |
 
 ## ۲) پنج کار اجباری قبل از انتشار
@@ -138,7 +138,7 @@ sudo certbot --nginx -d www.psmvalve.com -d psmvalve.com
 > راهنمای کامل با جزئیات: [DEPLOY.md](DEPLOY.md) · کانفیگ آماده: `deploy/nginx-psmvalve.conf`
 > ⏩ سریعترین راه: `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
 > که گامهای ۱ تا ۸ زیر را خودکار انجام میدهد. از ویندوز: `.\deploy\install-remote.ps1 -Server <IP> -Domain psmvalve.com`
-> یا با Docker: `bash deploy/docker.sh` — مقایسهٔ مسیرها: [deploy/README.md](deploy/README.md)
+> یا با Docker: `bash deploy/docker.sh` · یا Ubuntu 24.04 + aaPanel: [deploy/aapanel/README.md](deploy/aapanel/README.md) — مقایسهٔ مسیرها: [deploy/README.md](deploy/README.md)
 
 ### گام ۱ — سرور
 ```bash
@@ -148,11 +148,11 @@ apt update && apt upgrade -y
 apt install -y curl git nginx ufw
 ```
 
-### گام ۲ — Node 20 LTS
+### گام ۲ — Node 22 LTS
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
-node -v   # باید v20.x باشد
+node -v   # باید v22.x باشد
 npm i -g pm2
 ```
 

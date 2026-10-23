@@ -22,7 +22,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "home");
   return buildMetadata({
     locale,
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Home({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dict = await getDictionary(locale);
   const media = getMedia();
   const sliders = getSliders();

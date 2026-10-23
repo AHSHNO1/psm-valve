@@ -11,6 +11,7 @@
 | **۱b) لانچر یکخطی VPS** | اوبونتو یا **Windows Server** — بدون آمادهسازی دستی | `sudo bash deploy/start-vps-ubuntu.sh` · `.\deploy\start-vps-windows.ps1` | ۱۰–۲۵ دقیقه |
 | **۲) Docker** | هر سروری که Docker دارد؛ یا نصب ساده و تکرارپذیر | `bash deploy/docker.sh` | ۵–۱۵ دقیقه (بیلد اول) |
 | **۳) هاست اشتراکی cPanel/CloudLinux** | هاست با Node.js Selector | [`deploy/cpanel/README.md`](./cpanel/README.md) | ۱۵–۳۰ دقیقه |
+| **۳b) Ubuntu 24.04 + aaPanel** | VPS با پنل aaPanel | [`deploy/aapanel/README.md`](./aapanel/README.md) | ۲۰–۳۰ دقیقه |
 | **۴) سرور از قبل نصبشده** | انتشار نسخهٔ جدید روی نصب موجود | `bash deploy/update.sh` | ۳–۸ دقیقه |
 
 اگر مطمئن نیستی: مسیر **۱** را بردار (تکدستوری، شامل Node/PM2/Nginx/SSL/بکاپ/فایروال).
@@ -30,7 +31,7 @@ sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com
 اسکریپت ۱۱ گام را پشتسرهم انجام میدهد:
 
 1. بررسی سیستمعامل و پیشنیازها (`apt-get`)
-2. نصب بستههای پایه + **Node.js 20 LTS** + **PM2** (+ Certbot و ابزار فایروال در صورت نیاز)
+2. نصب بستههای پایه + **Node.js 22 LTS** + **PM2** (+ Certbot و ابزار فایروال در صورت نیاز)
 3. ساخت کاربر اجراکننده (`psm`)، پوشههای پروژه/بکاپ و **سواپ ۲GB** روی سرورهای کمرمز
 4. `git clone` (نصب اول) یا `git pull` (اجرای دوباره)
 5. `npm ci`
@@ -167,7 +168,7 @@ bash deploy/docker.sh --admin-password 'رمز-قوی'   # با رمز دلخو�
 
 راهنمای کامل: [`deploy/cpanel/README.md`](./cpanel/README.md)
 
-خلاصه: در cPanel → Setup Node.js App یک اپ با Node 20، `Application root = psm-valve` و
+خلاصه: در cPanel → Setup Node.js App یک اپ با Node 22، `Application root = psm-valve` و
 `Startup file = app.js` بساز، `deploy/cpanel/app.js` را در ریشهٔ پروژه کپی کن، سپس در Terminal:
 
 ```bash
@@ -179,6 +180,21 @@ node scripts/rotate-admin-password.mjs
 
 ---
 
+## مسیر ۳b — Ubuntu 24.04 + aaPanel
+
+راهنمای کامل: [`deploy/aapanel/README.md`](./aapanel/README.md)
+
+خلاصه: aaPanel را نصب و پنل را امن کن؛ Node 22 + PM2 را نصب کن؛ سایت را با ریشهٔ
+`/www/wwwroot/psm-valve` بساز؛ `.env.production` را **قبل از بیلد** بساز؛ با کاربر
+`www` بیلد کن و PM2 را با یک instance روی `127.0.0.1:3000` اجرا کن؛ SSL را از پنل بگیر و
+[`deploy/aapanel/nginx-snippet.conf`](./aapanel/nginx-snippet.conf) را در کانفیگ سایت
+بگذار. آپدیت‌ها: `sudo bash deploy/aapanel/update.sh`.
+
+> روی سرور aaPanel، `deploy/install.sh` را اجرا نکن؛ آن اسکریپت Nginx/PM2 سیستمی می‌سازد
+> و با پنل تعارض دارد (به‌صورت پیش‌فرض هم جلوی اجرا را می‌گیرد).
+
+---
+
 ## مسیر ۴ — انتشار نسخهٔ جدید روی نصب موجود
 
 | استقرار | دستور |
@@ -187,6 +203,7 @@ node scripts/rotate-admin-password.mjs
 | Windows Server | اجرای دوبارهٔ `.\deploy\start-vps-windows.ps1` (داده، آپلود و env حفظ میشوند) |
 | Docker | `git pull && docker compose up -d --build` |
 | cPanel | `git pull && npm ci && npm run build` + Restart در پنل |
+| aaPanel | `sudo bash /www/wwwroot/psm-valve/deploy/aapanel/update.sh` |
 
 پیشبررسی را میتوان محلی هم اجرا کرد: `node scripts/preflight.mjs` (همین بررسی در `update.sh` روی سرور هم انجام میشود).
 
@@ -239,7 +256,7 @@ powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -ZipPath
 | `-AppDir <path>` · `-Port <number>` | مسیر نصب (پیشفرض `C:\PSMValve`) و پورت داخلی اپ |
 | `-AdminUser` · `-AdminPassword` · `-AdminPasswordFile` | کاربر/رمز پنل؛ بدون رمز، رمز تصادفی در `C:\ProgramData\PSMValve\initial-admin-password.txt` |
 | `-SourceDir` · `-ZipPath` · `-Repo` · `-Branch` | منبع کد؛ اولویت با SourceDir، بعد ZipPath، بعد پوشهٔ پروژه، بعد گیت‌هاب |
-| `-NodeMajor <number>` | نسخهٔ اصلی Node.js (پیشفرض `20`؛ MSI رسمی از nodejs.org) |
+| `-NodeMajor <number>` | نسخهٔ اصلی Node.js (پیشفرض `22`؛ MSI رسمی از nodejs.org) |
 | `-NoHttps` · `-NoFirewall` · `-SkipBuild` · `-ForceEnv` | فقط HTTP · دست‌نزدن به فایروال · پرش از بیلد · بازنویسی اسرار env |
 | `-Help` | فهرست گزینهها |
 
@@ -289,6 +306,7 @@ powershell -ExecutionPolicy Bypass -File "C:\ProgramData\PSMValve\manage.ps1" -A
 | `nginx-psmvalve.conf` | کانفیگ Nginx (SSL، کش داراییها، ریدایرکت به www) |
 | `push-assets.ps1` | انتقال `data/` و `public/uploads/` از ویندوز به سرور |
 | `cpanel/` | مسیر هاست اشتراکی: `app.js` + `.htaccess` + README |
+| `aapanel/` | مسیر Ubuntu 24.04 + aaPanel: README، کانفیگ Nginx و `update.sh` امن |
 | `../Dockerfile` · `../docker-compose.yml` · `../.dockerignore` | مسیر Docker |
 | `../ecosystem.config.js` | اجرای PM2 — پورت از فایل `.app-port` (منبع یکتا) خوانده میشود |
 

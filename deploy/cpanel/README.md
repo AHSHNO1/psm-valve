@@ -12,7 +12,7 @@
 ۱. **Setup Node.js App → Create Application**
    | فیلد | مقدار |
    | --- | --- |
-   | Node.js version | **20** یا ۲۲ (حداقل ۲۰ لازم است) |
+   | Node.js version | **22** (حداقل ۲۲ لازم است) |
    | Application mode | Production |
    | Application root | `psm-valve` (پوشهٔ همین مخزن) |
    | Application URL | دامنه یا سابدامنهٔ سایت |
@@ -37,13 +37,13 @@ cp deploy/cpanel/app.js .
 ## ۲) نصب و بیلد (Terminal cPanel)
 
 ```bash
-source /home/USERNAME/nodevenv/psm-valve/20/bin/activate
+source /home/USERNAME/nodevenv/psm-valve/22/bin/activate
 cd ~/psm-valve
 npm ci
 npm run build
 ```
 
-مسیر واقعی `nodevenv` در پنل cPanel نمایش داده میشود (مثال بالا برای نسخهٔ 20 است).
+مسیر واقعی `nodevenv` در پنل cPanel نمایش داده میشود (مثال بالا برای نسخهٔ 22 است).
 
 ## ۳) متغیرهای محیطی
 
@@ -76,7 +76,7 @@ cd ~/psm-valve && node scripts/rotate-admin-password.mjs
 | موضوع | توضیح |
 | --- | --- |
 | دادهٔ پایدار | `data/` و `public/uploads/` باید داخل خود `Application root` باشند (نوشتنی). بکاپ: `bash deploy/backup.sh` |
-| دیتابیس SQLite | `better-sqlite3` باینری بومی است؛ اگر نصبش خطا داد، از هاست بخواهید `make/gcc` را در Build Tools فعال کند (Node 20 LTS). |
+| دیتابیس SQLite | `better-sqlite3` باینری بومی است؛ اگر نصبش خطا داد، از هاست بخواهید `make/gcc` را در Build Tools فعال کند (Node 22 LTS). |
 | حافظهٔ بیلد | `next build` به ~۱.۵GB حافظه نیاز دارد. اگر بیلد با `Killed` قطع شد، بیلد را روی سیستم خودتان/CI انجام دهید و پوشهٔ `.next` را آپلود کنید. |
 | فایلهای حساس | `.env.production` و `data/` هرگز نباید از وب خوانده شوند (`.htaccess` این را میبندد؛ بهتر است docroot دامنه روی `public_html` بماند و اپ در root جدا باشد). |
 | تغییر `JWT_SECRET` | بعد از تغییر، باید `npm run build` دوباره اجرا شود (میدلور مقدار را در زمان بیلد درونریزی میکند). |

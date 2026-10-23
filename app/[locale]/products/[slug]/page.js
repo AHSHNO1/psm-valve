@@ -41,7 +41,7 @@ function toLatinDigits(value) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const p = getProduct(slug);
   if (!p) return { robots: { index: false, follow: false } };
 
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ProductPage({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const p = getProduct(slug);
   if (!p) notFound();
 

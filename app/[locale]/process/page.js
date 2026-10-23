@@ -10,7 +10,7 @@ function pick(obj, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const process = getContent().process || {};
   const seo = pageSeo(locale, "process");
   const customDescription = pick(process.subtitle, locale);
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ProcessPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dictionary = await getDictionary(locale);
   const content = getContent();
   const process = content.process || {};

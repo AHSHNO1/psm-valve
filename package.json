@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "node --test tests/",
     "cv:inspect": "python scripts/inspect-cv-xlsx.py VALVE_CV.xlsx --summary --validate --analyse",
     "cv:import": "python scripts/import-cv-xlsx.py",
@@ -19,31 +19,31 @@
     "audit:responsive": "node scripts/responsive-audit.mjs"
   },
   "dependencies": {
-    "@react-three/drei": "^9.108.3",
-    "@react-three/fiber": "^8.16.8",
-    "@studio-freight/lenis": "^1.0.42",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "apexcharts": "^8.1.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "clsx": "^2.1.1",
-    "framer-motion": "^11.3.0",
+    "framer-motion": "^12.43.0",
     "html2canvas": "^1.4.1",
     "jose": "^6.2.12",
     "jspdf": "^4.2.1",
+    "lenis": "^1.3.27",
     "lucide-react": "^1.54.0",
-    "next": "14.2.35",
-    "next-themes": "^0.3.0",
+    "next": "16.4.2",
+    "next-themes": "^0.4.6",
     "nodemailer": "^10.1.2",
-    "react": "18.3.1",
+    "react": "^19.2.9",
     "react-apexcharts": "^2.1.1",
-    "react-dom": "18.3.1",
-    "sharp": "^0.34.4",
+    "react-dom": "^19.2.9",
+    "sharp": "^0.35.5",
     "three": "^0.166.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.35",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.4.2",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7"
   }

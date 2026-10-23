@@ -72,7 +72,7 @@ function absoluteImage(value) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const item = getNews().find((entry) => entry.slug === slug);
   if (!item) return { robots: { index: false, follow: false } };
 
@@ -96,7 +96,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function NewsDetailPage({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const items = getNews();
   const item = items.find((entry) => entry.slug === slug);
   if (!item) notFound();

@@ -19,6 +19,7 @@ const DOCS = [
   "deploy/README.md",
   "deploy/INSTALL-STEPS.txt",
   "deploy/cpanel/README.md",
+  "deploy/aapanel/README.md",
   "docs/CV-TABLES.md",
 ];
 
@@ -73,6 +74,9 @@ test("راهنمای متنی، سند اصلی در ریشهٔ پروژه اس�
     "deploy/docker.sh",
     "deploy/docker-entrypoint.sh",
     "deploy/cpanel/README.md",
+    "deploy/aapanel/README.md",
+    "deploy/aapanel/update.sh",
+    "deploy/aapanel/nginx-snippet.conf",
     "node scripts/preflight.mjs",
     "node scripts/rotate-admin-password.mjs",
     "node scripts/test-email.mjs",

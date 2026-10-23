@@ -37,10 +37,11 @@ function readEnv(file) {
 const fileEnv = readEnv(".env.production");
 const env = { ...fileEnv, ...process.env };
 
-// 1) Node
+// 1) Node — Node 20 در آوریل ۲۰۲۶ به پایان پشتیبانی رسید.
 const major = Number(process.versions.node.split(".")[0]);
-if (major >= 20) pass("Node.js", `v${process.versions.node}`);
-else fail("Node.js", `v${process.versions.node} — نسخهٔ ۲۰ LTS یا بالاتر لازم است`);
+if (major >= 22) pass("Node.js", `v${process.versions.node}`);
+else if (major === 20) warn("Node.js", `v${process.versions.node} — Node 20 EOL شده؛ Node 22 LTS نصب کنید`);
+else fail("Node.js", `v${process.versions.node} — نسخهٔ ۲۲ LTS یا بالاتر لازم است`);
 
 // 2) Build
 const buildServer = path.join(ROOT, ".next", "server", "app");
@@ -77,6 +78,23 @@ if (String(env.ADMIN_ALLOW_INSECURE_DEV_CREDENTIALS).toLowerCase() === "true") {
   pass("admin/admin در تولید", "غیرفعال است");
 }
 
+// 5b) Permissions of secrets and runtime data (POSIX only; Windows uses ACLs)
+if (process.platform !== "win32") {
+  const sensitive = [
+    ["data/admin.json", "هش رمز مدیر"],
+    ["data/users.json", "کاربران پنل"],
+    ["data/messages.json", "پیام‌های تماس"],
+    [".env.production", "متغیرهای محیطی"]
+  ];
+  for (const [file, label] of sensitive) {
+    const full = path.join(ROOT, file);
+    if (!fs.existsSync(full)) continue;
+    const mode = fs.statSync(full).mode & 0o777;
+    if ((mode & 0o077) === 0) pass(`دسترسی ${label}`, `${file} → ${mode.toString(8)}`);
+    else warn(`دسترسی ${label}`, `${file} → ${mode.toString(8)}؛ chmod 600 لازم است`);
+  }
+}
+
 // 6) Data
 const dataFiles = [
   ["data/psm-valve.sqlite", "دیتابیس محصولات"],
@@ -102,10 +120,18 @@ for (const [file, label] of assets) {
   else warn(label, `${file} یافت نشد`);
 }
 
-// 8) Uploads dir writable
+// 8) Uploads dir writable by the service user
 const uploads = path.join(ROOT, "public", "uploads");
-if (fs.existsSync(uploads)) pass("پوشهٔ آپلود", "public/uploads");
-else warn("پوشهٔ آپلود", "ساخته می‌شود، اما مطمئن شوید کاربر pm2 اجازهٔ نوشتن دارد");
+if (fs.existsSync(uploads)) {
+  try {
+    fs.accessSync(uploads, fs.constants.W_OK);
+    pass("پوشهٔ آپلود", "public/uploads قابل نوشتن است");
+  } catch {
+    fail("پوشهٔ آپلود", "public/uploads برای کاربر سرویس قابل نوشتن نیست (chown/chmod)");
+  }
+} else {
+  warn("پوشهٔ آپلود", "ساخته می‌شود، اما مطمئن شوید کاربر سرویس اجازهٔ نوشتن دارد");
+}
 
 // 9) Env file presence in production
 if (fs.existsSync(path.join(ROOT, ".env.production"))) pass(".env.production", "موجود است");

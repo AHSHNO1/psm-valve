@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const header = getCatalogHeader();
   const seo = pageSeo(locale, "products");
   const heading = [header.title1?.[locale], header.title2?.[locale]].filter(Boolean).join(" ").trim();
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   });
 }
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
   return (
     <ProductsMasonelian
       products={getProducts()}

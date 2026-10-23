@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 import { pageSeo } from "@/lib/seo-copy";
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "standards");
   return buildMetadata({
     locale,
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }) {
   });
 }
 
-export default function StandardsPage({ params }) {
-  const { locale } = params;
+export default async function StandardsPage({ params }) {
+  const { locale } = await params;
   return <StandardsTable locale={locale} />;
 }

@@ -30,7 +30,7 @@ function pick(value, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "units");
   return buildMetadata({
     locale,
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function UnitsPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dictionary = await getDictionary(locale);
   const text = dictionary.unitsPage;
   const units = getContent().units;

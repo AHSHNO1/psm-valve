@@ -14,13 +14,19 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+if [ -d /www/server/panel ] && [ "${ALLOW_AAPANEL:-false}" != "true" ]; then
+  echo "این سرور aaPanel دارد. برای نصب روی aaPanel از deploy/aapanel/README.md استفاده کنید."
+  echo "اگر آگاهانه می‌خواهید Nginx/PM2 سیستمی را جایگزین پنل کنید: ALLOW_AAPANEL=true bash deploy/bootstrap-server.sh"
+  exit 1
+fi
+
 echo "==> 1/7 بهروزرسانی بستهها و نصب پیشنیازها"
 apt update && apt upgrade -y
 apt install -y nginx git curl ufw fail2ban build-essential unzip ca-certificates \
   certbot python3-certbot-nginx apache2-utils
 
-echo "==> 2/7 نصب Node.js 20 LTS"
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+echo "==> 2/7 نصب Node.js 22 LTS"
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
 node -v
 npm -v

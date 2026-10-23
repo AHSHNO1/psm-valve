@@ -14,7 +14,7 @@ function pick(value, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const a = getArticle(slug);
   if (!a || a.active === false) return { robots: { index: false, follow: false } };
 
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ArticlePage({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const a = getArticle(slug);
   const dict = await getDictionary(locale);
   if (!a || a.active === false) notFound();

@@ -56,7 +56,7 @@ const COPY = {
 };
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const t = COPY[locale] || COPY.en;
   return buildMetadata({
     locale,
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function NewsPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const news = getNews();
   const t = COPY[locale] || COPY.en;
 

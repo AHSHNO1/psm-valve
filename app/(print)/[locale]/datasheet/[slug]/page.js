@@ -16,18 +16,19 @@ const DATASHEET_LABEL = {
 };
 
 export async function generateMetadata({ params }) {
-  const product = getProduct(params.slug);
-  const name = product?.name?.[params.locale] || product?.name?.en || product?.name?.fa || product?.series;
+  const { locale, slug } = await params;
+  const product = getProduct(slug);
+  const name = product?.name?.[locale] || product?.name?.en || product?.name?.fa || product?.series;
   return {
     title: product
-      ? `${DATASHEET_LABEL[params.locale] || "Datasheet"} — ${name}`
+      ? `${DATASHEET_LABEL[locale] || "Datasheet"} — ${name}`
       : "Datasheet",
     robots: { index: false, follow: false }
   };
 }
 
 export default async function DatasheetPage({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   if (!isValidLocale(locale)) notFound();
 
   const product = getProduct(slug);

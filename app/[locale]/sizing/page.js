@@ -35,7 +35,7 @@ const META = {
 };
 
 export async function generateMetadata({ params }) {
-  const locale = params?.locale || "fa";
+  const locale = (await params)?.locale || "fa";
   const m = META[locale] || META.en;
   return buildMetadata({
     locale,
@@ -125,9 +125,9 @@ const HUB = {
   }
 };
 
-export default function SizingPage({ params, searchParams }) {
-  const locale = params?.locale || "fa";
-  const requestedTool = searchParams?.tool;
+export default async function SizingPage({ params, searchParams }) {
+  const locale = (await params)?.locale || "fa";
+  const requestedTool = (await searchParams)?.tool;
   const tool = ["sizing", "calculator", "standards"].includes(requestedTool)
     ? requestedTool
     : "sizing";
@@ -239,7 +239,7 @@ export default function SizingPage({ params, searchParams }) {
         )}
 
         {tool === "standards" && (
-          <StandardsTable locale={locale} initialTab={searchParams?.tab} />
+          <StandardsTable locale={locale} initialTab={(await searchParams)?.tab} />
         )}
       </div>
     </div>

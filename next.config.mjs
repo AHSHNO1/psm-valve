@@ -6,8 +6,9 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30
   },
+  // ماژولهای نیتیو باید خارج از باندل سرور بارگذاری شوند.
+  serverExternalPackages: ["better-sqlite3", "sharp"],
   experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3", "sharp"],
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",
@@ -40,19 +41,31 @@ const nextConfig = {
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" }
         ]
+      },
+      {
+        // Admin responses contain live data and must never be cached or indexed.
+        source: "/admin/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" }
+        ]
+      },
+      {
+        source: "/api/auth/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" }
+        ]
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" }
+        ]
       }
     ];
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-      };
-    }
-    return config;
-  }
+  // Turbopack (پیشفرض Next 16) به کانفیگ webpack نیاز ندارد.
+  turbopack: {}
 };
 
 export default nextConfig;

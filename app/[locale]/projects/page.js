@@ -13,7 +13,7 @@ function pick(obj, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const meta = getContent().projects || {};
   const seo = pageSeo(locale, "projects");
   const customDescription = pick(meta.subtitle, locale);
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ProjectsPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const projects = getProjects().filter(function(p) { return p.active !== false; });
   const content = getContent();
   const meta = content.projects || {};

@@ -31,7 +31,7 @@ param(
     [string]$ZipPath = "",
     [string]$Repo = "https://github.com/AHSHNO1/psm-valve.git",
     [string]$Branch = "main",
-    [int]$NodeMajor = 20,
+    [int]$NodeMajor = 22,
     [switch]$NoHttps,
     [switch]$NoFirewall,
     [switch]$SkipBuild,
@@ -82,7 +82,7 @@ PSM VALVE — راه‌اندازی یک‌دستوری روی Windows Server
   -ZipPath <path>              نصب از فایل ZIP پروژه
   -Repo <url>                  دریافت کد از مخزن (پیش‌فرض: مخزن پروژه)
   -Branch <name>               شاخهٔ انتشار (پیش‌فرض: main)
-  -NodeMajor <number>          نسخهٔ اصلی Node.js (پیش‌فرض: 20)
+  -NodeMajor <number>          نسخهٔ اصلی Node.js (پیش‌فرض: 22)
   -NoHttps                     فقط HTTP (بدون گواهی)
   -NoFirewall                  بدون تغییر قواعد فایروال
   -SkipBuild                   پرش از بیلد (اگر .next آماده است)
@@ -592,7 +592,7 @@ if ($AdminUser -notmatch '^[A-Za-z0-9._@-]{1,64}$') {
 if ($Port -lt 1 -or $Port -gt 65535) { throw "پورت خارج از بازهٔ مجاز (1-65535): $Port" }
 if ($SourceDir -and $ZipPath) { throw "هم‌زمان -SourceDir و -ZipPath ندهید." }
 if ($AdminPassword -and $AdminPasswordFile) { throw "هم‌زمان -AdminPassword و -AdminPasswordFile ندهید." }
-if ($NodeMajor -lt 20) { throw "Node.js باید دست‌کم نسخهٔ 20 باشد." }
+if ($NodeMajor -lt 22) { throw "Node.js باید دست‌کم نسخهٔ 22 باشد (Node 20 به پایان پشتیبانی رسیده است)." }
 
 $Domain = $Domain.Trim()
 $Domain = $Domain -replace '^https?://', ''

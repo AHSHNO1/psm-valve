@@ -1,6 +1,6 @@
 ===============================================================================
   PSM VALVE — راهنمای متنی راهاندازی، انتشار و نگهداری  (نسخهٔ TXT)
-  آخرین بهروزرسانی: ۲۰۲۶-۱۰-۲۲
+  آخرین بهروزرسانی: ۲۰۲۶-۱۰-۲۳
   نکته: این فایل مرجع اصلی است و در ریشهٔ پروژه قرار دارد (INSTALL-STEPS.txt)؛
   نسخهٔ داخل پوشهٔ deploy فقط یک اشاره‌گر به همین فایل است.
   نسخهٔ جدولی/کامل: deploy/README.md    ·    راهنمای دستی از صفر: DEPLOY.md
@@ -20,7 +20,9 @@
   ۲) همان کار از ویندوز   : .\deploy\install-remote.ps1 -Server <IP> -Domain <domain>
   ۳) Docker               : bash deploy/docker.sh
   ۴) هاست اشتراکی cPanel  : راهنمای deploy/cpanel/README.md (Node.js Selector)
-  ۵) نصب موجود (آپدیت)    : su - psm -c 'bash /var/www/psm-valve/deploy/update.sh'
+  ۵) Ubuntu 24.04 + aaPanel : راهنمای deploy/aapanel/README.md
+  ۶) نصب موجود (آپدیت)    : su - psm -c 'bash /var/www/psm-valve/deploy/update.sh'
+     آپدیت روی aaPanel     : sudo bash /www/wwwroot/psm-valve/deploy/aapanel/update.sh
 
 -------------------------------------------------------------------------------
 ۱) پیشنیازها
@@ -74,7 +76,7 @@
 
 گامهایی که اجرا میشود:
   ۱) بررسی سیستمعامل و پیشنیازها
-  ۲) نصب بستههای پایه + Node.js 20 LTS + PM2 (+ Certbot)
+  ۲) نصب بستههای پایه + Node.js 22 LTS + PM2 (+ Certbot)
   ۳) ساخت کاربر psm، پوشههای پروژه/بکاپ و سواپ ۲GB
   ۴) git clone در نصب اول · git pull در اجرای دوباره · rsync اگر --source داده باشی
   ۵) npm ci
@@ -84,6 +86,36 @@
   ۹) اجرای دائمی با PM2 + pm2 save + pm2 startup
  ۱۰) Nginx + SSL رایگان + ریدایرکت http→https و بدون-www→www + ufw و fail2ban
  ۱۱) cron بکاپ روزانه (۳ بامداد) + بررسی سلامت + چاپ خلاصه/رمز پنل
+
+-------------------------------------------------------------------------------
+۲-ب) Ubuntu 24.04 + aaPanel (خلاصه)
+-------------------------------------------------------------------------------
+  راهنمای کامل: deploy/aapanel/README.md
+  کانفیگ Nginx: deploy/aapanel/nginx-snippet.conf
+  آپدیت امن   : deploy/aapanel/update.sh
+
+  ۱) aaPanel را نصب کن و پنل را با SSL/IP Whitelist/2FA امن کن.
+  ۲) Node.js 22 LTS + PM2 نصب کن (Node 20 EOL شده است).
+  ۳) در aaPanel سایت بساز: دامنه و www، ریشه /www/wwwroot/psm-valve، بدون PHP.
+  ۴) کد را در همان مسیر clone کن و مالکیت را به کاربر www بده.
+  ۵) قبل از بیلد:
+       bash deploy/make-env.sh --admin-user admin
+       chown www:www .env.production && chmod 600 .env.production
+       sudo -u www -H bash -c 'cd /www/wwwroot/psm-valve && \
+         node scripts/rotate-admin-password.mjs --username admin'
+  ۶) بیلد با کاربر www:
+       sudo -u www -H bash -c 'cd /www/wwwroot/psm-valve && npm ci'
+       sudo -u www -H bash -c 'cd /www/wwwroot/psm-valve && \
+         NODE_OPTIONS=--max-old-space-size=2048 npm run build'
+  ۷) اجرا با PM2 (یک instance، فقط 127.0.0.1:3000):
+       sudo -u www -H bash -c 'cd /www/wwwroot/psm-valve && \
+         pm2 start ecosystem.config.js && pm2 save'
+  ۸) SSL را از پنل بگیر و snippet را در کانفیگ سایت اعمال کن.
+  ۹) پورت 3000 را در فایروال/Security Group باز نکن.
+ ۱۰) cron بکاپ: deploy/backup.sh با BACKUP_DIR=/www/backup/psm-valve
+ ۱۱) آپدیت بعدی: sudo bash deploy/aapanel/update.sh
+
+  نکته: روی سرور aaPanel، deploy/install.sh را اجرا نکن (تعارض Nginx/PM2).
 
 -------------------------------------------------------------------------------
 ۳) پایان نصب — چه چیزی تحویل میگیری
@@ -324,7 +356,7 @@ Windows Server 2012 R2 به بعد (PowerShell ۵.۱؛ گیت لازم نیست)
 گامهای لانچر ویندوز (۱۱ گام):
   ۱) پیشنیازها، توقف نسخهٔ قبلی و آزادکردن پورت
   ۲) دریافت کد (-SourceDir · -ZipPath · پوشهٔ پروژه · ZIP گیت‌هاب · git clone)
-  ۳) نصب Node.js 20 LTS در صورت نبود (MSI رسمی nodejs.org)
+  ۳) نصب Node.js 22 LTS در صورت نبود (MSI رسمی nodejs.org)
   ۴) npm ci --include=dev
   ۵) ساخت .env.production با اسرار تصادفی (UTF-8 بدون BOM؛ -ForceEnv برای بازنویسی)
   ۶) تنظیم رمز پنل (بدون گزینه، رمز تصادفی در C:\ProgramData\PSMValve\initial-admin-password.txt)

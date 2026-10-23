@@ -5,7 +5,7 @@ import { getContent, getCertificates } from "@/lib/content";
 import CeoSection from "@/components/CeoSection";
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "about");
   return buildMetadata({
     locale,
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function AboutPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dict = await getDictionary(locale);
   const content = getContent();
   const ceo = content.ceo || {};

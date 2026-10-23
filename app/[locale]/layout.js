@@ -47,7 +47,7 @@ const META = {
 };
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const messages = await getDictionary(locale);
 
   const safeLocale = isValidLocale(locale) ? locale : defaultLocale;
@@ -106,7 +106,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function LocaleLayout({ children, params }) {
-  const { locale } = params;
+  const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
 
   const dict = await getDictionary(locale);

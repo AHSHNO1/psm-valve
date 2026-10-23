@@ -1,15 +1,15 @@
 # راهنمای راهاندازی، انتشار و نگهداری — PSM VALVE
 
-> آخرین بهروزرسانی: ۲۰۲۶-۱۰-۲۲ · نسخهٔ اپ: `package.json` → Next.js 14.2.35
+> آخرین بهروزرسانی: ۲۰۲۶-۱۰-۲۳ · نسخهٔ اپ: `package.json` → Next.js 16.4.2 (بیلد Turbopack، فایل `proxy.js` بهجای `middleware.js`)
 > این فایل مرجع کامل «از صفر تا آنلاین» است. برای شروع سریع توسعه، `README.md` را ببین.
 > **خلاصهٔ انتشار و چک‌لیست:** [`GO-LIVE.md`](GO-LIVE.md) · پیش‌بررسی: `node scripts/preflight.mjs`
 > 🚀 **مسیر خودکار (توصیهشده):** `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
-> همین یک دستور، همهٔ گامهای بخش ۳ و ۴ را انجام میدهد: نصب Node 20 / PM2 / Nginx / Certbot، ساخت کاربر اجرا
+> همین یک دستور، همهٔ گامهای بخش ۳ و ۴ را انجام میدهد: نصب Node 22 / PM2 / Nginx / Certbot، ساخت کاربر اجرا
 > و سواپ، دریافت کد، `npm ci`، ساخت `.env.production` با اسرار تصادفی، تنظیم رمز پنل (هش bcrypt)، بیلد،
 > اجرای PM2 با startup، کانفیگ Nginx و SSL، cron بکاپ روزانه، فایروال و بررسی سلامت.
 > **یک خط فرمان، بدون گزینه:** اوبونتو → `sudo bash deploy/start-vps-ubuntu.sh` ·
 > Windows Server → `powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1` (بخش «ویندوز سرور» در ادامه).
-> گزینههای دیگر: Docker → `bash deploy/docker.sh` · cPanel/CloudLinux → [`deploy/cpanel/README.md`](deploy/cpanel/README.md)
+> گزینههای دیگر: Docker → `bash deploy/docker.sh` · cPanel/CloudLinux → [`deploy/cpanel/README.md`](deploy/cpanel/README.md) · **Ubuntu 24.04 + aaPanel** → [`deploy/aapanel/README.md`](deploy/aapanel/README.md)
 > مقایسهٔ همهٔ مسیرها و چکلیست: [`deploy/README.md`](deploy/README.md)
 
 ---
@@ -18,9 +18,9 @@
 
 | موضوع | مقدار / نیاز |
 | --- | --- |
-| نوع اپلیکیشن | Next.js 14 App Router — نیازمند **پروسهٔ Node** (`next start`) و دیسک پایدار. روی هاست اشتراکی فقط-PHP اجرا نمیشود؛ روی cPanel با **Node.js Selector** ممکن است (راهنما: [`deploy/cpanel/README.md`](./deploy/cpanel/README.md)). |
+| نوع اپلیکیشن | Next.js 16 App Router — نیازمند **پروسهٔ Node** (`next start`) و دیسک پایدار. روی هاست اشتراکی فقط-PHP اجرا نمیشود؛ روی cPanel با **Node.js Selector** ممکن است (راهنما: [`deploy/cpanel/README.md`](./deploy/cpanel/README.md)). |
 | پورت پیشفرض | `3000` — با `--port <number>` (یا `APP_PORT=<port>`) تغییر میکند و در فایل `.app-port` کنار پروژه ذخیره میشود؛ Nginx، PM2 و بررسیهای سلامت همه از همان یک فایل میخوانند (`PORT` در `.env` فقط بازنویسی موقت است). جزئیات: [`deploy/README.md`](deploy/README.md) → «پورت اپ». |
-| نسخهٔ Node | **۲۰ LTS** یا ۲۲ LTS (حداقل ۱۸.۱۷) |
+| نسخهٔ Node | **۲۲ LTS** (حداقل ۲۲؛ Node 20 در آوریل ۲۰۲۶ EOL شد) |
 | ذخیرهسازی داده | **فایلسیستم پایدار**: `data/*.json`, پایگاه‌دادهٔ `data/psm-valve.sqlite` و `public/uploads/**` |
 | نقشهٔ داده | ۱) `data/` دادهٔ زندهٔ JSON و SQLite · ۲) `public/uploads/**` فایلهای آپلودشده از پنل · ۳) `lib/products.js` فقط دادهٔ اولیهٔ seed محصولات |
 | ناسازگار با | Vercel، Netlify، Render Static، Cloudflare Pages، هر PaaS با دیسک موقت (فایل نوشتهشده با هر دیپلوی/ریاستارت پاک میشود) |
@@ -110,7 +110,7 @@ powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -SourceD
 
 | کار در لینوکس | معادل در ویندوز |
 | --- | --- |
-| Node 20 + PM2 + `pm2 startup` | MSI رسمی nodejs.org + دو **Scheduled Task** با حساب SYSTEM (`PSM-VALVE`، `PSM-VALVE-Proxy`) که در بوت بالا می‌آیند و خودکار ریاستارت می‌شوند |
+| Node 22 + PM2 + `pm2 startup` | MSI رسمی nodejs.org + دو **Scheduled Task** با حساب SYSTEM (`PSM-VALVE`، `PSM-VALVE-Proxy`) که در بوت بالا می‌آیند و خودکار ریاستارت می‌شوند |
 | Nginx reverse proxy + Certbot | **Caddy** (پروکسی + گواهی Let's Encrypt خودکار)؛ اگر پورت ۸۰ دست IIS باشد، اپ مستقیم روی پورت ۳۰۰۰ سرو می‌شود |
 | `ufw` + `fail2ban` | قواعد فایروال ویندوز در گروه `PSM VALVE` (۸۰/۴۴۳ یا پورت اپ) |
 | cron بکاپ | بکاپ خودکار ندارد؛ از `manage.ps1` و کپی `data\` + `public\uploads\` استفاده کن |
@@ -130,6 +130,17 @@ powershell -ExecutionPolicy Bypass -File .\deploy\start-vps-windows.ps1 -SourceD
 اگر سرور اوبونتو داری ولی نمی‌خواهی گزینه‌ها را یادداشت کنی، `deploy/start-vps-ubuntu.sh` همان
 `install.sh` را با تشخیص خودکار IP و دریافت `sudo` اجرا میکند (از داخل پوشهٔ پروژه یا با `curl | sudo bash`).
 
+## ۲-ز) Ubuntu 24.04 + aaPanel — راهنمای اختصاصی
+
+اگر سرور را با پنل **aaPanel** مدیریت می‌کنی، `install.sh` را اجرا نکن (با Nginx/PM2 پنل تعارض دارد).
+راهنمای گام‌به‌گام، کانفیگ Nginx سازگار با پنل و اسکریپت آپدیت امن:
+
+👉 [`deploy/aapanel/README.md`](./deploy/aapanel/README.md)
+
+خلاصه: Node 22 + PM2، ریشهٔ `/www/wwwroot/psm-valve`، کاربر `www`، پورت لوکال `3000`،
+SSL از پنل و اعمال [`deploy/aapanel/nginx-snippet.conf`](./deploy/aapanel/nginx-snippet.conf).
+آپدیت: `sudo bash deploy/aapanel/update.sh`.
+
 ## ۳) راهاندازی سرور — گامبهگام
 
 > ⏩ **میخواهی این بخش خودکار انجام شود؟** `sudo bash deploy/install.sh --domain psmvalve.com --email admin@psmvalve.com`
@@ -145,12 +156,12 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y nginx git curl ufw fail2ban build-essential unzip
 ```
 
-### گام ۲ — نصب Node.js 20 LTS
+### گام ۲ — نصب Node.js 22 LTS
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
-node -v && npm -v      # باید v20.x و 10.x بدهد
+node -v && npm -v      # باید v22.x و 10.x بدهد
 ```
 
 ### گام ۳ — نصب PM2
@@ -489,7 +500,7 @@ git push origin main
 
 | فایل | نقش |
 | --- | --- |
-| `middleware.js` | ریدایرکت زبان (`/products` → `/fa/products`) + محافظت نقشیمحور `/admin/*` |
+| `proxy.js` | ریدایرکت زبان (`/products` → `/fa/products`) + محافظت نقشیمحور `/admin/*` (نام جدید `middleware` در Next 16) |
 | `lib/auth.js` | JWT، کوکی نشست، اعتبارسنجی مدیر/نویسنده |
 | `lib/rate-limit.js` | محدودسازی در حافظه (`login`, `contact`) — نیازمند تکنسخه بودن پروسه |
 | `lib/db.js` | خواندن/نوشتن `data/*.json` |

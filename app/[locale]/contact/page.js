@@ -7,7 +7,7 @@ import { getBranding, getContent } from "@/lib/content";
 import { getSettings } from "@/lib/db";
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "contact");
   return buildMetadata({
     locale,
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ContactPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dict = await getDictionary(locale);
   const company = getCompanyInfo();
   const branding = getBranding();

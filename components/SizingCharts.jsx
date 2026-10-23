@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, AlertTriangle, TrendingUp, Gauge, Target, Zap, Activity, BookOpen, Star, Award
@@ -25,7 +25,7 @@ function inherentCv(x, type) {
 
 function useChartTheme() {
   const [isDark, setIsDark] = useState(false);
-  useMemo(() => {
+  useEffect(() => {
     if (typeof window === "undefined") return;
     setIsDark(document.documentElement.classList.contains("dark"));
     const observer = new MutationObserver(() => {

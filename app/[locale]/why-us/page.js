@@ -19,7 +19,7 @@ const ICONS = {
 };
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const whyUs = getContent().whyUs || {};
   const seo = pageSeo(locale, "whyUs");
   const customDescription = pick(whyUs.subtitle, locale);
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function WhyUsPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dictionary = await getDictionary(locale);
   const content = getContent();
   const whyUs = content.whyUs || {};

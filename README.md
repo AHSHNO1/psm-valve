@@ -9,17 +9,20 @@
 
 | لایه | فناوری |
 | --- | --- |
-| فریمورک | Next.js 14.2.35 (App Router) + React 18 |
+| فریمورک | Next.js 16.4.2 (App Router، بیلد Turbopack) + React 19 |
 | استایل | Tailwind CSS 3.4 + CSS سراسری (تم Metro) |
-| انیمیشن/سهبعدی | Framer Motion، Three.js + @react-three/fiber/drei |
+| انیمیشن/سهبعدی | Framer Motion 12، Three.js + @react-three/fiber 9 / drei 10 |
 | نمودار | ApexCharts / react-apexcharts |
 | احراز هویت | `jose` (JWT در کوکی httpOnly) + `bcryptjs` |
 | ذخیرهسازی | JSON در `data/*.json`، محصولات در SQLite (`data/psm-valve.sqlite`) و داراییها در `public/uploads/**` |
-| i18n | دیکشنریهای `messages/{fa,en,ar,ru}.json` + مدیریت مسیر در `middleware.js` |
+| i18n | دیکشنریهای `messages/{fa,en,ar,ru}.json` + مدیریت مسیر در `proxy.js` (نام جدید middleware در Next 16) |
+| کیفیت کد | ESLint 9 (کانفیگ flat) + `node --test` |
 
 > ⚠️ این پروژه به **دیسک پایدار (persistent disk)** نیاز دارد. SQLite محصولات و فایلهای JSON/آپلودها باید روی volume پایدار باشند؛ روی Vercel/Netlify/serverless با دیسک موقت قابل استفاده نیست. راهنما: [`DEPLOY.md`](./DEPLOY.md)
 
 ## شروع سریع (توسعه)
+
+پیش‌نیاز: **Node.js 22 LTS** (Node 20 به پایان پشتیبانی رسیده است).
 
 ```powershell
 npm ci                # نصب وابستگیها
@@ -60,7 +63,7 @@ data/*.json           دادهٔ زندهٔ سایت (محتوا، تنظیما�
 data/psm-valve.sqlite پایگاه‌دادهٔ محصولات — به صورت خودکار از lib/products.js seed میشود
 messages/*.json       دیکشنری ترجمهها
 public/uploads/**     داراییهای آپلودشده از پنل (در گیت ردیابی نمیشود)
-middleware.js         ریدایرکت زبان + محافظت نقشمحور از /admin
+proxy.js              ریدایرکت زبان + محافظت نقشمحور از /admin (نام جدید middleware در Next 16)
 deploy/               اسکریپتها و کانفیگ انتشار
 ```
 
@@ -102,7 +105,9 @@ deploy/               اسکریپتها و کانفیگ انتشار
 | همان کار، از ویندوز | `.\deploy\install-remote.ps1 -Server <IP> -Domain psmvalve.com` |
 | **Docker** | `bash deploy/docker.sh` |
 | **cPanel/CloudLinux** (Node.js Selector) | [`deploy/cpanel/README.md`](./deploy/cpanel/README.md) |
+| **Ubuntu 24.04 + aaPanel** — سایت، SSL، بکاپ و آپدیت با پنل | [`deploy/aapanel/README.md`](./deploy/aapanel/README.md) |
 | انتشار نسخهٔ جدید روی نصب موجود | `bash deploy/update.sh` |
+| انتشار نسخهٔ جدید روی نصب aaPanel | `sudo bash deploy/aapanel/update.sh` |
 
 پیشبررسی قبل از انتشار: `node scripts/preflight.mjs`
 

@@ -24,6 +24,13 @@
 - **تلفن دوم در فوتر**: `company.phone.secondary` (‏`+98 86 3416 1918`‏) به منبع یکتای اطلاعات
   شرکت اضافه شد؛ فوتر آن را کنار تلفن (با همان ایزولاسیون دوجهتهٔ شماره‌ها) نمایش می‌دهد
   و پنل «اطلاعات شرکت و تماس» فیلد **تلفن دوم** گرفت.
+- **بستهٔ استقرار aaPanel برای Ubuntu 24.04**: پوشهٔ `deploy/aapanel/` شامل
+  `README.md` (راهنمای ۱۴ بخشی از نصب پنل تا چک‌لیست انتشار)، `nginx-snippet.conf`
+  (پروکسی آمادهٔ aaPanel با محدودیت آپلود ۶۰ مگابایت، gzip، کش دارایی‌های استاتیک و
+  هدرهای امنیتی) و `update.sh` (به‌روزرسانی امن با قفل، بکاپ داده و بکاپ SQLite،
+  بیلد با کاربر `www`، ری‌استارت PM2 و تست سلامت). مسیر پیشنهادی:
+  `/www/wwwroot/psm-valve` روی `www`.
+- **`ecosystem.config.js` روی aaPanel**: اپ فقط روی `127.0.0.1:3000` گوش می‌دهد.
 
 ### امنیت (Security)
 
@@ -33,9 +40,51 @@
 - لانچر ویندوز اسرار و رمز اولیه را در `C:\ProgramData\PSMValve` با ACL محدود به
   `SYSTEM` و `Administrators` می‌نویسد، `.env.production` را بدون BOM تولید می‌کند و
   رمز را از فایل موقت به اسکریپت می‌دهد (نه آرگومان قابل‌مشاهدهٔ طولانی).
+- **دسترسی فایل‌های داده محدود شد**: پوشهٔ `data/` با حالت `0700` و فایل‌های
+  `admin.json`، `users.json`، `messages.json` و بقیهٔ JSONها با حالت `0600` نوشته می‌شوند
+  (شامل نوشتن اتمیک و فایل‌های موقت) تا هش رمز و پیام‌های تماس برای کاربران دیگر سرور
+  قابل خواندن نباشد.
+- **هدرهای کش و ایندکس**: مسیرهای `/admin/*` و `/api/auth/*` با
+  `Cache-Control: private, no-store` و `/api/*` و پنل با `X-Robots-Tag: noindex, nofollow`
+  سرو می‌شوند تا نشست مدیر در کش میانی ذخیره نشود و صفحات پنل ایندکس نشوند.
+- **preflight سخت‌گیرانه‌تر**: مجوز فایل‌های حساس روی لینوکس بررسی می‌شود و نبود دسترسی
+  نوشتن در `public/uploads` خطای واضح می‌دهد؛ نسخهٔ Node زیر ۲۲ رد می‌شود و Node 20
+  فقط هشدار EOL می‌گیرد.
+- **به‌روزرسانی وابستگی‌های آسیب‌پذیر**: `sharp` به `0.35.5` (رفع آسیب‌پذیری‌های
+  libvips/libheif/librsvg) و `dompurify` (وابستگی اختیاری jspdf) به `3.4.17`.
+- **ارتقا به Next 16.4.2 + React 19.3**: دو آسیب‌پذیری بحرانی باقی‌مانده در Next 14
+  که در شاخهٔ ۱۴ پچ نمیشدند، با این ارتقا برطرف شدند. تست‌های ۲۲۴/۲۲۴، بیلد
+  Turbopack (۱۲۲ صفحهٔ استاتیک) و lint (۰ خطا) سبز هستند و مسیرهای حیاتی
+  (چهار زبان، سایزینگ با نمودار، دیتاشیت چاپی، پنل ادمین، هدرهای امنیتی و
+  هدایتها) در مرورگر بازبینی شدند.
+
+### رفع شد (Fixed)
+
+- **هدایت‌های اشتباه پشت reverse proxy**: `middleware.js` آدرس عمومی را از
+  `X-Forwarded-Host`/`Host` و `X-Forwarded-Proto` می‌سازد (با اعتبارسنجی هاست و پشتیبانی
+  IPv6). پیش‌تر `/` و `/admin` پشت Nginx/aaPanel به `http://localhost:3000/...` هدایت
+  می‌شدند که ورود پنل و انتخاب زبان را روی دامنهٔ واقعی خراب می‌کرد.
+- `install.sh` و نمونهٔ Nginx سیستمی حالا `X-Forwarded-Host` را هم می‌فرستند تا همین
+  مسیر هدایت درست کار کند.
 
 ### تغییر کرد (Changed)
 
+- **ارتقای major به Next.js 16.4.2 + React 19.3** (مهاجرت کامل طبق راهنمای رسمی):
+  - بیلد پیشفرض به **Turbopack** منتقل شد؛ کانفیگ webpack حذف و `turbopack: {}` جایگزین شد.
+  - `middleware.js` به **`proxy.js`** تغییر نام کرد (تغییر نام رسمی middleware در Next 16؛
+    runtime پیشفرض Node.js). منطق هدایت زبان و نگهبانی `/admin` تغییری نکرده است.
+  - همهٔ `params`/`searchParams`/`cookies()`/`headers()` در ۲۶ فایل سروری به الگوی
+    **async** (await) مهاجرت داده شدند — دسترسی sync در Next 16 حذف شده است.
+  - `serverComponentsExternalPackages` به سرِچن `serverExternalPackages` منتقل شد
+    (`better-sqlite3`, `sharp`).
+  - اکوسیستم همگام شد: `@react-three/fiber` ۹ و `drei` ۱۰ (سازگار با React 19)،
+    `framer-motion` ۱۲، `next-themes` ۰.۴، `lenis` جایگزین بستهٔ منسوخ
+    `@studio-freight/lenis`.
+  - **ESLint 9 با کانفیگ flat**: `.eslintrc.json` حذف و `eslint.config.mjs` جایگزین شد؛
+    `next lint` در Next 16 حذف شده و اسکریپت `npm run lint` مستقیم `eslint .` را اجرا میکند.
+    سه باگ واقعی که پلاگین react-hooks نسخهٔ ۷ پیدا کرد رفع شد: نشتی
+    MutationObserver در `SizingCharts`، فراخوانی تابع قبل از تعریف در
+    `ContactForm` و مقدار ناپایدار در `SizingReportModal`.
 - `deploy/docker.sh` گزینهٔ `--admin-user` گرفت و نام کاربری را به چرخش رمز منتقل می‌کند.
 - خلاصهٔ پایان نصب در `install.sh` و لانچرها آدرس درست را چاپ می‌کند: روی IP یا نصب
   بدون SSL همان `http://<domain|ip>` و در غیر این صورت `https://www.<domain>`.
@@ -49,12 +98,18 @@
   برچسب لاتین و شمارهٔ ردیف، مزایا به‌صورت چیپ و کادر «ارسال رزومه» با ایمیل قابل‌کلیک
   (`dir="ltr"` + ایزولهٔ دوجهته). متن‌های بخش از دیکشنری خوانده می‌شود و بازنویسی
   پنل «تنظیمات» (`careerTitle`، `careerSubtitle`، `careerRoles`) همچنان اولویت دارد.
+- **Node 22 LTS پیش‌فرض شد** (Node 20 در آوریل ۲۰۲۶ EOL شد): `package.json` و
+  `package-lock.json` (`engines >=22`)، CI، `install.sh`، `bootstrap-server.sh`،
+  لانچر ویندوز و راهنماهای cPanel/aaPanel همگی ۲۲ هستند.
+- `install.sh` و `bootstrap-server.sh` روی سروری که aaPanel دارد متوقف می‌شوند و به
+  `deploy/aapanel/README.md` ارجاع می‌دهند؛ عبور آگاهانه با `ALLOW_AAPANEL=true`.
 
 ### تست (Tests)
 
 - ۴ تست جدید برای کوکی نشست (`tests/auth-cookie.test.mjs`) و چرخش رمز با نام کاربری
-  (`tests/rotate-admin-password.test.mjs`) — مجموعاً ۲۲۱ تست در ۲۳ فایل، همه سبز.
-- نگهبان مستندات (`tests/docs.test.mjs`) حالا بخش ۱۳ و دو لانچر جدید را هم الزام می‌کند.
+  (`tests/rotate-admin-password.test.mjs`) — مجموعاً ۲۲۴ تست در ۲۳ فایل، همه سبز.
+- نگهبان مستندات (`tests/docs.test.mjs`) حالا بخش ۱۳، دو لانچر جدید و مسیر aaPanel را
+  هم الزام می‌کند.
 
 ## [1.0.0] — ۲۰۲۶-۱۰-۲۲
 

@@ -28,7 +28,7 @@ function pickArray(obj, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const s = getServiceBySlug(slug);
   if (!s) return { robots: { index: false, follow: false } };
   const name = pick(s.name, locale) || slug;
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ServiceDetailPage({ params }) {
-  const { locale, slug } = params;
+  const { locale, slug } = await params;
   const s = getServiceBySlug(slug);
   if (!s) notFound();
 

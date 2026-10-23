@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
  * دیتاشیت به مسیر مستقل /datasheet/[locale]/[slug] منتقل شده است
  * تا بدون نوار سایت و تم تاریک چاپ شود.
  */
-export default function LegacyDatasheetPage({ params }) {
-  redirect(`/${params.locale}/datasheet/${params.slug}`);
+export default async function LegacyDatasheetPage({ params }) {
+  const { locale, slug } = await params;
+  redirect(`/${locale}/datasheet/${slug}`);
 }

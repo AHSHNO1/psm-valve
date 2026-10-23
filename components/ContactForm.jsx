@@ -13,11 +13,7 @@ export default function ContactForm() {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
 
-  useEffect(function() {
-    refreshCaptcha();
-  }, []);
-
-  const refreshCaptcha = async function(preserveError) {
+  async function refreshCaptcha(preserveError) {
     setCaptcha(null);
     setCaptchaToken("");
     setCaptchaInput("");
@@ -34,7 +30,11 @@ export default function ContactForm() {
       setStatus("error");
       setError(reason.message);
     }
-  };
+  }
+
+  useEffect(function() {
+    refreshCaptcha();
+  }, []);
 
   const update = function(k) {
     return function(e) { setForm(Object.assign({}, form, { [k]: e.target.value })); };

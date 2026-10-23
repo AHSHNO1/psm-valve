@@ -9,7 +9,7 @@ import { pageSeo } from "@/lib/seo-copy";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "media");
   return buildMetadata({
     locale,
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function MediaPage({ params, searchParams }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dict = await getDictionary(locale);
   const media = getMedia();
   let aparatUnavailable = false;
@@ -69,7 +69,7 @@ export default async function MediaPage({ params, searchParams }) {
         articles={articles}
         locale={locale}
         dict={dict}
-        initialTab={searchParams?.tab}
+        initialTab={(await searchParams)?.tab}
       />
     </section>
   );

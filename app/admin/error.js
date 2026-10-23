@@ -6,6 +6,7 @@
 // ============================================================
 
 import { useEffect } from "react";
+import Link from "next/link";
 
 export default function AdminError({ error, reset }) {
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function AdminError({ error, reset }) {
           >
             تلاش مجدد
           </button>
-          <a
+          <Link
             href="/admin"
             style={{
               border: "1px solid rgba(128,128,128,.5)",
@@ -68,7 +69,7 @@ export default function AdminError({ error, reset }) {
             }}
           >
             بازگشت به داشبورد
-          </a>
+          </Link>
         </div>
       </div>
     </div>

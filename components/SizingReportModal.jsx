@@ -127,6 +127,9 @@ export default function SizingReportModal({ isOpen, onClose, result, form, formS
   const [pdfLoading, setPdfLoading] = useState(false);
   const [shotLoading, setShotLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  // شناسه و تاریخ گزارش یک بار در باز شدن مودال ساخته میشوند (نه در هر رندر)
+  const [reportStamp] = useState(() => Date.now().toString().slice(-6));
+  const [reportDate] = useState(() => new Date().toLocaleDateString(locale === "fa" ? "fa-IR" : "en-GB"));
 
   const isFa = locale === "fa";
   const characteristicNames = CATALOG_CHARACTERISTICS[locale] || CATALOG_CHARACTERISTICS.en;
@@ -816,8 +819,8 @@ export default function SizingReportModal({ isOpen, onClose, result, form, formS
                     fontSize: 10.5, color: "var(--text-muted)", fontWeight: 700,
                     paddingBottom: 10, borderBottom: "1px solid var(--border)"
                   }}>
-                    <span>{L.reportRef}: PSM-SZ-{Date.now().toString().slice(-6)}</span>
-                    <span>{L.date}: {new Date().toLocaleDateString(isFa ? "fa-IR" : "en-GB")}</span>
+                    <span>{L.reportRef}: PSM-SZ-{reportStamp}</span>
+                    <span>{L.date}: {reportDate}</span>
                   </div>
 
                   {isService && svcMode === "twoPhase" && (

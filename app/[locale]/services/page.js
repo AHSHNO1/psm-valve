@@ -9,7 +9,7 @@ import MediaImage from "@/components/MediaImage";
 const ICONS = { Cog, Gauge, Wrench, Circle, Flame, Truck, Settings };
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "services");
   return buildMetadata({
     locale,
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ServicesPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dict = await getDictionary(locale);
 
   const list = getAllServices();

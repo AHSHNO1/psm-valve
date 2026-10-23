@@ -9,8 +9,8 @@ import { ArrowRight, ExternalLink, Pencil } from "lucide-react";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default function EditProductPage({ params }) {
-  const { slug } = params;
+export default async function EditProductPage({ params }) {
+  const { slug } = await params;
   const product = getProduct(slug);
   if (!product) notFound();
 

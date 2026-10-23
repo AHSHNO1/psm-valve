@@ -40,7 +40,8 @@ module.exports = {
       name: "psm-valve",
       cwd: __dirname,
       script: "node_modules/next/dist/bin/next",
-      args: `start -p ${APP_PORT}`,
+      // فقط روی loopback گوش می‌دهد؛ دسترسی عمومی باید از reverse proxy (Nginx/aaPanel) باشد.
+      args: `start -H 127.0.0.1 -p ${APP_PORT}`,
       instances: 1,
       exec_mode: "fork",
       autorestart: true,

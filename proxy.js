@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-// Import the verification subpath (not the package root) so the Edge bundle
-// does not pull in JWE/deflate code that depends on Node's CompressionStream.
 import { jwtVerify } from "jose/jwt/verify";
 import { locales, defaultLocale } from "./lib/i18n";
 
 // ============================================================
-// MIDDLEWARE — PSM Valve
+// PROXY (نام جدید middleware در Next 16) — PSM Valve
 // مسئولیتها:
 //   ۱) هدایت ریشهٔ دامنه (/) به نسخهٔ زباندار مناسب
 //   ۲) هدایت آدرسهای بدون زبان (/products) به نسخهٔ زباندار
@@ -63,6 +61,30 @@ function withLocaleCookie(response, locale) {
   return response;
 }
 
+/**
+ * مبدأ عمومی درخواست را از هدرهای پروکسی می‌سازد.
+ * Next پشت reverse proxy ممکن است request.url را localhost بسازد؛ هدایت مطلق به
+ * localhost کاربر را بیرون می‌اندازد. Nginx این هدرها را ست می‌کند.
+ */
+function publicOrigin(request) {
+  const headers = request.headers;
+  const host = (headers.get("x-forwarded-host") || headers.get("host") || "")
+    .split(",")[0]
+    .trim();
+  const proto = (headers.get("x-forwarded-proto") || "").split(",")[0].trim();
+  if (!host || /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(host)) return null;
+  if (!/^(\[[0-9a-f:.]+\]|[a-z0-9.-]+)(:\d+)?$/i.test(host)) return null;
+  const scheme =
+    proto === "https" || proto === "http"
+      ? proto
+      : request.nextUrl.protocol.replace(":", "") || "http";
+  return `${scheme}://${host}`;
+}
+
+function redirectTo(request, pathname) {
+  return NextResponse.redirect(new URL(pathname, publicOrigin(request) || request.url));
+}
+
 /** پاسخ عبور، همراه با ثبت مسیر جاری برای بررسی دوباره در لایهٔ سرور */
 function passWithPath(request, pathname) {
   const requestHeaders = new Headers(request.headers);
@@ -77,7 +99,7 @@ async function guardAdminArea(request, pathname) {
   const token = request.cookies.get(ADMIN_COOKIE)?.value;
   const secret = process.env.JWT_SECRET;
   if (!token || !secret || new TextEncoder().encode(secret).length < 32) {
-    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    return redirectTo(request, LOGIN_PATH);
   }
 
   try {
@@ -89,15 +111,15 @@ async function guardAdminArea(request, pathname) {
     if (payload.role === "author") {
       return isAuthorArea
         ? passWithPath(request, pathname)
-        : NextResponse.redirect(new URL(AUTHOR_HOME, request.url));
+        : redirectTo(request, AUTHOR_HOME);
     }
-    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    return redirectTo(request, LOGIN_PATH);
   } catch {
-    return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    return redirectTo(request, LOGIN_PATH);
   }
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const pathname = request.nextUrl.pathname;
 
   // ── ۱) پنل ادمین (بدون پیشوند زبان) ──
@@ -108,10 +130,7 @@ export async function middleware(request) {
   // ── ۲) ریشهٔ دامنه: به نسخهٔ زباندار هدایت کن تا 404 رخ ندهد ──
   if (pathname === "/") {
     const target = resolveLocale(request);
-    return withLocaleCookie(
-      NextResponse.redirect(new URL("/" + target, request.url)),
-      target
-    );
+    return withLocaleCookie(redirectTo(request, "/" + target), target);
   }
 
   const pathLocale = getPathLocale(pathname);
@@ -127,11 +146,10 @@ export async function middleware(request) {
 
   // ── ۴) مسیر بدون زبان (مثل /products): زبان را اضافه کن ──
   const target = resolveLocale(request);
-  const destination = new URL(
-    "/" + target + pathname + request.nextUrl.search,
-    request.url
+  return withLocaleCookie(
+    redirectTo(request, "/" + target + pathname + request.nextUrl.search),
+    target
   );
-  return withLocaleCookie(NextResponse.redirect(destination), target);
 }
 
 export const config = {

@@ -13,7 +13,7 @@ function pick(value, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "articles");
   return buildMetadata({
     locale,
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ArticlesPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const dict = await getDictionary(locale);
   const articles = getArticles().filter((article) => article.active !== false);
 

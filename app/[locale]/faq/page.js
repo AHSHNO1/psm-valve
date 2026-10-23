@@ -10,7 +10,7 @@ function pick(value, locale) {
 }
 
 export async function generateMetadata({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const seo = pageSeo(locale, "faq");
   return buildMetadata({
     locale,
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function FaqPage({ params }) {
-  const { locale } = params;
+  const { locale } = await params;
   const faqs = getFaqs().filter(function(f) { return f.active !== false; });
   const content = getContent();
   const faqSchema = {
