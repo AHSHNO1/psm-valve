@@ -86,6 +86,8 @@ SMTP_SECURE=true
 SMTP_USER=psmvalve@gmail.com
 SMTP_PASS=
 CONTACT_TO=psmvalve@gmail.com
+# گیرندهٔ هشدارهای خطای سرور (۵xx و شکست SMTP) — در نبودش همان CONTACT_TO
+ALERT_EMAIL_TO=$CONTACT_TO
 EOF
 chmod 600 "$ENV_FILE"
 

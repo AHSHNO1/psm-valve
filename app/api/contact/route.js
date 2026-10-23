@@ -3,6 +3,7 @@ import { addMessage } from "@/lib/db";
 import { verifyContactChallenge } from "@/lib/contact-challenge";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { sendContactNotification } from "@/lib/mailer";
+import { notifyAdminError } from "@/lib/error-alert";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,6 +62,12 @@ export async function POST(request) {
     // پیام همیشه در پنل ذخیره می‌شود؛ ایمیل فقط اطلاع‌رسانی است و
     // خطای SMTP نباید ارسال فرم را خراب کند.
     const mailed = await sendContactNotification(saved);
+    if (mailed.sent === false && mailed.reason === "send-failed") {
+      // پیام در پنل ذخیره شده؛ فقط مدیر را از شکست SMTP باخبر می‌کنیم.
+      notifyAdminError("mailer:contact-notification", new Error("ارسال اعلان ایمیل فرم تماس ناموفق بود"), {
+        detail: `پیام ${saved.id} در پنل مدیریت ذخیره شد اما ارسال ایمیل شکست خورد.`
+      }).catch(() => {});
+    }
     return NextResponse.json({ ok: true, id: saved.id, mailed: mailed.sent });
   } catch (error) {
     console.error("Unable to store contact message:", error);
