@@ -28,8 +28,8 @@
 .hero-photo-slider-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(10,12,15,.22), rgba(10,12,15,.1) 52%, rgba(10,12,15,.04)),
-    linear-gradient(0deg, rgba(10,12,15,.14), transparent 58%);
+  background: linear-gradient(90deg, rgba(8,11,16,.38), rgba(8,11,16,.18) 52%, rgba(8,11,16,.06)),
+    linear-gradient(0deg, rgba(8,11,16,.26), transparent 55%);
   pointer-events: none;
 }
 .hero-slide-copy {
@@ -88,9 +88,9 @@
   min-height: 48px;
   margin-top: 28px;
   padding: 0 22px;
-  border: 1px solid #F5C518;
+  border: 1px solid rgba(245, 197, 24, 0.9);
   border-radius: 12px;
-  background: linear-gradient(135deg, #F5C518, #D9A615);
+  background: var(--gold-grad);
   color: #1A1D21;
   font-size: 14px;
   font-weight: 900;
@@ -247,7 +247,7 @@
 }
 .credibility-dot.is-active::before {
   width: 24px;
-  background: linear-gradient(135deg, #E0A81A, #B8850A);
+  background: var(--gold-grad);
 }
 @media (max-width: 640px) {
   .credibility-dots { display: none; }

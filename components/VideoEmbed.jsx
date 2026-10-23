@@ -87,7 +87,7 @@ export default function VideoEmbed({ url, title, poster, aspect = "16/9" }) {
         >
           <div
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-full grid place-items-center shadow-2xl group-hover:scale-110 transition"
-            style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)", color: "#1A1D21" }}
+            style={{ background: "var(--gold-grad)", color: "#1A1D21" }}
           >
             <Play size={28} fill="currentColor" />
           </div>

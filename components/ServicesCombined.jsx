@@ -547,7 +547,7 @@ export default function ServicesCombined({ services, locale }) {
         }
         .svc-other-card:hover .svc-other-icon {
           background: var(--gold);
-          color: #FFFFFF;
+          color: #1A1D21;
           transform: scale(1.08) rotate(-5deg);
         }
 

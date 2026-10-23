@@ -156,6 +156,6 @@ export const config = {
   // همهٔ مسیرها بهجز فایلهای داخلی Next، API و فایلهای استاتیک بررسی میشوند
   // تا آدرسهای بدون زبان (/products) و پنل ادمین هم مدیریت شوند.
   matcher: [
-    "/((?!_next/static|_next/image|api|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\..*).*)"
+    "/((?!_next/static|_next/image|_next/hmr|api|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\..*).*)"
   ]
 };

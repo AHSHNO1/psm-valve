@@ -150,8 +150,8 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                 borderRadius: 20,
                 display: "grid",
                 placeItems: "center",
-                background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                color: "#FFFFFF",
+                background: "var(--gold-grad)",
+                color: "#1A1D21",
                 flexShrink: 0
               }}>
                 <FlaskConical size={36} strokeWidth={1.8} />
@@ -173,8 +173,8 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                   display: "inline-block",
                   padding: "6px 14px",
                   borderRadius: 10,
-                  background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                  color: "#FFFFFF",
+                  background: "var(--gold-grad)",
+                  color: "#1A1D21",
                   fontSize: 14,
                   fontWeight: 900,
                   marginBottom: 8,
@@ -236,7 +236,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                     borderRadius: 16,
                     padding: 12,
                     background: "linear-gradient(135deg, #F8F9FB, #EEF1F6)",
-                    border: "3px solid #E0A81A",
+                    border: "3px solid var(--gold-bg)",
                     boxShadow: "0 8px 24px rgba(201, 149, 13, 0.15), inset 0 2px 6px rgba(0, 0, 0, 0.04)",
                     transition: "all 0.3s",
                     overflow: "hidden"
@@ -284,8 +284,8 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                             margin: "0 auto 10px",
                             display: "grid",
                             placeItems: "center",
-                            background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                            color: "#FFFFFF",
+                            background: "var(--gold-grad)",
+                            color: "#1A1D21",
                             boxShadow: "0 6px 16px rgba(201, 149, 13, 0.3)"
                           }}>
                             <Award size={26} strokeWidth={2} />
@@ -311,7 +311,7 @@ export default function CeoSection({ ceo, locale, certificates, labels }) {
                       height: 0,
                       borderStyle: "solid",
                       borderWidth: "0 42px 42px 0",
-                      borderColor: "transparent " + "#E0A81A" + " transparent transparent",
+                      borderColor: "transparent " + "var(--gold-bg)" + " transparent transparent",
                       opacity: 0.9
                     }} />
                   </div>

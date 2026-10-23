@@ -11,6 +11,12 @@ export default function ThemeToggle() {
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", (resolvedTheme || theme) === "dark" ? "#10141B" : "#F6F8FB");
+  }, [mounted, theme, resolvedTheme]);
+
   const labels = {
     fa: { theme: "تغییر پوسته", light: "تغییر به حالت روشن", dark: "تغییر به حالت تاریک" },
     en: { theme: "Change theme", light: "Switch to light mode", dark: "Switch to dark mode" },
@@ -24,7 +30,7 @@ export default function ThemeToggle() {
         type="button"
         aria-label={labels.theme}
         className="header-control w-10 h-10 rounded-lg border grid place-items-center"
-        style={{ color: "var(--gold)", borderColor: "var(--text-soft)", background: "var(--bg-card)" }}
+        style={{ color: "var(--gold)", borderColor: "var(--border-strong)", background: "var(--bg-card)" }}
       >
         <Sun size={18} />
       </button>
@@ -40,7 +46,7 @@ export default function ThemeToggle() {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? labels.light : labels.dark}
       className="header-control w-10 h-10 rounded-lg border transition grid place-items-center"
-      style={{ color: "var(--gold)", borderColor: "var(--text-soft)", background: "var(--bg-card)" }}
+      style={{ color: "var(--gold)", borderColor: "var(--border-strong)", background: "var(--bg-card)" }}
     >
       {isDark ? <Sun size={18} /> : <Moon size={18} />}
     </button>

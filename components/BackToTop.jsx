@@ -28,7 +28,7 @@ export default function BackToTop() {
           aria-label="Back to top"
           className="fixed bottom-24 md:bottom-28 left-4 md:left-6 z-30 w-11 h-11 md:w-12 md:h-12 rounded-full grid place-items-center shadow-lg transition-all hover:scale-110"
           style={{
-            background: "linear-gradient(135deg, #C9950D, #F5C518)",
+            background: "var(--gold-grad)",
             color: "#1A1D21",
             boxShadow: "0 8px 25px rgba(212, 160, 23, 0.4)"
           }}

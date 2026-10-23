@@ -447,8 +447,8 @@ export default function Footer({ logo, company, socialLinks = {}, chrome = {} })
           border-radius: 7px;
           display: grid;
           place-items: center;
-          background: linear-gradient(135deg, #E0A81A, #B8850A);
-          color: #FFFFFF;
+          background: var(--gold-grad);
+          color: #1A1D21;
           flex-shrink: 0;
         }
         .footer-knowledge-title {

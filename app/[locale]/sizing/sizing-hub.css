@@ -26,7 +26,7 @@
   margin-bottom: 14px;
   background: linear-gradient(135deg, rgba(224, 168, 26, 0.15), rgba(184, 133, 10, 0.05));
   border: 1px solid rgba(224, 168, 26, 0.35);
-  color: #B8850A;
+  color: var(--gold-text);
 }
 .dark .hub-badge {
   color: var(--gold);
@@ -74,9 +74,9 @@
 }
 
 .hub-card-active {
-  background: linear-gradient(135deg, #E0A81A, #B8850A);
+  background: var(--gold-grad);
   border-color: transparent;
-  box-shadow: 0 16px 40px rgba(201, 149, 13, 0.35);
+  box-shadow: 0 16px 40px var(--glow);
 }
 
 .hub-card-top {
@@ -106,8 +106,8 @@
 }
 
 .hub-card-active .hub-card-badge {
-  background: rgba(255, 255, 255, 0.20);
-  color: #FFFFFF;
+  background: rgba(26, 29, 33, 0.14);
+  color: #1A1D21;
 }
 
 .hub-card-title {
@@ -118,7 +118,7 @@
 }
 
 .hub-card-active .hub-card-title {
-  color: #FFFFFF;
+  color: #1A1D21;
 }
 
 .hub-card-desc {
@@ -130,7 +130,7 @@
 }
 
 .hub-card-active .hub-card-desc {
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(26, 29, 33, 0.78);
 }
 
 .hub-card-chips {

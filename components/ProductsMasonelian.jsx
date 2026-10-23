@@ -282,7 +282,7 @@ export default function ProductsMasonelian({ products = [], categories = [], hea
               {/* Category header */}
               <div className="flex items-start gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl grid place-items-center shrink-0"
-                  style={{ background: "linear-gradient(135deg, #C9950D, #F5C518)", color: "#1A1D21" }}>
+                  style={{ background: "var(--gold-grad)", color: "#1A1D21" }}>
                   <Icon size={20} />
                 </div>
                 <div className="min-w-0">

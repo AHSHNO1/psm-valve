@@ -39,7 +39,7 @@ export default function MediaTabs({ media, news, articles, dict, locale }) {
             <button key={tb.id} onClick={function() { setTab(tb.id); }}
               className="flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap"
               style={{
-                background: active ? "linear-gradient(135deg, #C9950D, #F5C518)" : "transparent",
+                background: active ? "var(--gold-grad)" : "transparent",
                 color: active ? "#1A1D21" : "var(--text-soft)"
               }}>
               <Icon size={15} />

@@ -4,55 +4,67 @@
 
 /* ===== LIGHT THEME (WCAG AA Compliant) ===== */
 :root, .light {
-  --bg: #F7F9FC;
-  --bg-soft: #EEF2F6;
+  --bg: #F6F8FB;
+  --bg-soft: #EDF1F7;
   --bg-card: #FFFFFF;
-  --bg-card-hover: #FAFAFA;
-  --surface-glass: rgba(255, 255, 255, 0.92);
-  --header-surface: rgba(255, 255, 255, 0.94);
-  --text: #1A1D21;
-  --text-soft: #3D4451;
-  --text-muted: #5C6370;
+  --bg-card-hover: #FBFCFE;
+  --surface-glass: rgba(255, 255, 255, 0.90);
+  --header-surface: rgba(255, 255, 255, 0.88);
+  --text: #171B22;
+  --text-soft: #3B4350;
+  --text-muted: #5D6675;
   --text-inverse: #FFFFFF;
-  --border: rgba(26, 29, 33, 0.15);
-  --border-strong: rgba(26, 29, 33, 0.25);
+  --border: rgba(23, 32, 48, 0.12);
+  --border-strong: rgba(23, 32, 48, 0.22);
   --gold: #B8860B;           /* Darker gold for text - contrast 4.8:1 */
   --gold-text: #7A5906;      /* Small gold text on light surfaces */
   --gold-bg: #D4A017;        /* Gold for backgrounds */
   --gold-light: #F5C518;
+  --gold-strong: #A87B0F;    /* Deep gold for hover/borders */
+  --gold-grad: linear-gradient(135deg, #C9950D 0%, #E0B018 50%, #F5C518 100%);
+  --gold-rgb: 184 134 11;
+  --gold-bg-rgb: 212 160 23;
+  --gold-strong-rgb: 168 123 15;
+  --silver-rgb: 156 163 175;
   --silver: #6B7280;
   --silver-light: #9CA3AF;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.10);
-  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
-  --glow: rgba(184, 134, 11, 0.20);
-  --card-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.14);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.07);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 36px rgba(15, 23, 42, 0.12);
+  --glow: rgba(184, 134, 11, 0.18);
+  --card-shadow-hover: 0 14px 38px rgba(15, 23, 42, 0.14);
 }
 
 .dark {
-  --bg: #171B22;
-  --bg-soft: #202631;
-  --bg-card: #282F39;
-  --bg-card-hover: #313A46;
-  --surface-glass: rgba(40, 47, 57, 0.86);
-  --header-surface: rgba(24, 29, 37, 0.92);
-  --text: #F1F4F8;
-  --text-soft: #C9CDD3;
-  --text-muted: #A3A9B2;
-  --text-inverse: #171B22;
-  --border: rgba(220, 224, 230, 0.13);
-  --border-strong: rgba(220, 224, 230, 0.22);
-  --gold: #E1C276;
-  --gold-text: #E1C276;
-  --gold-bg: #D4AA52;
-  --gold-light: #EBD28F;
-  --silver: #AAB6C5;
+  --bg: #10141B;
+  --bg-soft: #171D26;
+  --bg-card: #1F2733;
+  --bg-card-hover: #28323F;
+  --surface-glass: rgba(31, 39, 51, 0.86);
+  --header-surface: rgba(13, 17, 23, 0.86);
+  --text: #F2F5FA;
+  --text-soft: #C7CDD8;
+  --text-muted: #99A2B0;
+  --text-inverse: #10141B;
+  --border: rgba(210, 220, 235, 0.11);
+  --border-strong: rgba(210, 220, 235, 0.20);
+  --gold: #E4C67C;
+  --gold-text: #E4C67C;
+  --gold-bg: #D9AC55;
+  --gold-light: #EFD79A;
+  --gold-strong: #F5C518;
+  --gold-grad: linear-gradient(135deg, #B8860B 0%, #D4A017 55%, #F0C245 100%);
+  --gold-rgb: 228 198 124;
+  --gold-bg-rgb: 217 172 85;
+  --gold-strong-rgb: 245 197 24;
+  --silver-rgb: 213 221 231;
+  --silver: #A9B4C4;
   --silver-light: #D5DDE7;
-  --shadow-sm: 0 2px 8px rgba(4, 10, 18, 0.18);
-  --shadow-md: 0 8px 24px rgba(4, 10, 18, 0.24);
-  --shadow-lg: 0 16px 44px rgba(4, 10, 18, 0.32);
-  --glow: rgba(225, 194, 118, 0.16);
-  --card-shadow-hover: 0 14px 34px rgba(4, 10, 18, 0.30);
+  --shadow-sm: 0 2px 6px rgba(2, 6, 12, 0.35);
+  --shadow-md: 0 8px 22px rgba(2, 6, 12, 0.45);
+  --shadow-lg: 0 18px 48px rgba(2, 6, 12, 0.55);
+  --glow: rgba(228, 198, 124, 0.15);
+  --card-shadow-hover: 0 16px 40px rgba(2, 6, 12, 0.50);
 }
 
 * { box-sizing: border-box; }
@@ -93,16 +105,17 @@ html, body {
 
 html.dark body {
   background-image:
-    radial-gradient(ellipse at 12% 0%, rgba(42, 57, 79, 0.20), transparent 42%),
-    radial-gradient(ellipse at 94% 38%, rgba(34, 45, 62, 0.13), transparent 38%);
+    radial-gradient(ellipse at 12% 0%, rgba(38, 56, 84, 0.28), transparent 44%),
+    radial-gradient(ellipse at 94% 30%, rgba(66, 52, 18, 0.14), transparent 40%);
   background-attachment: fixed;
 }
 
 body::-webkit-scrollbar { width: 8px; }
 body::-webkit-scrollbar-track { background: var(--bg); }
 body::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--silver), var(--gold-bg));
+  background: linear-gradient(180deg, var(--silver-light), var(--gold-bg));
   border-radius: 10px;
+  opacity: 0.85;
 }
 
 @layer components {
@@ -113,7 +126,7 @@ body::-webkit-scrollbar-thumb {
   .btn-gold {
     @apply inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base
       transition-all duration-300;
-    background: linear-gradient(135deg, #C9950D 0%, #E0B018 50%, #F5C518 100%);
+    background: var(--gold-grad);
     color: #1A1D21;
     box-shadow: 0 4px 14px var(--glow);
   }
@@ -130,7 +143,10 @@ body::-webkit-scrollbar-thumb {
     box-shadow: var(--shadow-md);
   }
   .dark .btn-silver {
-    background: linear-gradient(135deg, #8B8F94 0%, #C0C0C0 45%, #9CA3AF 100%);
+    background: linear-gradient(135deg, #39424F 0%, #4A5563 55%, #39424F 100%);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-sm);
   }
 
   .btn-outline {
@@ -161,7 +177,7 @@ body::-webkit-scrollbar-thumb {
 
   .heading-grad { color: var(--text); }
   .dark .heading-grad {
-    background: linear-gradient(135deg, #E5E7EB 0%, #C0C0C0 45%, #9CA3AF 100%);
+    background: linear-gradient(135deg, #F4F6FA 0%, #C9D2DE 50%, #9AA6B5 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -169,7 +185,7 @@ body::-webkit-scrollbar-thumb {
 
   .heading-gold { color: var(--gold); }
   .dark .heading-gold {
-    background: linear-gradient(135deg, #FFD700 0%, #F5C518 50%, #D4A017 100%);
+    background: linear-gradient(135deg, #F0C245 0%, #E4C67C 50%, #D4A017 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -184,6 +200,12 @@ body::-webkit-scrollbar-thumb {
     border: 1px solid var(--gold);
     color: var(--gold-text);
     background: var(--glow);
+  }
+
+  /* الگوی واحد «روی‌ساخت طلایی» برای نشان‌ها و آیکونباکس‌ها در کل سایت */
+  .gold-gradient {
+    background: var(--gold-grad);
+    color: #1A1D21;
   }
 
   .text-soft { color: var(--text-soft); }
@@ -329,10 +351,10 @@ body::-webkit-scrollbar-thumb {
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #E0A81A, #B8850A);
-  color: #FFFFFF;
+  background: var(--gold-grad);
+  color: #1A1D21;
   margin-bottom: 12px;
-  box-shadow: 0 8px 22px rgba(201, 149, 13, 0.35);
+  box-shadow: 0 8px 22px var(--glow);
 }
 .pub-cert-title {
   font-size: 14px;
@@ -415,7 +437,7 @@ body::-webkit-scrollbar-thumb {
 }
 .hero-dot-active {
   width: 28px;
-  background: #F5C518;
+  background: var(--gold-bg);
 }
 
 /* ===== SKELETON LOADING ===== */
@@ -472,7 +494,7 @@ body::-webkit-scrollbar-thumb {
   font-size: 13px;
   font-weight: 900;
   text-decoration: none;
-  background: linear-gradient(135deg, #C9950D, #F5C518);
+  background: var(--gold-grad);
   color: #1A1D21;
   transition: top 0.2s ease;
 }
@@ -487,7 +509,7 @@ body::-webkit-scrollbar-thumb {
   inset-inline-start: 0;
   height: 3px;
   z-index: 60;
-  background: linear-gradient(90deg, #C9950D, #F5C518, #E0A81A);
+  background: var(--gold-grad);
   transform-origin: 0% 50%;
   pointer-events: none;
 }

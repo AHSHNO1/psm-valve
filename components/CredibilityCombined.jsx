@@ -194,8 +194,8 @@ export default function CredibilityCombined({ certificates, partners, content, l
                       aspectRatio: "1",
                       borderRadius: 14,
                       padding: 10,
-                      background: "linear-gradient(135deg, #F8F9FB, #EEF1F6)",
-                      border: "2.5px solid #E0A81A",
+                      background: "linear-gradient(135deg, var(--bg-soft), var(--bg-card))",
+                      border: "2.5px solid var(--gold-bg)",
                       boxShadow: "0 6px 20px rgba(201, 149, 13, 0.12), inset 0 2px 6px rgba(0,0,0,0.04)",
                       overflow: "hidden"
                     }}>
@@ -218,8 +218,8 @@ export default function CredibilityCombined({ certificates, partners, content, l
                               width: 44, height: 44, borderRadius: 12,
                               margin: "0 auto 8px",
                               display: "grid", placeItems: "center",
-                              background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-                              color: "#FFFFFF"
+                              background: "var(--gold-grad)",
+                              color: "#1A1D21"
                             }}>
                               <Award size={20} />
                             </div>
@@ -240,7 +240,7 @@ export default function CredibilityCombined({ certificates, partners, content, l
                         width: 0, height: 0,
                         borderStyle: "solid",
                         borderWidth: "0 32px 32px 0",
-                        borderColor: "transparent #E0A81A transparent transparent",
+                        borderColor: "transparent var(--gold-bg) transparent transparent",
                         opacity: 0.9
                       }} />
                     </div>
@@ -292,11 +292,11 @@ export default function CredibilityCombined({ certificates, partners, content, l
                   zIndex: 2
                 }}
                 onMouseEnter={function(e) {
-                  e.currentTarget.style.background = "linear-gradient(135deg, #E0A81A, #B8850A)";
-                  e.currentTarget.style.color = "#FFFFFF";
+                  e.currentTarget.style.background = "var(--gold-grad)";
+                  e.currentTarget.style.color = "#1A1D21";
                 }}
                 onMouseLeave={function(e) {
-                  e.currentTarget.style.background = "#FFFFFF";
+                  e.currentTarget.style.background = "var(--bg-card)";
                   e.currentTarget.style.color = "var(--gold)";
                 }}
               >
@@ -322,11 +322,11 @@ export default function CredibilityCombined({ certificates, partners, content, l
                   zIndex: 2
                 }}
                 onMouseEnter={function(e) {
-                  e.currentTarget.style.background = "linear-gradient(135deg, #E0A81A, #B8850A)";
-                  e.currentTarget.style.color = "#FFFFFF";
+                  e.currentTarget.style.background = "var(--gold-grad)";
+                  e.currentTarget.style.color = "#1A1D21";
                 }}
                 onMouseLeave={function(e) {
-                  e.currentTarget.style.background = "#FFFFFF";
+                  e.currentTarget.style.background = "var(--bg-card)";
                   e.currentTarget.style.color = "var(--gold)";
                 }}
               >
@@ -364,7 +364,7 @@ export default function CredibilityCombined({ certificates, partners, content, l
         padding: "16px 20px",
         borderRadius: 18,
         background: "linear-gradient(135deg, #FFF9E6, #FEF3C7)",
-        border: "2px solid #E0A81A",
+        border: "2px solid var(--gold-bg)",
         marginTop: 40,
         marginBottom: 14,
         display: "flex",
@@ -376,8 +376,8 @@ export default function CredibilityCombined({ certificates, partners, content, l
         <div style={{
           width: 54, height: 54, borderRadius: 14,
           display: "grid", placeItems: "center",
-          background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-          color: "#FFFFFF",
+          background: "var(--gold-grad)",
+          color: "#1A1D21",
           flexShrink: 0,
           boxShadow: "0 8px 20px rgba(201, 149, 13, 0.35)"
         }}>
@@ -398,8 +398,8 @@ export default function CredibilityCombined({ certificates, partners, content, l
             <span style={{
               padding: "2px 10px",
               borderRadius: 6,
-              background: "linear-gradient(135deg, #E0A81A, #B8850A)",
-              color: "#FFFFFF",
+              background: "var(--gold-grad)",
+              color: "#1A1D21",
               fontSize: 11
             }}>
               {locale === "fa" ? "تولیدی نوع یک" : "Type I"}

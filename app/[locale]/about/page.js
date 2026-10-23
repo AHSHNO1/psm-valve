@@ -137,7 +137,7 @@ export default async function AboutPage({ params }) {
               width: 50,
               height: 4,
               borderRadius: 2,
-              background: "linear-gradient(90deg, #E0A81A, #B8850A)",
+              background: "linear-gradient(90deg, var(--gold-bg), var(--gold-strong))",
               marginBottom: 20
             }} />
             <p className="leading-9 text-base sm:text-lg" style={{ color: "var(--text-soft)" }}>

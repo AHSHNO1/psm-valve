@@ -170,14 +170,14 @@ export default async function LocaleLayout({ children, params }) {
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#0F1114" />
+        <meta name="theme-color" content="#F6F8FB" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="PSM Valve" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.classList.add(t==='dark'?'dark':'light');}catch(e){document.documentElement.classList.add('light');}})();`
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark';document.documentElement.classList.add(d?'dark':'light');var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',d?'#10141B':'#F6F8FB');}catch(e){document.documentElement.classList.add('light');}})();`
           }}
         />
       </head>
